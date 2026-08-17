@@ -58,7 +58,7 @@ const Landing = () => {
           speed={0.4}
           autoAnimate={true}
           followMouse={true}
-          onClick={() => navigate('/auth')}
+          onClick={() => navigate('/home')}
         >
           Get Started 
         </SpecularButton>

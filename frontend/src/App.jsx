@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
+import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import AthleteDashboard from "./pages/AthleteDashboard";
 
@@ -8,8 +9,10 @@ const App = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
+
+        <Route path="/home" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
-       
+
         <Route path="/athlete/dashboard" element={<AthleteDashboard />} />
       </Routes>
     </BrowserRouter>
