@@ -4,9 +4,12 @@ import SpecularButton from '../components/SpecularButton';
 
 const useTypewriter = (text, speed = 80, delay = 200) => {
   const [displayText, setDisplayText] = useState('');
+  const [isComplete, setIsComplete] = useState(false);
 
   useEffect(() => {
     let currentIndex = 0;
+    setDisplayText('');
+    setIsComplete(false);
 
     const startTyping = setTimeout(() => {
       const intervalId = setInterval(() => {
@@ -15,6 +18,7 @@ const useTypewriter = (text, speed = 80, delay = 200) => {
           currentIndex++;
         } else {
           clearInterval(intervalId);
+          setIsComplete(true);
         }
       }, speed);
 
@@ -24,20 +28,35 @@ const useTypewriter = (text, speed = 80, delay = 200) => {
     return () => clearTimeout(startTyping);
   }, [text, speed, delay]);
 
-  return displayText;
+  return { displayText, isComplete };
 };
 
 const Landing = () => {
   const navigate = useNavigate();
-  const animatedTitle = useTypewriter('Welcome to Athlyx', 80, 200);
+
+  const { displayText: animatedTitle, isComplete } = useTypewriter(
+    'Welcome to Athlyx',
+    80,
+    200
+  );
 
   return (
     <div className="landing">
       <div className="landing-content">
-        <h1>
-          {animatedTitle}
-          <span className="typewriter-cursor">|</span>
-        </h1>
+        <div className="landing-title">
+          <h1>
+            {animatedTitle}
+            <span className="typewriter-cursor">|</span>
+          </h1>
+
+          {isComplete && (
+            <img
+              src="/logo.png"
+              alt="Athlyx Logo"
+              className="landing-logo"
+            />
+          )}
+        </div>
 
         <p>
           Discover talent. Connect with coaches.
@@ -60,7 +79,7 @@ const Landing = () => {
           followMouse={true}
           onClick={() => navigate('/home')}
         >
-          Get Started 
+          Get Started
         </SpecularButton>
       </div>
     </div>

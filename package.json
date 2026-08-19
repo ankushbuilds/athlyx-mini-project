@@ -1,0 +1,11 @@
+{
+  "name": "athlyx",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\""
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}

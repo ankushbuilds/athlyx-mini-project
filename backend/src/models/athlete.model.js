@@ -9,11 +9,6 @@ const athleteSchema = new mongoose.Schema(
             unique: true
         },
 
-        profilePhoto: {
-            type: String,
-            default: ""
-        },
-
         dateOfBirth: {
             type: Date
         },
@@ -45,9 +40,9 @@ const athleteSchema = new mongoose.Schema(
         },
 
         sport: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Sport",
-            required: true
+            type: String,
+            required: true,
+            trim: true
         },
 
         position: {

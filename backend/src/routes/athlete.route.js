@@ -1,41 +1,17 @@
 const express = require("express");
 const router = express.Router();
-
 const athleteController = require("../controllers/athlete.controller");
 const authMiddleware = require("../middleware/auth.middleware");
 
-router.post(
-    "/create",
-    authMiddleware,
-    athleteController.createAthlete
-);
+router.post("/create", authMiddleware, athleteController.createAthlete);
 
-router.get(
-    "/get-profile",
-    authMiddleware,
-    athleteController.getMyAthleteProfile
-);
+router.get("/get-profile", authMiddleware, athleteController.getMyAthleteProfile);
 
-router.put(
-    "/update-profile",
-    authMiddleware,
-    athleteController.updateMyAthleteProfile
-);
+router.put("/update-profile", authMiddleware, athleteController.updateMyAthleteProfile);
 
-router.delete(
-    "/delete-profile",
-    authMiddleware,
-    athleteController.deleteMyAthleteProfile
-);
+router.delete("/delete-profile", authMiddleware, athleteController.deleteMyAthleteProfile);
 
-router.get(
-    "/get-all", //for scouts and coaches to view all athletes
-    athleteController.getAllAthletes
-);
-
-router.get(
-    "/:id",
-    athleteController.getAthleteById
-);
+router.get("/get-all", athleteController.getAllAthletes);
+router.get("/:id", athleteController.getAthleteById);
 
 module.exports = router;
