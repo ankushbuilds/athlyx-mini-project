@@ -2386,3 +2386,290 @@ padding:13px;
     height:40px;
   }
 }
+
+/* Delete Account */
+/* Settings */
+
+.settings-page{
+  min-height:100%;
+  padding:45px;
+  background:#0d0d12;
+  color:#ffffff;
+  box-sizing:border-box;
+}
+
+.settings-header{
+  margin-bottom:35px;
+}
+
+.settings-header h1{
+  margin:0 0 8px;
+  font-size:32px;
+  font-weight:700;
+  letter-spacing:-0.8px;
+  color:#ffffff;
+}
+
+.settings-header p{
+  margin:0;
+  color:#9999a5;
+  font-size:15px;
+}
+
+.settings-section{
+  width:100%;
+  max-width:850px;
+  margin-bottom:20px;
+  padding:25px;
+  background:#15151c;
+  border:1px solid #292932;
+  border-radius:14px;
+  box-sizing:border-box;
+}
+
+.settings-section h2{
+  margin:0 0 20px;
+  font-size:17px;
+  font-weight:600;
+  color:#ffffff;
+}
+
+.settings-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:18px 0;
+  border-top:1px solid #292932;
+}
+
+.settings-item:first-of-type{
+  border-top:none;
+  padding-top:0;
+}
+
+.settings-item:last-of-type{
+  padding-bottom:0;
+}
+
+.settings-item-left{
+  display:flex;
+  align-items:center;
+  gap:15px;
+  min-width:0;
+}
+
+.settings-item-left>svg{
+  width:20px;
+  height:20px;
+  flex-shrink:0;
+  color:#9999a5;
+}
+
+.settings-item-left h3{
+  margin:0 0 5px;
+  font-size:15px;
+  font-weight:600;
+  color:#ffffff;
+}
+
+.settings-item-left p{
+  margin:0;
+  font-size:13px;
+  line-height:1.5;
+  color:#9999a5;
+}
+
+.settings-item button{
+  flex-shrink:0;
+  padding:9px 16px;
+  border:1px solid #363642;
+  border-radius:8px;
+  background:#252530;
+  color:#dddde4;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+
+.settings-item button:hover{
+  background:#2d2d39;
+  border-color:#454550;
+  color:#ffffff;
+}
+
+.danger-section{
+  border-color:#3b2929;
+}
+
+.danger-section h2{
+  color:#ff8f8f;
+}
+
+.delete-item{
+  border-top-color:#3b2929;
+}
+
+.delete-item .settings-item-left>svg{
+  color:#ff7373;
+}
+
+.delete-item .settings-item-left h3{
+  color:#ff8f8f;
+}
+
+.delete-btn{
+  border:1px solid #713535!important;
+  background:#351b1b!important;
+  color:#ffb2b2!important;
+}
+
+.delete-btn:hover{
+  background:#451f1f!important;
+  border-color:#914545!important;
+}
+
+.delete-modal-overlay{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(0,0,0,.7);
+  box-sizing:border-box;
+}
+
+.delete-modal{
+  width:100%;
+  max-width:420px;
+  padding:30px;
+  background:#181820;
+  border:1px solid #30303a;
+  border-radius:16px;
+  text-align:center;
+  box-shadow:0 20px 50px rgba(0,0,0,.4);
+  box-sizing:border-box;
+}
+
+.delete-modal-icon{
+  width:42px;
+  height:42px;
+  margin-bottom:15px;
+  padding:10px;
+  border-radius:50%;
+  color:#ff7373;
+  background:#351b1b;
+}
+
+.delete-modal h2{
+  margin:0 0 10px;
+  font-size:21px;
+  font-weight:700;
+  color:#ffffff;
+}
+
+.delete-modal p{
+  margin:0 auto 25px;
+  max-width:340px;
+  color:#9999a5;
+  font-size:14px;
+  line-height:1.6;
+}
+
+.delete-modal-actions{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+}
+
+.cancel-btn,
+.confirm-delete-btn{
+  border:none;
+  padding:11px 17px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+
+.cancel-btn{
+  background:#252530;
+  border:1px solid #363642;
+  color:#dddde4;
+}
+
+.cancel-btn:hover{
+  background:#2d2d39;
+}
+
+.confirm-delete-btn{
+  background:#b42323;
+  color:#ffffff;
+}
+
+.confirm-delete-btn:hover{
+  background:#8f1d1d;
+}
+
+.cancel-btn:disabled,
+.confirm-delete-btn:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+@media(max-width:768px){
+
+  .settings-page{
+    padding:30px 20px;
+  }
+
+  .settings-header h1{
+    font-size:28px;
+  }
+
+  .settings-section{
+    padding:20px;
+  }
+}
+
+@media(max-width:520px){
+
+  .settings-page{
+    padding:25px 15px;
+  }
+
+  .settings-section{
+    padding:18px;
+  }
+
+  .settings-item{
+    flex-direction:column;
+    align-items:stretch;
+    gap:15px;
+  }
+
+  .settings-item button{
+    width:100%;
+  }
+
+  .settings-item-left{
+    align-items:flex-start;
+  }
+
+  .delete-modal{
+    padding:25px 20px;
+  }
+
+  .delete-modal-actions{
+    flex-direction:column;
+  }
+
+  .cancel-btn,
+  .confirm-delete-btn{
+    width:100%;
+  }
+}

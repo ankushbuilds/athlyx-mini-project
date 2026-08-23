@@ -5,6 +5,7 @@ import Auth from "./pages/Auth";
 import AthleteDashboard from "./pages/AthleteDashboard";
 import AthleteProfile from "./pages/AthleteProfile";
 import AthleteProfileView from "./pages/AthleteProfileView";
+import Settings from "./pages/Settings";
 
 const App = () => {
   return (
@@ -20,6 +21,7 @@ const App = () => {
           path="/athlete/profile" element={<AthleteProfile />}
         />
         <Route path="/athlete/my-profile" element={<AthleteProfileView />} />
+       <Route path="/athlete/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
   );
