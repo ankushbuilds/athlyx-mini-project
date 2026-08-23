@@ -24,7 +24,7 @@ const Navbar = () => {
         </button>
 
         <button onClick={() => navigate("/contact")}>
-          Contact
+          Contact 
         </button>
         <button onClick={() => navigate("/help")}>
           Help
