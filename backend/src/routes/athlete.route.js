@@ -9,7 +9,7 @@ router.get("/get-profile", authMiddleware, athleteController.getMyAthleteProfile
 
 router.put("/update-profile", authMiddleware, athleteController.updateMyAthleteProfile);
 
-router.delete("/delete-profile", authMiddleware, athleteController.deleteMyAthleteProfile);
+
 
 router.get("/get-all", athleteController.getAllAthletes);
 router.get("/:id", athleteController.getAthleteById);

@@ -312,33 +312,7 @@ async function updateMyAthleteProfile(req, res) {
     }
 }
 
-async function deleteMyAthleteProfile(req, res) {
-    try {
-        const athlete = await Athlete.findOneAndDelete({
-            user: req.user.id
-        });
 
-        if (!athlete) {
-            return res.status(404).json({
-                message: "Athlete profile not found"
-            });
-        }
-
-        return res.status(200).json({
-            message: "Athlete profile deleted successfully"
-        });
-    } catch (error) {
-        console.error(
-            "Delete athlete profile error:",
-            error
-        );
-
-        return res.status(500).json({
-            message: "Error deleting athlete profile",
-            error: error.message
-        });
-    }
-}
 
 async function getAllAthletes(req, res) {
     try {
@@ -400,7 +374,6 @@ module.exports = {
     createAthlete,
     getMyAthleteProfile,
     updateMyAthleteProfile,
-    deleteMyAthleteProfile,
     getAllAthletes,
     getAthleteById
 };

@@ -196,10 +196,138 @@ async function deleteAccount(req,res){
   }
 }
 
+// Change Password
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        message: "Current password and new password are required"
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: "New password must be at least 6 characters"
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Current password is incorrect"
+      });
+    }
+
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      user.password
+    );
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        message: "New password must be different"
+      });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Password changed successfully"
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+
+    res.status(500).json({
+      message: "Failed to change password"
+    });
+  }
+};
+
+const changeEmail = async (req, res) => {
+  try {
+    const { currentPassword, newEmail } = req.body;
+
+    if (!currentPassword || !newEmail) {
+      return res.status(400).json({
+        message: "Current password and new email are required"
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!isPasswordCorrect) {
+      return res.status(401).json({
+        message: "Current password is incorrect"
+      });
+    }
+
+    const normalizedEmail = newEmail.trim().toLowerCase();
+
+    if (normalizedEmail === user.email) {
+      return res.status(400).json({
+        message: "New email must be different from current email"
+      });
+    }
+
+    const emailExists = await User.findOne({
+      email: normalizedEmail
+    });
+
+    if (emailExists) {
+      return res.status(409).json({
+        message: "Email is already registered"
+      });
+    }
+
+    user.email = normalizedEmail;
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Email address changed successfully",
+      email: user.email
+    });
+  } catch (error) {
+    console.error("Change email error:", error);
+
+    res.status(500).json({
+      message: "Failed to change email address"
+    });
+  }
+};
 
 module.exports = {
     registerUser,
     loginUser,
     getCurrentUser,
-    deleteAccount
+    deleteAccount,
+    changePassword,
+    changeEmail
 };
