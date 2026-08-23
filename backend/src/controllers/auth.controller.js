@@ -1,4 +1,5 @@
 const User = require("../models/user.model");
+const Athlete = require("../models/athlete.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
@@ -167,9 +168,38 @@ async function getCurrentUser(req, res) {
     }
 }
 
+// Delete Account
+async function deleteAccount(req,res){
+  try{
+    const userId = req.user.id;
+
+    const user = await User.findByIdAndDelete(userId);
+
+    if(!user){
+      return res.status(404).json({
+        success:false,
+        message:"User not found"
+      });
+    }
+
+    return res.status(200).json({
+      success:true,
+      message:"Account deleted successfully"
+    });
+  }catch(error){
+    console.error("Delete account error:",error);
+
+    return res.status(500).json({
+      success:false,
+      message:"Error deleting account"
+    });
+  }
+}
+
 
 module.exports = {
     registerUser,
     loginUser,
-    getCurrentUser
+    getCurrentUser,
+    deleteAccount
 };

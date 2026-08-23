@@ -9,5 +9,7 @@ router.post('/login', authController.loginUser);
 
 router.get('/me', authMiddleware, authController.getCurrentUser); 
 
+router.delete('/delete', authMiddleware, authController.deleteAccount);
+
 module.exports = router;
  
