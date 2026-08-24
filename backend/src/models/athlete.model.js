@@ -119,6 +119,34 @@ const athleteSchema = new mongoose.Schema(
         isAvailable: {
             type: Boolean,
             default: true
+        },
+
+        settings: {
+            profileVisibility: {
+                type: String,
+                enum: ["Public", "Private"],
+                default: "Public"
+            },
+
+            contactVisible: {
+                type: Boolean,
+                default: true
+            },
+
+            messageNotifications: {
+                type: Boolean,
+                default: true
+            },
+
+            opportunityNotifications: {
+                type: Boolean,
+                default: true
+            },
+
+            emailNotifications: {
+                type: Boolean,
+                default: true
+            }
         }
     },
     {
