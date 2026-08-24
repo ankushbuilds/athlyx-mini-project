@@ -1,7 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path) => location.pathname === path;
 
   return (
     <header className="home-header">
@@ -11,22 +14,38 @@ const Navbar = () => {
       </div>
 
       <nav className="home-nav">
-        <button onClick={() => navigate("/home")}>
+        <button
+          className={isActive("/home") ? "active" : ""}
+          onClick={() => navigate("/home")}
+        >
           Home
         </button>
 
-        <button onClick={() => navigate("/discover")}>
+        <button
+          className={isActive("/discover") ? "active" : ""}
+          onClick={() => navigate("/discover")}
+        >
           Discover
         </button>
 
-        <button onClick={() => navigate("/about")}>
+        <button
+          className={isActive("/about") ? "active" : ""}
+          onClick={() => navigate("/about")}
+        >
           About
         </button>
 
-        <button onClick={() => navigate("/contact")}>
-          Contact 
+        <button
+          className={isActive("/contact") ? "active" : ""}
+          onClick={() => navigate("/contact")}
+        >
+          Contact
         </button>
-        <button onClick={() => navigate("/help")}>
+
+        <button
+          className={isActive("/help") ? "active" : ""}
+          onClick={() => navigate("/help")}
+        >
           Help
         </button>
       </nav>

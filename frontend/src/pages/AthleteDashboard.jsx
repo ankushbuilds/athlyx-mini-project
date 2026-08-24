@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
-  FiGrid,
   FiUser,
   FiCompass,
   FiBriefcase,
-  FiSettings,
   FiLogOut
 } from "react-icons/fi";
+import AthleteSidebar from "../components/AthleteSidebar";
 
 const AthleteDashboard = () => {
   const navigate = useNavigate();
@@ -164,8 +163,6 @@ const AthleteDashboard = () => {
         </div>
 
         <div className="header-right">
-         
-
           <button
             className="logout-btn"
             onClick={handleLogout}
@@ -177,62 +174,12 @@ const AthleteDashboard = () => {
       </header>
 
       <div className="dashboard-layout">
-        <aside className="sidebar-icon-only">
-          <div
-            className="sidebar-item active"
-            data-tooltip="Dashboard"
-            onClick={() =>
-              navigate("/athlete/dashboard")
-            }
-          >
-            <FiGrid size={22} />
-          </div>
-
-          <div
-            className="sidebar-item"
-            data-tooltip="My Profile"
-            onClick={() =>
-              navigate("/athlete/my-profile")
-            }
-          >
-            <FiUser size={22} />
-          </div>
-
-          <div
-            className="sidebar-item"
-            data-tooltip="Discover"
-            onClick={() =>
-              navigate("/athlete/discover")
-            }
-          >
-            <FiCompass size={22} />
-          </div>
-
-          <div
-            className="sidebar-item"
-            data-tooltip="Opportunities"
-            onClick={() =>
-              navigate("/athlete/opportunities")
-            }
-          >
-            <FiBriefcase size={22} />
-          </div>
-
-          <div
-            className="sidebar-item"
-            data-tooltip="Settings"
-            onClick={() =>
-              navigate("/athlete/settings")
-            }
-          >
-            <FiSettings size={22} />
-          </div>
-        </aside>
+        <AthleteSidebar />
 
         <main className="dashboard-content">
           <section className="welcome-section">
             <h1>
-              Welcome ,  {user?.name || "Athlete"}
+              Welcome, {user?.name || "Athlete"}
             </h1>
 
             <p>

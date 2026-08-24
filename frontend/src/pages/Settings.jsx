@@ -12,6 +12,7 @@ import {
   FiAward,
   FiMail
 } from "react-icons/fi";
+import AthleteSidebar from "../components/AthleteSidebar";
 
 const Toggle = ({ enabled, setEnabled }) => (
   <button
@@ -158,6 +159,7 @@ const Settings = () => {
 
   return (
     <div className="settings-page">
+       <AthleteSidebar />
       <div className="settings-header">
         <h1>Settings</h1>
         <p>Manage your account, privacy and preferences</p>
