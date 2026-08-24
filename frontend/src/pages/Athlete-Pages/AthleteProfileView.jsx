@@ -21,8 +21,8 @@ import {
   PDFDownloadLink,
   PDFViewer
 } from "@react-pdf/renderer";
-import AthleteSidebar from "../components/AthleteSidebar";
-import AthleteResume from "../components/AthleteResume";
+import AthleteSidebar from "../../components/AthleteSidebar";
+import AthleteResume from "../../components/AthleteResume";
 
 const AthleteProfileView = () => {
   const navigate = useNavigate();

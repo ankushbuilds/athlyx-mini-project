@@ -2,16 +2,16 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
-import AthleteDashboard from "./pages/AthleteDashboard";
-import AthleteProfile from "./pages/AthleteProfile";
-import AthleteProfileView from "./pages/AthleteProfileView";
-import Settings from "./pages/Settings";
+import AthleteDashboard from "./pages/Athlete-Pages/AthleteDashboard";
+import AthleteProfile from "./pages/Athlete-Pages/AthleteProfile";
+import AthleteProfileView from "./pages/Athlete-Pages/AthleteProfileView";
+import Settings from "./pages/Athlete-Pages/Settings";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Help from "./pages/Help";
-import Discover from "./pages/Discover";
-import Opportunities from "./pages/Opportunities";
-import Showcase from "./pages/Showcase";
+import Discover from "./pages/Athlete-Pages/Discover";
+import Opportunities from "./pages/Athlete-Pages/Opportunities";
+import Showcase from "./pages/Athlete-Pages/Showcase";
 const App = () => {
   return (
     <BrowserRouter>

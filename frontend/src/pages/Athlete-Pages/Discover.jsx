@@ -5,7 +5,7 @@ import {
   FiUsers,
   FiArrowRight
 } from "react-icons/fi";
-import AthleteSidebar from "../components/AthleteSidebar";
+import AthleteSidebar from "../../components/AthleteSidebar";
 
 const Discover = () => {
   const [search, setSearch] = useState("");

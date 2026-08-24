@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FiCamera, FiUser } from "react-icons/fi";
-import AthleteSidebar from "../components/AthleteSidebar";
+import AthleteSidebar from "../../components/AthleteSidebar";
 
 const AthleteProfile = () => {
   const navigate = useNavigate();

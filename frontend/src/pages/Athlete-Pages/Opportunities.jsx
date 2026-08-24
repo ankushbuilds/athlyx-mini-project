@@ -6,7 +6,7 @@ import {
   FiBriefcase,
   FiArrowRight
 } from "react-icons/fi";
-import AthleteSidebar from "../components/AthleteSidebar";
+import AthleteSidebar from "../../components/AthleteSidebar";
 
 const Opportunities = () => {
   const [search, setSearch] = useState("");

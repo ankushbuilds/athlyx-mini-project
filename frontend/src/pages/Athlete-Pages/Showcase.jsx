@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import AthleteSidebar from "../components/AthleteSidebar";
+import AthleteSidebar from "../../components/AthleteSidebar";
 import {
     FiAward,
     FiEdit2,
