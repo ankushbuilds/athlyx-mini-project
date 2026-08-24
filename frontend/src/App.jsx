@@ -9,7 +9,9 @@ import Settings from "./pages/Settings";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Help from "./pages/Help";
-
+import Discover from "./pages/Discover";
+import Opportunities from "./pages/Opportunities";
+import Showcase from "./pages/Showcase";
 const App = () => {
   return (
     <BrowserRouter>
@@ -26,6 +28,13 @@ const App = () => {
         <Route path="/athlete/profile" element={<AthleteProfile />} />
         <Route path="/athlete/my-profile" element={<AthleteProfileView />} />
         <Route path="/athlete/settings" element={<Settings />} />
+        <Route path="/athlete/discover" element={<Discover />} />
+
+        <Route path="/athlete/opportunities" element={<Opportunities />} />
+        <Route
+          path="/athlete/showcase"
+          element={<Showcase />}
+        />
       </Routes>
     </BrowserRouter>
   );
