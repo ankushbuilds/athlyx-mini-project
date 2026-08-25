@@ -5,7 +5,8 @@ import {
   FiCompass,
   FiBriefcase,
   FiSettings,
-  FiAward
+  FiAward,
+  FiUsers
 } from "react-icons/fi";
 
 const AthleteSidebar = () => {
@@ -55,7 +56,8 @@ const AthleteSidebar = () => {
       >
         <FiBriefcase size={22} />
       </div>
-         <div
+
+      <div
         className={`sidebar-item ${
           isActive("/athlete/showcase") ? "active" : ""
         }`}
@@ -63,7 +65,16 @@ const AthleteSidebar = () => {
         onClick={() => navigate("/athlete/showcase")}
       >
         <FiAward size={22} />
-        
+      </div>
+
+      <div
+        className={`sidebar-item ${
+          isActive("/athlete/connections") ? "active" : ""
+        }`}
+        data-tooltip="Connections"
+        onClick={() => navigate("/athlete/connections")}
+      >
+        <FiUsers size={22} />
       </div>
 
       <div
@@ -75,8 +86,6 @@ const AthleteSidebar = () => {
       >
         <FiSettings size={22} />
       </div>
-
-   
     </aside>
   );
 };

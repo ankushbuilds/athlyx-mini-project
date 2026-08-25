@@ -315,9 +315,7 @@ const CoachDiscover = () => {
                           key={athlete._id}
                           className="coach-athlete-card"
                           onClick={() =>
-                            navigate(
-                              `/coach/athletes/${athlete._id}`
-                            )
+                            navigate(`/profile/athlete/${athlete._id}`)
                           }
                         >
                           <div className="athlete-card-top">
@@ -395,12 +393,12 @@ const CoachDiscover = () => {
 
                               {skills.length >
                                 3 && (
-                                <span>
-                                  +
-                                  {skills.length -
-                                    3}
-                                </span>
-                              )}
+                                  <span>
+                                    +
+                                    {skills.length -
+                                      3}
+                                  </span>
+                                )}
                             </div>
                           )}
 

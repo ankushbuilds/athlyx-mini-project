@@ -9,6 +9,8 @@ import {
 } from "react-icons/fi";
 import CoachSidebar from "../../components/CoachSidebar";
 
+const API = "http://localhost:5000/api";
+
 const CoachAthletes = () => {
   const navigate = useNavigate();
 
@@ -32,28 +34,34 @@ const CoachAthletes = () => {
 
     const filtered = athletes.filter((athlete) => {
       const name =
-        athlete?.user?.name ||
         athlete?.name ||
+        athlete?.user?.name ||
         "";
 
       const sport =
         athlete?.sport ||
+        athlete?.profile?.sport ||
         "";
 
       const position =
         athlete?.position ||
+        athlete?.profile?.position ||
         "";
 
       const city =
         athlete?.address?.city ||
+        athlete?.profile?.address?.city ||
         "";
 
       const state =
         athlete?.address?.state ||
+        athlete?.profile?.address?.state ||
         "";
 
       const skills = Array.isArray(athlete?.skills)
         ? athlete.skills.join(" ")
+        : Array.isArray(athlete?.profile?.skills)
+        ? athlete.profile.skills.join(" ")
         : "";
 
       const searchableText = `
@@ -86,7 +94,7 @@ const CoachAthletes = () => {
       setError("");
 
       const response = await axios.get(
-        "http://localhost:5000/api/coach-athletes/my-athletes",
+        `${API}/connections/coach/athletes`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -124,7 +132,7 @@ const CoachAthletes = () => {
 
       setError(
         error.response?.data?.message ||
-        "Failed to load your athletes."
+          "Failed to load your athletes."
       );
     } finally {
       setLoading(false);
@@ -133,26 +141,46 @@ const CoachAthletes = () => {
 
   const getAthleteName = (athlete) => {
     return (
-      athlete?.user?.name ||
       athlete?.name ||
+      athlete?.user?.name ||
       "Athlete"
     );
   };
 
   const getProfilePic = (athlete) => {
     return (
-      athlete?.user?.profilePic ||
       athlete?.profilePic ||
+      athlete?.user?.profilePic ||
       ""
+    );
+  };
+
+  const getSport = (athlete) => {
+    return (
+      athlete?.sport ||
+      athlete?.profile?.sport ||
+      "Sport not available"
+    );
+  };
+
+  const getPosition = (athlete) => {
+    return (
+      athlete?.position ||
+      athlete?.profile?.position ||
+      "Athlete"
     );
   };
 
   const getLocation = (athlete) => {
     const city =
-      athlete?.address?.city || "";
+      athlete?.address?.city ||
+      athlete?.profile?.address?.city ||
+      "";
 
     const state =
-      athlete?.address?.state || "";
+      athlete?.address?.state ||
+      athlete?.profile?.address?.state ||
+      "";
 
     if (city && state) {
       return `${city}, ${state}`;
@@ -166,9 +194,27 @@ const CoachAthletes = () => {
   };
 
   const getSkills = (athlete) => {
-    return Array.isArray(athlete?.skills)
-      ? athlete.skills
-      : [];
+    if (Array.isArray(athlete?.skills)) {
+      return athlete.skills;
+    }
+
+    if (Array.isArray(athlete?.profile?.skills)) {
+      return athlete.profile.skills;
+    }
+
+    return [];
+  };
+
+  const handleAthleteClick = (athlete) => {
+    const athleteId =
+      athlete?._id ||
+      athlete?.user?._id;
+
+    if (!athleteId) {
+      return;
+    }
+
+    navigate(`/coach/athletes/${athleteId}`);
   };
 
   return (
@@ -177,6 +223,7 @@ const CoachAthletes = () => {
 
       <main className="coach-athletes-content">
         <div className="coach-athletes-container">
+
           <div className="coach-athletes-header">
             <div>
               <span className="coach-athletes-eyebrow">
@@ -313,16 +360,15 @@ const CoachAthletes = () => {
 
                       return (
                         <div
-                          key={
-                            athlete._id
-                          }
+                          key={athlete._id}
                           className="coach-athlete-card"
                           onClick={() =>
-                            navigate(
-                              `/coach/athletes/${athlete._id}`
+                            handleAthleteClick(
+                              athlete
                             )
                           }
                         >
+
                           <div className="athlete-card-top">
                             <div className="athlete-avatar">
                               {profilePic ? (
@@ -355,20 +401,23 @@ const CoachAthletes = () => {
                             </h3>
 
                             <p className="athlete-position">
-                              {athlete.position ||
-                                "Athlete"}
+                              {getPosition(
+                                athlete
+                              )}
                             </p>
                           </div>
 
                           <div className="athlete-card-details">
+
                             <div className="athlete-detail">
                               <FiAward
                                 size={16}
                               />
 
                               <span>
-                                {athlete.sport ||
-                                  "Sport not available"}
+                                {getSport(
+                                  athlete
+                                )}
                               </span>
                             </div>
 
@@ -383,6 +432,7 @@ const CoachAthletes = () => {
                                 )}
                               </span>
                             </div>
+
                           </div>
 
                           {skills.length > 0 && (
@@ -402,12 +452,10 @@ const CoachAthletes = () => {
                                   )
                                 )}
 
-                              {skills.length >
-                                3 && (
+                              {skills.length > 3 && (
                                 <span>
                                   +
-                                  {skills.length -
-                                    3}
+                                  {skills.length - 3}
                                 </span>
                               )}
                             </div>
@@ -422,6 +470,7 @@ const CoachAthletes = () => {
                               →
                             </span>
                           </div>
+
                         </div>
                       );
                     }
@@ -430,6 +479,7 @@ const CoachAthletes = () => {
               )}
             </>
           )}
+
         </div>
       </main>
     </div>

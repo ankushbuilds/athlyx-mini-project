@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import {
   FiEdit,
@@ -15,29 +15,54 @@ import {
   FiClock,
   FiFileText,
   FiDownload,
-  FiX
+  FiX,
+  FiUserPlus
 } from "react-icons/fi";
 import {
   PDFDownloadLink,
   PDFViewer
 } from "@react-pdf/renderer";
 import AthleteSidebar from "../../components/AthleteSidebar";
+import CoachSidebar from "../../components/CoachSidebar";
 import AthleteResume from "../../components/AthleteResume";
+
+const API = "http://localhost:5000/api";
 
 const AthleteProfileView = () => {
   const navigate = useNavigate();
+  const { athleteId } = useParams();
+
+  const isPublicProfile = Boolean(athleteId);
 
   const [athlete, setAthlete] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showResumeModal, setShowResumeModal] = useState(false);
 
+  const [sendingRequest, setSendingRequest] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState("none");
+  const [requestError, setRequestError] = useState("");
+
+  const [currentUserRole, setCurrentUserRole] = useState("");
+
   useEffect(() => {
+    const user = JSON.parse(
+      localStorage.getItem("user")
+    );
+
+    if (user?.role) {
+      setCurrentUserRole(user.role);
+    }
+
     fetchAthleteProfile();
-  }, []);
+  }, [athleteId]);
 
   const fetchAthleteProfile = async () => {
     try {
+      setLoading(true);
+      setError("");
+      setRequestError("");
+
       const token = localStorage.getItem("token");
 
       if (!token) {
@@ -45,34 +70,93 @@ const AthleteProfileView = () => {
         return;
       }
 
-      const response = await axios.get(
-        "http://localhost:5000/api/athletes/get-profile",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
+      if (isPublicProfile) {
+        const response = await axios.get(
+          `${API}/athletes/${athleteId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
-        }
-      );
+        );
 
-      setAthlete(response.data.athlete);
+        setAthlete(response.data.athlete);
+
+        const user = JSON.parse(
+          localStorage.getItem("user")
+        );
+
+        if (user?.role === "coach") {
+          try {
+            const statusResponse = await axios.get(
+              `${API}/connections/status/${athleteId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`
+                }
+              }
+            );
+
+            const status =
+              statusResponse.data?.status || "none";
+
+            if (status === "accepted") {
+              setConnectionStatus("connected");
+            } else if (status === "pending") {
+              setConnectionStatus("pending");
+            } else if (status === "rejected") {
+              setConnectionStatus("rejected");
+            } else {
+              setConnectionStatus("none");
+            }
+          } catch (statusError) {
+            console.error(
+              "Failed to fetch connection status:",
+              statusError
+            );
+
+            setConnectionStatus("none");
+          }
+        } else {
+          setConnectionStatus("none");
+        }
+      } else {
+        const response = await axios.get(
+          `${API}/athletes/get-profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+
+        setAthlete(response.data.athlete);
+        setConnectionStatus("none");
+      }
     } catch (error) {
       console.error(
         "Failed to fetch athlete profile:",
         error
       );
 
-      if (error.response?.status === 401) {
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
 
-        navigate("/auth", { replace: true });
+        navigate("/auth", {
+          replace: true
+        });
+
         return;
       }
 
       if (error.response?.status === 404) {
-        navigate("/athlete/profile", {
-          replace: true
-        });
+        setError(
+          "Athlete profile not found."
+        );
         return;
       }
 
@@ -82,6 +166,86 @@ const AthleteProfileView = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendConnectionRequest = async () => {
+    if (
+      sendingRequest ||
+      connectionStatus === "pending" ||
+      connectionStatus === "connected"
+    ) {
+      return;
+    }
+
+    try {
+      setSendingRequest(true);
+      setRequestError("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/auth", {
+          replace: true
+        });
+        return;
+      }
+
+      const response = await axios.post(
+        `${API}/connections/send/${athleteId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      if (
+        response.status === 200 ||
+        response.status === 201
+      ) {
+        setConnectionStatus("pending");
+      }
+    } catch (error) {
+      console.error(
+        "Send connection request error:",
+        error
+      );
+
+      const status =
+        error.response?.data?.status;
+
+      if (status === "pending") {
+        setConnectionStatus("pending");
+      } else if (status === "accepted") {
+        setConnectionStatus("connected");
+      } else {
+        const message =
+          error.response?.data?.message
+            ?.toLowerCase() || "";
+
+        if (
+          message.includes("pending") ||
+          message.includes("already sent")
+        ) {
+          setConnectionStatus("pending");
+        }
+
+        if (
+          message.includes("connected") ||
+          message.includes("already connected")
+        ) {
+          setConnectionStatus("connected");
+        }
+      }
+
+      setRequestError(
+        error.response?.data?.message ||
+          "Failed to send connection request."
+      );
+    } finally {
+      setSendingRequest(false);
     }
   };
 
@@ -113,58 +277,119 @@ const AthleteProfileView = () => {
 
   const resumeData = athlete
     ? {
-        name: athlete.user?.name || "Athlete",
-        email: athlete.user?.email || "",
+        name:
+          athlete.user?.name ||
+          "Athlete",
+        email:
+          athlete.user?.email || "",
         profilePic:
           athlete.user?.profilePic || "",
-        dateOfBirth: athlete.dateOfBirth || "",
-        gender: athlete.gender || "",
-        phone: athlete.phone || "",
-        city: athlete.address?.city || "",
-        state: athlete.address?.state || "",
+        dateOfBirth:
+          athlete.dateOfBirth || "",
+        gender:
+          athlete.gender || "",
+        phone:
+          athlete.phone || "",
+        city:
+          athlete.address?.city || "",
+        state:
+          athlete.address?.state || "",
         country:
-          athlete.address?.country || "India",
-        sport: athlete.sport || "",
-        position: athlete.position || "",
+          athlete.address?.country ||
+          "India",
+        sport:
+          athlete.sport || "",
+        position:
+          athlete.position || "",
         experience:
           athlete.experience ?? 0,
-        skills: athlete.skills || [],
-        bio: athlete.bio || "",
-        height: athlete.height || "",
-        weight: athlete.weight || "",
+        skills:
+          athlete.skills || [],
+        bio:
+          athlete.bio || "",
+        height:
+          athlete.height || "",
+        weight:
+          athlete.weight || "",
         achievements:
           athlete.achievements || [],
         socialLinks: {
           instagram:
-            athlete.socialLinks?.instagram ||
-            "",
+            athlete.socialLinks
+              ?.instagram || "",
           facebook:
-            athlete.socialLinks?.facebook ||
-            "",
+            athlete.socialLinks
+              ?.facebook || "",
           youtube:
-            athlete.socialLinks?.youtube ||
-            ""
+            athlete.socialLinks
+              ?.youtube || ""
         }
       }
     : {};
 
+  const renderSidebar = () => {
+    if (
+      isPublicProfile &&
+      currentUserRole === "coach"
+    ) {
+      return <CoachSidebar />;
+    }
+
+    return <AthleteSidebar />;
+  };
+
+  const showConnectButton =
+    isPublicProfile &&
+    currentUserRole === "coach";
+
+  const getConnectionButtonText = () => {
+    if (
+      connectionStatus === "connected"
+    ) {
+      return "Connected";
+    }
+
+    if (
+      connectionStatus === "pending"
+    ) {
+      return "Request Sent";
+    }
+
+    if (
+      connectionStatus === "rejected"
+    ) {
+      return "Connect";
+    }
+
+    if (sendingRequest) {
+      return "Sending...";
+    }
+
+    return "Connect";
+  };
+
+  const isConnectionButtonDisabled =
+    sendingRequest ||
+    connectionStatus === "pending" ||
+    connectionStatus === "connected";
+
   if (loading) {
     return (
       <div className="athlete-profile-view-page">
-        <AthleteSidebar />
+        {renderSidebar()}
 
         <main className="athlete-profile-view-content">
           <div className="profile-view-container">
             <div className="page-heading">
-              <h1>My Profile</h1>
+              <h1>Athlete Profile</h1>
             </div>
 
             <section className="profile-view-section">
               <h2>Loading Profile</h2>
 
               <p className="profile-bio">
-                Please wait while we load your
-                profile.
+                Please wait while we load the
+                athlete profile.
               </p>
             </section>
           </div>
@@ -176,12 +401,12 @@ const AthleteProfileView = () => {
   if (error) {
     return (
       <div className="athlete-profile-view-page">
-        <AthleteSidebar />
+        {renderSidebar()}
 
         <main className="athlete-profile-view-content">
           <div className="profile-view-container">
             <div className="page-heading">
-              <h1>My Profile</h1>
+              <h1>Athlete Profile</h1>
             </div>
 
             <div className="profile-error">
@@ -196,7 +421,15 @@ const AthleteProfileView = () => {
   if (!athlete) {
     return (
       <div className="athlete-profile-view-page">
-        <AthleteSidebar />
+        {renderSidebar()}
+
+        <main className="athlete-profile-view-content">
+          <div className="profile-view-container">
+            <div className="profile-error">
+              Athlete profile not found.
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -214,30 +447,69 @@ const AthleteProfileView = () => {
 
   return (
     <div className="athlete-profile-view-page">
-      <AthleteSidebar />
+      {renderSidebar()}
 
       <main className="athlete-profile-view-content">
         <div className="profile-view-container">
+
           <div className="page-heading profile-page-heading">
             <div>
               <span className="page-eyebrow">
                 ATHLETE PROFILE
               </span>
 
-              <h1>My Profile</h1>
+              <h1>
+                {athlete.user?.name ||
+                  "Athlete"}
+              </h1>
             </div>
 
-            <button
-              type="button"
-              className="generate-resume-btn"
-              onClick={() =>
-                setShowResumeModal(true)
-              }
-            >
-              <FiFileText />
-              Generate Resume
-            </button>
+            <div className="profile-header-actions">
+
+              {!isPublicProfile && (
+                <button
+                  type="button"
+                  className="generate-resume-btn"
+                  onClick={() =>
+                    setShowResumeModal(true)
+                  }
+                >
+                  <FiFileText />
+                  Generate Resume
+                </button>
+              )}
+
+              {showConnectButton && (
+                <button
+                  type="button"
+                  className="generate-resume-btn"
+                  onClick={
+                    sendConnectionRequest
+                  }
+                  disabled={
+                    isConnectionButtonDisabled
+                  }
+                >
+                  {connectionStatus ===
+                    "connected" ? (
+                    <FiCheckCircle />
+                  ) : (
+                    <FiUserPlus />
+                  )}
+
+                  {getConnectionButtonText()}
+                </button>
+              )}
+
+            </div>
           </div>
+
+          {requestError &&
+            connectionStatus === "none" && (
+              <div className="profile-error">
+                {requestError}
+              </div>
+            )}
 
           <section className="profile-view-header">
             <div className="profile-view-photo">
@@ -281,6 +553,7 @@ const AthleteProfileView = () => {
             <h2>Personal Information</h2>
 
             <div className="profile-details-grid">
+
               <div className="profile-detail">
                 <span>
                   <FiUser /> Gender
@@ -346,6 +619,7 @@ const AthleteProfileView = () => {
                     : "Not added"}
                 </strong>
               </div>
+
             </div>
           </section>
 
@@ -353,6 +627,7 @@ const AthleteProfileView = () => {
             <h2>Sports Information</h2>
 
             <div className="profile-details-grid">
+
               <div className="profile-detail">
                 <span>
                   Primary Sport
@@ -392,6 +667,7 @@ const AthleteProfileView = () => {
                     : "Currently Unavailable"}
                 </strong>
               </div>
+
             </div>
           </section>
 
@@ -399,6 +675,7 @@ const AthleteProfileView = () => {
             <h2>Location</h2>
 
             <div className="profile-details-grid">
+
               <div className="profile-detail">
                 <span>
                   <FiMapPin /> City
@@ -427,6 +704,7 @@ const AthleteProfileView = () => {
                     "India"}
                 </strong>
               </div>
+
             </div>
           </section>
 
@@ -526,6 +804,7 @@ const AthleteProfileView = () => {
             <h2>Social Links</h2>
 
             <div className="profile-skills">
+
               {athlete.socialLinks
                 ?.instagram && (
                 <span>
@@ -602,124 +881,130 @@ const AthleteProfileView = () => {
                     No social links added.
                   </p>
                 )}
+
             </div>
           </section>
 
-          <div className="profile-bottom-actions">
-            <button
-              className="bottom-edit-profile-btn"
-              onClick={() =>
-                navigate(
-                  "/athlete/profile?mode=edit"
-                )
-              }
-            >
-              <FiEdit />
-              Edit Athlete Profile
-            </button>
+          {!isPublicProfile && (
+            <div className="profile-bottom-actions">
+              <button
+                className="bottom-edit-profile-btn"
+                onClick={() =>
+                  navigate(
+                    "/athlete/profile?mode=edit"
+                  )
+                }
+              >
+                <FiEdit />
+                Edit Athlete Profile
+              </button>
+            </div>
+          )}
 
-         
-          </div>
         </div>
       </main>
 
-      {showResumeModal && (
-        <div
-          className="resume-modal-overlay"
-          onClick={() =>
-            setShowResumeModal(false)
-          }
-        >
+      {!isPublicProfile &&
+        showResumeModal && (
           <div
-            className="resume-modal"
-            onClick={(event) =>
-              event.stopPropagation()
+            className="resume-modal-overlay"
+            onClick={() =>
+              setShowResumeModal(false)
             }
           >
-            <div className="resume-modal-header">
-              <div>
-                <span className="page-eyebrow">
-                  ATHLYX
-                </span>
+            <div
+              className="resume-modal"
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+            >
 
-                <h2>
-                  Resume Preview
-                </h2>
+              <div className="resume-modal-header">
+                <div>
+                  <span className="page-eyebrow">
+                    ATHLYX
+                  </span>
 
-                <p>
-                  Review your athlete
-                  resume before
-                  downloading it.
-                </p>
+                  <h2>
+                    Resume Preview
+                  </h2>
+
+                  <p>
+                    Review your athlete
+                    resume before
+                    downloading it.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="resume-modal-close"
+                  onClick={() =>
+                    setShowResumeModal(false)
+                  }
+                  aria-label="Close resume preview"
+                >
+                  <FiX />
+                </button>
               </div>
 
-              <button
-                type="button"
-                className="resume-modal-close"
-                onClick={() =>
-                  setShowResumeModal(false)
-                }
-                aria-label="Close resume preview"
-              >
-                <FiX />
-              </button>
-            </div>
-
-            <div className="resume-preview">
-              <PDFViewer
-                width="100%"
-                height="100%"
-                showToolbar={false}
-              >
-                <AthleteResume
-                  data={resumeData}
-                />
-              </PDFViewer>
-            </div>
-
-            <div className="resume-modal-footer">
-              <button
-                type="button"
-                className="resume-cancel-btn"
-                onClick={() =>
-                  setShowResumeModal(false)
-                }
-              >
-                Close
-              </button>
-
-              <PDFDownloadLink
-                document={
+              <div className="resume-preview">
+                <PDFViewer
+                  width="100%"
+                  height="100%"
+                  showToolbar={false}
+                >
                   <AthleteResume
                     data={resumeData}
                   />
-                }
-                fileName={`${(
-                  athlete.user?.name ||
-                  "Athlete"
-                )
-                  .replace(
-                    /[^a-z0-9]/gi,
-                    "-"
+                </PDFViewer>
+              </div>
+
+              <div className="resume-modal-footer">
+
+                <button
+                  type="button"
+                  className="resume-cancel-btn"
+                  onClick={() =>
+                    setShowResumeModal(false)
+                  }
+                >
+                  Close
+                </button>
+
+                <PDFDownloadLink
+                  document={
+                    <AthleteResume
+                      data={resumeData}
+                    />
+                  }
+                  fileName={`${(
+                    athlete.user?.name ||
+                    "Athlete"
                   )
-                  .toLowerCase()}-athlyx-resume.pdf`}
-                className="resume-download-btn"
-              >
-                {({ loading }) =>
-                  loading ? (
-                    "Preparing PDF..."
-                  ) : (
-                    <>
-                      <FiDownload />
-                      Download as PDF
-                    </>
-                  )
-                }
-              </PDFDownloadLink>
+                    .replace(
+                      /[^a-z0-9]/gi,
+                      "-"
+                    )
+                    .toLowerCase()}-athlyx-resume.pdf`}
+                  className="resume-download-btn"
+                >
+                  {({ loading }) =>
+                    loading ? (
+                      "Preparing PDF..."
+                    ) : (
+                      <>
+                        <FiDownload />
+                        Download as PDF
+                      </>
+                    )
+                  }
+                </PDFDownloadLink>
+
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 };

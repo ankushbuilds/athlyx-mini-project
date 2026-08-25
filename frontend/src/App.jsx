@@ -15,6 +15,7 @@ import Settings from "./pages/Athlete-Pages/Settings";
 import Discover from "./pages/Athlete-Pages/Discover";
 import Opportunities from "./pages/Athlete-Pages/Opportunities";
 import Showcase from "./pages/Athlete-Pages/Showcase";
+import AthleteConnections from "./pages/Athlete-Pages/AthleteConnections";
 
 // Coach Pages
 import CoachDashboard from "./pages/Coach-Pages/CoachDashboard";
@@ -28,15 +29,41 @@ const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/auth" element={<Auth />} />
 
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/help" element={<Help />} />
+        {/* ==================== PUBLIC ROUTES ==================== */}
 
-        {/* Athlete Routes */}
+        <Route
+          path="/"
+          element={<Landing />}
+        />
+
+        <Route
+          path="/home"
+          element={<Home />}
+        />
+
+        <Route
+          path="/auth"
+          element={<Auth />}
+        />
+
+        <Route
+          path="/about"
+          element={<About />}
+        />
+
+        <Route
+          path="/contact"
+          element={<Contact />}
+        />
+
+        <Route
+          path="/help"
+          element={<Help />}
+        />
+
+        {/* ==================== ATHLETE ROUTES ==================== */}
+
         <Route
           path="/athlete/dashboard"
           element={<AthleteDashboard />}
@@ -49,6 +76,11 @@ const App = () => {
 
         <Route
           path="/athlete/my-profile"
+          element={<AthleteProfileView />}
+        />
+
+        <Route
+          path="/profile/athlete/:athleteId"
           element={<AthleteProfileView />}
         />
 
@@ -72,7 +104,13 @@ const App = () => {
           element={<Showcase />}
         />
 
-        {/* Coach Routes */}
+        <Route
+          path="/athlete/connections"
+          element={<AthleteConnections />}
+        />
+
+        {/* ==================== COACH ROUTES ==================== */}
+
         <Route
           path="/coach/dashboard"
           element={<CoachDashboard />}
@@ -88,9 +126,16 @@ const App = () => {
           element={<CoachProfileView />}
         />
 
+        {/* Coach connected athletes list */}
         <Route
           path="/coach/athletes"
           element={<CoachAthletes />}
+        />
+
+        {/* Individual athlete profile opened by coach */}
+        <Route
+          path="/coach/athletes/:athleteId"
+          element={<AthleteProfileView />}
         />
 
         <Route
@@ -100,18 +145,23 @@ const App = () => {
 
         <Route
           path="/coach/opportunities"
-          element={<div>Opportunities</div>}
+          element={
+            <div>Opportunities</div>
+          }
         />
 
         <Route
           path="/coach/requests"
-          element={<div>Athlete Requests</div>}
+          element={
+            <div>Athlete Requests</div>
+          }
         />
 
         <Route
           path="/coach/settings"
           element={<CoachSettings />}
         />
+
       </Routes>
     </BrowserRouter>
   );
