@@ -21,6 +21,12 @@ async function registerUser(req, res) {
         email = email.trim().toLowerCase();
         role = role || "athlete";
 
+        if (!["athlete", "coach"].includes(role)) {
+            return res.status(400).json({
+                message: "Invalid user role"
+            });
+        }
+
         const existingUser = await User.findOne({ email });
 
         if (existingUser) {
@@ -156,6 +162,7 @@ async function getCurrentUser(req, res) {
 async function deleteAccount(req, res) {
     try {
         const userId = req.user.id;
+        const role = req.user.role;
 
         const user = await User.findById(userId);
 
@@ -166,9 +173,11 @@ async function deleteAccount(req, res) {
             });
         }
 
-        await Athlete.findOneAndDelete({
-            user: userId
-        });
+        if (role === "athlete") {
+            await Athlete.findOneAndDelete({
+                user: userId
+            });
+        }
 
         await User.findByIdAndDelete(userId);
 
@@ -321,23 +330,49 @@ const changeEmail = async (req, res) => {
 };
 
 // ==========================================
-// GET ATHLETE SETTINGS
+// GET SETTINGS
 // ==========================================
 
 const getSettings = async (req, res) => {
     try {
-        const athlete = await Athlete.findOne({
-            user: req.user.id
-        });
+        const user = await User.findById(req.user.id).select(
+            "role settings"
+        );
 
-        if (!athlete) {
+        if (!user) {
             return res.status(404).json({
-                message: "Athlete profile not found"
+                message: "User not found"
             });
         }
 
+        if (
+            user.role !== "athlete" &&
+            user.role !== "coach"
+        ) {
+            return res.status(400).json({
+                message: "Invalid user role"
+            });
+        }
+
+        const settings = {
+            profileVisibility:
+                user.settings?.profileVisibility || "Public",
+
+            contactVisible:
+                user.settings?.contactVisible ?? true,
+
+            messageNotifications:
+                user.settings?.messageNotifications ?? true,
+
+            opportunityNotifications:
+                user.settings?.opportunityNotifications ?? true,
+
+            emailNotifications:
+                user.settings?.emailNotifications ?? true
+        };
+
         return res.status(200).json({
-            settings: athlete.settings
+            settings
         });
     } catch (error) {
         console.error("Get settings error:", error);
@@ -349,7 +384,7 @@ const getSettings = async (req, res) => {
 };
 
 // ==========================================
-// UPDATE ATHLETE SETTINGS
+// UPDATE SETTINGS
 // ==========================================
 
 const updateSettings = async (req, res) => {
@@ -362,6 +397,10 @@ const updateSettings = async (req, res) => {
             emailNotifications
         } = req.body;
 
+        // ------------------------------------------
+        // VALIDATE PROFILE VISIBILITY
+        // ------------------------------------------
+
         if (
             profileVisibility !== undefined &&
             !["Public", "Private"].includes(profileVisibility)
@@ -370,6 +409,10 @@ const updateSettings = async (req, res) => {
                 message: "Invalid profile visibility"
             });
         }
+
+        // ------------------------------------------
+        // VALIDATE CONTACT VISIBILITY
+        // ------------------------------------------
 
         if (
             contactVisible !== undefined &&
@@ -380,6 +423,10 @@ const updateSettings = async (req, res) => {
             });
         }
 
+        // ------------------------------------------
+        // VALIDATE MESSAGE NOTIFICATIONS
+        // ------------------------------------------
+
         if (
             messageNotifications !== undefined &&
             typeof messageNotifications !== "boolean"
@@ -388,6 +435,10 @@ const updateSettings = async (req, res) => {
                 message: "Invalid message notification value"
             });
         }
+
+        // ------------------------------------------
+        // VALIDATE OPPORTUNITY NOTIFICATIONS
+        // ------------------------------------------
 
         if (
             opportunityNotifications !== undefined &&
@@ -398,6 +449,10 @@ const updateSettings = async (req, res) => {
             });
         }
 
+        // ------------------------------------------
+        // VALIDATE EMAIL NOTIFICATIONS
+        // ------------------------------------------
+
         if (
             emailNotifications !== undefined &&
             typeof emailNotifications !== "boolean"
@@ -407,45 +462,73 @@ const updateSettings = async (req, res) => {
             });
         }
 
-        const athlete = await Athlete.findOne({
-            user: req.user.id
-        });
+        // ------------------------------------------
+        // FIND USER
+        // ------------------------------------------
 
-        if (!athlete) {
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
             return res.status(404).json({
-                message: "Athlete profile not found"
+                message: "User not found"
             });
         }
 
-        if (!athlete.settings) {
-            athlete.settings = {};
+        // ------------------------------------------
+        // ROLE CHECK
+        // ------------------------------------------
+
+        if (
+            user.role !== "athlete" &&
+            user.role !== "coach"
+        ) {
+            return res.status(400).json({
+                message: "Invalid user role"
+            });
         }
 
+        // ------------------------------------------
+        // INITIALIZE SETTINGS
+        // ------------------------------------------
+
+        if (!user.settings) {
+            user.settings = {};
+        }
+
+        // ------------------------------------------
+        // UPDATE ONLY PROVIDED VALUES
+        // ------------------------------------------
+
         if (profileVisibility !== undefined) {
-            athlete.settings.profileVisibility = profileVisibility;
+            user.settings.profileVisibility =
+                profileVisibility;
         }
 
         if (contactVisible !== undefined) {
-            athlete.settings.contactVisible = contactVisible;
+            user.settings.contactVisible =
+                contactVisible;
         }
 
         if (messageNotifications !== undefined) {
-            athlete.settings.messageNotifications = messageNotifications;
+            user.settings.messageNotifications =
+                messageNotifications;
         }
 
         if (opportunityNotifications !== undefined) {
-            athlete.settings.opportunityNotifications = opportunityNotifications;
+            user.settings.opportunityNotifications =
+                opportunityNotifications;
         }
 
         if (emailNotifications !== undefined) {
-            athlete.settings.emailNotifications = emailNotifications;
+            user.settings.emailNotifications =
+                emailNotifications;
         }
 
-        await athlete.save();
+        await user.save();
 
         return res.status(200).json({
             message: "Settings updated successfully",
-            settings: athlete.settings
+            settings: user.settings
         });
     } catch (error) {
         console.error("Update settings error:", error);

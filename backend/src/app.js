@@ -4,6 +4,10 @@ const authRoutes = require("./routes/auth.route");
 const athleteRoutes = require("./routes/athlete.route");
 const userRoutes = require("./routes/user.route");
 const showcaseRoutes = require("./routes/showcase.route");
+const coachRoutes = require("./routes/coach.route");
+const coachAthleteRoutes = require("./routes/coachAthlete.route");
+
+
 
 
 
@@ -19,5 +23,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/athletes", athleteRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/showcase", showcaseRoutes);
+app.use("/api/coaches", coachRoutes);
+app.use("/api/coach-athletes",coachAthleteRoutes);
 
 module.exports = app;

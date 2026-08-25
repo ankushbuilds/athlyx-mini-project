@@ -32,6 +32,112 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    // ==========================================
+    // COACH PROFILE
+    // ==========================================
+
+    phone: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    address: {
+      city: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+
+      state: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+
+      country: {
+        type: String,
+        trim: true,
+        default: "India",
+      },
+    },
+
+    sport: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    specialization: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    experience: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+
+    organization: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    achievements: {
+      type: [String],
+      default: [],
+    },
+    skills: {
+  type: [String],
+  default: [],
+},
+
+    bio: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    isAvailable: {
+      type: Boolean,
+      default: true,
+    },
+
+    // ==========================================
+    // SETTINGS
+    // ==========================================
+
+    settings: {
+      profileVisibility: {
+        type: String,
+        enum: ["Public", "Private"],
+        default: "Public",
+      },
+
+      contactVisible: {
+        type: Boolean,
+        default: true,
+      },
+
+      messageNotifications: {
+        type: Boolean,
+        default: true,
+      },
+
+      opportunityNotifications: {
+        type: Boolean,
+        default: true,
+      },
+
+      emailNotifications: {
+        type: Boolean,
+        default: true,
+      },
+    },
   },
   {
     timestamps: true,
