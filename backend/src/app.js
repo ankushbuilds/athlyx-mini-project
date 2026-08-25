@@ -6,7 +6,7 @@ const userRoutes = require("./routes/user.route");
 const showcaseRoutes = require("./routes/showcase.route");
 const coachRoutes = require("./routes/coach.route");
 const coachAthleteRoutes = require("./routes/coachAthlete.route");
-
+const connectionRoutes = require("./routes/connection.route");
 
 
 
@@ -25,5 +25,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/showcase", showcaseRoutes);
 app.use("/api/coaches", coachRoutes);
 app.use("/api/coach-athletes",coachAthleteRoutes);
+app.use("/api/connections", connectionRoutes);
 
 module.exports = app;

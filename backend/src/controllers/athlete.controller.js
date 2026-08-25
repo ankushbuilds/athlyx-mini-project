@@ -341,6 +341,15 @@ async function getAllAthletes(req, res) {
 
 async function getAthleteById(req, res) {
     try {
+        if (
+            req.user.role !== "coach" &&
+            req.user.role !== "athlete"
+        ) {
+            return res.status(403).json({
+                message: "You are not allowed to view athlete profiles"
+            });
+        }
+
         const athlete = await Athlete.findById(
             req.params.id
         ).populate(

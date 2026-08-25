@@ -76,27 +76,49 @@ const getMyAthletes = async (req, res) => {
     try {
         const coachId = req.user.id;
 
-        const connections =
-            await CoachAthlete.find({
-                coach: coachId,
-                status: "accepted"
+        // Find accepted connections for logged-in coach
+        const connections = await Connection.find({
+            coach: coachId,
+            status: "accepted"
+        })
+            .populate({
+                path: "athlete",
+                select: "name email role profilePic"
             })
-                .populate({
-                    path: "athlete",
-                    select: "-password"
-                })
-                .sort({
-                    updatedAt: -1
-                });
+            .sort({
+                updatedAt: -1
+            });
 
-        const athletes = connections
-            .map((connection) =>
-                connection.athlete
-            )
-            .filter(Boolean);
+        const athletes = await Promise.all(
+            connections
+                .filter((connection) => connection.athlete)
+                .map(async (connection) => {
+                    const athleteUser = connection.athlete;
+
+                    const athleteProfile = await Athlete.findOne({
+                        user: athleteUser._id
+                    });
+
+                    if (!athleteProfile) {
+                        return null;
+                    }
+
+                    return {
+                        ...athleteProfile.toObject(),
+
+                        user: {
+                            _id: athleteUser._id,
+                            name: athleteUser.name,
+                            email: athleteUser.email,
+                            role: athleteUser.role,
+                            profilePic: athleteUser.profilePic
+                        }
+                    };
+                })
+        );
 
         return res.status(200).json({
-            athletes
+            athletes: athletes.filter(Boolean)
         });
     } catch (error) {
         console.error(
@@ -105,8 +127,7 @@ const getMyAthletes = async (req, res) => {
         );
 
         return res.status(500).json({
-            message:
-                "Failed to fetch your athletes"
+            message: "Failed to fetch your athletes"
         });
     }
 };

@@ -12,6 +12,10 @@ router.put("/update-profile", authMiddleware, athleteController.updateMyAthleteP
 
 
 router.get("/get-all", athleteController.getAllAthletes);
-router.get("/:id", athleteController.getAthleteById);
+router.get(
+    "/:id",
+    authMiddleware,
+    athleteController.getAthleteById
+);
 
 module.exports = router;
