@@ -108,6 +108,25 @@ const userSchema = new mongoose.Schema(
     },
 
     // ==========================================
+// EMAIL VERIFICATION
+// ==========================================
+
+emailVerified: {
+  type: Boolean,
+  default: false,
+},
+
+emailVerificationOTP: {
+  type: String,
+  default: "",
+},
+
+emailVerificationOTPExpires: {
+  type: Date,
+  default: null,
+},
+
+    // ==========================================
     // SETTINGS
     // ==========================================
 

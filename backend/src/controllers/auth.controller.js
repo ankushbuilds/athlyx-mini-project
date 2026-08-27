@@ -2,6 +2,13 @@ const User = require("../models/user.model");
 const Athlete = require("../models/athlete.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { Resend } = require("resend");
+
+// ==========================================
+// RESEND
+// ==========================================
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ==========================================
 // REGISTER USER
@@ -27,25 +34,151 @@ async function registerUser(req, res) {
             });
         }
 
+        // ==========================================
+        // CHECK EXISTING USER
+        // ==========================================
+
         const existingUser = await User.findOne({ email });
 
         if (existingUser) {
-            return res.status(400).json({
-                message: "User already exists"
+
+            // Already verified
+            if (existingUser.emailVerified) {
+                return res.status(400).json({
+                    message: "User already exists"
+                });
+            }
+
+            // ==========================================
+            // USER EXISTS BUT EMAIL NOT VERIFIED
+            // SEND NEW OTP
+            // ==========================================
+
+            const otp = Math.floor(
+                100000 + Math.random() * 900000
+            ).toString();
+
+            const otpExpires = new Date(
+                Date.now() + 10 * 60 * 1000
+            );
+
+            existingUser.name = name;
+
+            existingUser.password = await bcrypt.hash(
+                password,
+                10
+            );
+
+            existingUser.role = role;
+
+            existingUser.emailVerified = false;
+
+            existingUser.emailVerificationOTP = otp;
+
+            existingUser.emailVerificationOTPExpires =
+                otpExpires;
+
+            await existingUser.save();
+
+            // ==========================================
+            // SEND OTP USING RESEND
+            // ==========================================
+
+            const { data, error } = await resend.emails.send({
+                from: "onboarding@resend.dev",
+                to: email,
+                subject: "Athlyx Email Verification OTP",
+                text:
+                    `Your Athlyx verification OTP is ${otp}. ` +
+                    `This OTP will expire in 10 minutes.`
+            });
+
+            if (error) {
+                console.error("Resend email error:", error);
+
+                return res.status(500).json({
+                    success: false,
+                    message: "User saved but OTP email could not be sent",
+                    error: error.message || error
+                });
+            }
+
+            console.log("OTP email sent:", data);
+
+            return res.status(200).json({
+                success: true,
+                otpSent: true,
+                message: "OTP sent to your email"
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // ==========================================
+        // HASH PASSWORD
+        // ==========================================
+
+        const hashedPassword = await bcrypt.hash(
+            password,
+            10
+        );
+
+        // ==========================================
+        // GENERATE OTP
+        // ==========================================
+
+        const otp = Math.floor(
+            100000 + Math.random() * 900000
+        ).toString();
+
+        const otpExpires = new Date(
+            Date.now() + 10 * 60 * 1000
+        );
+
+        // ==========================================
+        // CREATE USER
+        // ==========================================
 
         const user = await User.create({
             name,
             email,
             password: hashedPassword,
-            role
+            role,
+
+            emailVerified: false,
+
+            emailVerificationOTP: otp,
+
+            emailVerificationOTPExpires: otpExpires
         });
 
+        // ==========================================
+        // SEND OTP USING RESEND
+        // ==========================================
+
+        const { data, error } = await resend.emails.send({
+            from: "onboarding@resend.dev",
+            to: email,
+            subject: "Athlyx Email Verification OTP",
+            text:
+                `Your Athlyx verification OTP is ${otp}. ` +
+                `This OTP will expire in 10 minutes.`
+        });
+
+        if (error) {
+            console.error("Resend email error:", error);
+
+            return res.status(500).json({
+                success: false,
+                message: "User registered but OTP email could not be sent",
+                error: error.message || error
+            });
+        }
+
+        console.log("OTP email sent:", data);
+
         return res.status(201).json({
-            message: "User registered successfully",
+            success: true,
+            otpSent: true,
+            message: "OTP sent to your email",
             user: {
                 id: user._id,
                 name: user.name,
@@ -53,11 +186,213 @@ async function registerUser(req, res) {
                 role: user.role
             }
         });
+
     } catch (error) {
         console.error("Register error:", error);
 
         return res.status(500).json({
             message: "Error registering user",
+            error: error.message
+        });
+    }
+}
+
+// ==========================================
+// VERIFY EMAIL OTP
+// ==========================================
+
+async function verifyEmailOTP(req, res) {
+    try {
+        let { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: "Email and OTP are required"
+            });
+        }
+
+        email = email.trim().toLowerCase();
+        otp = otp.toString().trim();
+
+        // ==========================================
+        // FIND USER
+        // ==========================================
+
+        const user = await User.findOne({
+            email
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // ==========================================
+        // CHECK ALREADY VERIFIED
+        // ==========================================
+
+        if (user.emailVerified) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is already verified"
+            });
+        }
+
+        // ==========================================
+        // CHECK OTP
+        // ==========================================
+
+        if (user.emailVerificationOTP !== otp) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP"
+            });
+        }
+
+        // ==========================================
+        // CHECK OTP EXPIRY
+        // ==========================================
+
+        if (
+            !user.emailVerificationOTPExpires ||
+            user.emailVerificationOTPExpires < new Date()
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "OTP has expired"
+            });
+        }
+
+        // ==========================================
+        // VERIFY EMAIL
+        // ==========================================
+
+        user.emailVerified = true;
+
+        user.emailVerificationOTP = "";
+
+        user.emailVerificationOTPExpires = null;
+
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            verified: true,
+            message: "Email verified successfully"
+        });
+
+    } catch (error) {
+        console.error("Verify OTP error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "OTP verification failed",
+            error: error.message
+        });
+    }
+}
+
+// ==========================================
+// RESEND EMAIL OTP
+// ==========================================
+
+async function resendEmailOTP(req, res) {
+    try {
+        let { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is required"
+            });
+        }
+
+        email = email.trim().toLowerCase();
+
+        // ==========================================
+        // FIND USER
+        // ==========================================
+
+        const user = await User.findOne({
+            email
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // ==========================================
+        // ALREADY VERIFIED
+        // ==========================================
+
+        if (user.emailVerified) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is already verified"
+            });
+        }
+
+        // ==========================================
+        // GENERATE NEW OTP
+        // ==========================================
+
+        const otp = Math.floor(
+            100000 + Math.random() * 900000
+        ).toString();
+
+        const otpExpires = new Date(
+            Date.now() + 10 * 60 * 1000
+        );
+
+        user.emailVerificationOTP = otp;
+
+        user.emailVerificationOTPExpires =
+            otpExpires;
+
+        await user.save();
+
+        // ==========================================
+        // SEND NEW OTP USING RESEND
+        // ==========================================
+
+        const { data, error } = await resend.emails.send({
+            from: "onboarding@resend.dev",
+            to: email,
+            subject: "Athlyx Email Verification OTP",
+            text:
+                `Your new Athlyx verification OTP is ${otp}. ` +
+                `This OTP will expire in 10 minutes.`
+        });
+
+        if (error) {
+            console.error("Resend email error:", error);
+
+            return res.status(500).json({
+                success: false,
+                message: "OTP generated but email could not be sent",
+                error: error.message || error
+            });
+        }
+
+        console.log("OTP email sent:", data);
+
+        return res.status(200).json({
+            success: true,
+            message: "New OTP sent successfully"
+        });
+
+    } catch (error) {
+        console.error("Resend OTP error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to resend OTP",
             error: error.message
         });
     }
@@ -84,6 +419,16 @@ async function loginUser(req, res) {
         if (!user) {
             return res.status(401).json({
                 message: "Invalid email or password"
+            });
+        }
+
+        // ==========================================
+        // EMAIL VERIFICATION CHECK
+        // ==========================================
+
+        if (!user.emailVerified) {
+            return res.status(403).json({
+                message: "Please verify your email before login"
             });
         }
 
@@ -119,6 +464,7 @@ async function loginUser(req, res) {
                 role: user.role
             }
         });
+
     } catch (error) {
         console.error("Login error:", error);
 
@@ -135,7 +481,9 @@ async function loginUser(req, res) {
 
 async function getCurrentUser(req, res) {
     try {
-        const user = await User.findById(req.user.id).select("-password");
+        const user = await User.findById(
+            req.user.id
+        ).select("-password");
 
         if (!user) {
             return res.status(404).json({
@@ -146,8 +494,12 @@ async function getCurrentUser(req, res) {
         return res.status(200).json({
             user
         });
+
     } catch (error) {
-        console.error("Get current user error:", error);
+        console.error(
+            "Get current user error:",
+            error
+        );
 
         return res.status(500).json({
             message: "Internal server error"
@@ -185,8 +537,12 @@ async function deleteAccount(req, res) {
             success: true,
             message: "Account deleted successfully"
         });
+
     } catch (error) {
-        console.error("Delete account error:", error);
+        console.error(
+            "Delete account error:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
@@ -201,21 +557,28 @@ async function deleteAccount(req, res) {
 
 const changePassword = async (req, res) => {
     try {
-        const { currentPassword, newPassword } = req.body;
+        const {
+            currentPassword,
+            newPassword
+        } = req.body;
 
         if (!currentPassword || !newPassword) {
             return res.status(400).json({
-                message: "Current password and new password are required"
+                message:
+                    "Current password and new password are required"
             });
         }
 
         if (newPassword.length < 6) {
             return res.status(400).json({
-                message: "New password must be at least 6 characters"
+                message:
+                    "New password must be at least 6 characters"
             });
         }
 
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(
+            req.user.id
+        );
 
         if (!user) {
             return res.status(404).json({
@@ -230,33 +593,43 @@ const changePassword = async (req, res) => {
 
         if (!isMatch) {
             return res.status(400).json({
-                message: "Current password is incorrect"
+                message:
+                    "Current password is incorrect"
             });
         }
 
-        const isSamePassword = await bcrypt.compare(
-            newPassword,
-            user.password
-        );
+        const isSamePassword =
+            await bcrypt.compare(
+                newPassword,
+                user.password
+            );
 
         if (isSamePassword) {
             return res.status(400).json({
-                message: "New password must be different"
+                message:
+                    "New password must be different"
             });
         }
 
-        user.password = await bcrypt.hash(newPassword, 10);
+        user.password =
+            await bcrypt.hash(newPassword, 10);
 
         await user.save();
 
         return res.status(200).json({
-            message: "Password changed successfully"
+            message:
+                "Password changed successfully"
         });
+
     } catch (error) {
-        console.error("Change password error:", error);
+        console.error(
+            "Change password error:",
+            error
+        );
 
         return res.status(500).json({
-            message: "Failed to change password"
+            message:
+                "Failed to change password"
         });
     }
 };
@@ -267,15 +640,21 @@ const changePassword = async (req, res) => {
 
 const changeEmail = async (req, res) => {
     try {
-        const { currentPassword, newEmail } = req.body;
+        const {
+            currentPassword,
+            newEmail
+        } = req.body;
 
         if (!currentPassword || !newEmail) {
             return res.status(400).json({
-                message: "Current password and new email are required"
+                message:
+                    "Current password and new email are required"
             });
         }
 
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(
+            req.user.id
+        );
 
         if (!user) {
             return res.status(404).json({
@@ -283,32 +662,38 @@ const changeEmail = async (req, res) => {
             });
         }
 
-        const isPasswordCorrect = await bcrypt.compare(
-            currentPassword,
-            user.password
-        );
+        const isPasswordCorrect =
+            await bcrypt.compare(
+                currentPassword,
+                user.password
+            );
 
         if (!isPasswordCorrect) {
             return res.status(401).json({
-                message: "Current password is incorrect"
+                message:
+                    "Current password is incorrect"
             });
         }
 
-        const normalizedEmail = newEmail.trim().toLowerCase();
+        const normalizedEmail =
+            newEmail.trim().toLowerCase();
 
         if (normalizedEmail === user.email) {
             return res.status(400).json({
-                message: "New email must be different from current email"
+                message:
+                    "New email must be different from current email"
             });
         }
 
-        const emailExists = await User.findOne({
-            email: normalizedEmail
-        });
+        const emailExists =
+            await User.findOne({
+                email: normalizedEmail
+            });
 
         if (emailExists) {
             return res.status(409).json({
-                message: "Email is already registered"
+                message:
+                    "Email is already registered"
             });
         }
 
@@ -317,14 +702,20 @@ const changeEmail = async (req, res) => {
         await user.save();
 
         return res.status(200).json({
-            message: "Email address changed successfully",
+            message:
+                "Email address changed successfully",
             email: user.email
         });
+
     } catch (error) {
-        console.error("Change email error:", error);
+        console.error(
+            "Change email error:",
+            error
+        );
 
         return res.status(500).json({
-            message: "Failed to change email address"
+            message:
+                "Failed to change email address"
         });
     }
 };
@@ -335,9 +726,9 @@ const changeEmail = async (req, res) => {
 
 const getSettings = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select(
-            "role settings"
-        );
+        const user = await User.findById(
+            req.user.id
+        ).select("role settings");
 
         if (!user) {
             return res.status(404).json({
@@ -356,29 +747,39 @@ const getSettings = async (req, res) => {
 
         const settings = {
             profileVisibility:
-                user.settings?.profileVisibility || "Public",
+                user.settings?.profileVisibility ||
+                "Public",
 
             contactVisible:
-                user.settings?.contactVisible ?? true,
+                user.settings?.contactVisible ??
+                true,
 
             messageNotifications:
-                user.settings?.messageNotifications ?? true,
+                user.settings?.messageNotifications ??
+                true,
 
             opportunityNotifications:
-                user.settings?.opportunityNotifications ?? true,
+                user.settings?.opportunityNotifications ??
+                true,
 
             emailNotifications:
-                user.settings?.emailNotifications ?? true
+                user.settings?.emailNotifications ??
+                true
         };
 
         return res.status(200).json({
             settings
         });
+
     } catch (error) {
-        console.error("Get settings error:", error);
+        console.error(
+            "Get settings error:",
+            error
+        );
 
         return res.status(500).json({
-            message: "Failed to fetch settings"
+            message:
+                "Failed to fetch settings"
         });
     }
 };
@@ -403,10 +804,13 @@ const updateSettings = async (req, res) => {
 
         if (
             profileVisibility !== undefined &&
-            !["Public", "Private"].includes(profileVisibility)
+            !["Public", "Private"].includes(
+                profileVisibility
+            )
         ) {
             return res.status(400).json({
-                message: "Invalid profile visibility"
+                message:
+                    "Invalid profile visibility"
             });
         }
 
@@ -419,7 +823,8 @@ const updateSettings = async (req, res) => {
             typeof contactVisible !== "boolean"
         ) {
             return res.status(400).json({
-                message: "Invalid contact visibility value"
+                message:
+                    "Invalid contact visibility value"
             });
         }
 
@@ -432,7 +837,8 @@ const updateSettings = async (req, res) => {
             typeof messageNotifications !== "boolean"
         ) {
             return res.status(400).json({
-                message: "Invalid message notification value"
+                message:
+                    "Invalid message notification value"
             });
         }
 
@@ -445,7 +851,8 @@ const updateSettings = async (req, res) => {
             typeof opportunityNotifications !== "boolean"
         ) {
             return res.status(400).json({
-                message: "Invalid opportunity notification value"
+                message:
+                    "Invalid opportunity notification value"
             });
         }
 
@@ -458,7 +865,8 @@ const updateSettings = async (req, res) => {
             typeof emailNotifications !== "boolean"
         ) {
             return res.status(400).json({
-                message: "Invalid email notification value"
+                message:
+                    "Invalid email notification value"
             });
         }
 
@@ -466,7 +874,9 @@ const updateSettings = async (req, res) => {
         // FIND USER
         // ------------------------------------------
 
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(
+            req.user.id
+        );
 
         if (!user) {
             return res.status(404).json({
@@ -527,14 +937,20 @@ const updateSettings = async (req, res) => {
         await user.save();
 
         return res.status(200).json({
-            message: "Settings updated successfully",
+            message:
+                "Settings updated successfully",
             settings: user.settings
         });
+
     } catch (error) {
-        console.error("Update settings error:", error);
+        console.error(
+            "Update settings error:",
+            error
+        );
 
         return res.status(500).json({
-            message: "Failed to update settings"
+            message:
+                "Failed to update settings"
         });
     }
 };
@@ -545,6 +961,8 @@ const updateSettings = async (req, res) => {
 
 module.exports = {
     registerUser,
+    verifyEmailOTP,
+    resendEmailOTP,
     loginUser,
     getCurrentUser,
     deleteAccount,

@@ -1,21 +1,95 @@
-const express = require('express');
+const express = require("express");
+
 const router = express.Router();
-const authController = require('../controllers/auth.controller');
+
+const authController = require("../controllers/auth.controller");
 
 const authMiddleware = require("../middleware/auth.middleware");
 
-router.post('/register', authController.registerUser);
-router.post('/login', authController.loginUser);
+// ==========================================
+// AUTH ROUTES
+// ==========================================
 
-router.get('/me', authMiddleware, authController.getCurrentUser); 
+// Register
+router.post(
+    "/register",
+    authController.registerUser
+);
 
-router.delete('/delete-account', authMiddleware, authController.deleteAccount);
+// Verify Email OTP
+router.post(
+    "/verify-email-otp",
+    authController.verifyEmailOTP
+);
 
-router.put("/change-password", authMiddleware, authController.changePassword);
-router.put("/change-email", authMiddleware, authController.changeEmail);
+// Resend Email OTP
+router.post(
+    "/resend-email-otp",
+    authController.resendEmailOTP
+);
 
-router.get("/settings", authMiddleware, authController.getSettings);
-router.put("/settings", authMiddleware, authController.updateSettings);
+// Login
+router.post(
+    "/login",
+    authController.loginUser
+);
+
+// Get Current User
+router.get(
+    "/me",
+    authMiddleware,
+    authController.getCurrentUser
+);
+
+// ==========================================
+// ACCOUNT
+// ==========================================
+
+// Delete Account
+router.delete(
+    "/delete-account",
+    authMiddleware,
+    authController.deleteAccount
+);
+
+// ==========================================
+// PASSWORD
+// ==========================================
+
+// Change Password
+router.put(
+    "/change-password",
+    authMiddleware,
+    authController.changePassword
+);
+
+// ==========================================
+// EMAIL
+// ==========================================
+
+// Change Email
+router.put(
+    "/change-email",
+    authMiddleware,
+    authController.changeEmail
+);
+
+// ==========================================
+// SETTINGS
+// ==========================================
+
+// Get Settings
+router.get(
+    "/settings",
+    authMiddleware,
+    authController.getSettings
+);
+
+// Update Settings
+router.put(
+    "/settings",
+    authMiddleware,
+    authController.updateSettings
+);
 
 module.exports = router;
- 
