@@ -6,7 +6,9 @@ import {
   FiX,
   FiClock,
   FiMapPin,
-  FiAward
+  FiAward,
+  FiUser,
+  FiTrash2
 } from "react-icons/fi";
 import AthleteSidebar from "../../components/AthleteSidebar";
 
@@ -14,10 +16,20 @@ const API = "http://localhost:5000/api";
 
 const AthleteConnections = () => {
   const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [connections, setConnections] = useState([]);
+
+  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [loadingConnections, setLoadingConnections] = useState(true);
+
   const [respondingId, setRespondingId] = useState(null);
+  const [disconnectingId, setDisconnectingId] = useState(null);
+
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  // ==========================================
+  // AUTH CONFIG
+  // ==========================================
 
   const getAuthConfig = () => {
     const token = localStorage.getItem("token");
@@ -29,9 +41,13 @@ const AthleteConnections = () => {
     };
   };
 
+  // ==========================================
+  // FETCH PENDING COACH REQUESTS
+  // ==========================================
+
   const fetchConnectionRequests = async () => {
     try {
-      setLoading(true);
+      setLoadingRequests(true);
       setError("");
 
       const token = localStorage.getItem("token");
@@ -66,15 +82,72 @@ const AthleteConnections = () => {
           "Failed to load connection requests."
       );
     } finally {
-      setLoading(false);
+      setLoadingRequests(false);
     }
   };
 
+  // ==========================================
+  // FETCH ACCEPTED COACH CONNECTIONS
+  // ==========================================
+
+  const fetchConnections = async () => {
+    try {
+      setLoadingConnections(true);
+      setError("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        setError("Please login again.");
+        return;
+      }
+
+      const response = await axios.get(
+        `${API}/connections/athlete/coaches`,
+        getAuthConfig()
+      );
+
+      setConnections(response.data.connections || []);
+    } catch (error) {
+      console.error(
+        "Fetch connected coaches error:",
+        error
+      );
+
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        setError("Session expired. Please login again.");
+        return;
+      }
+
+      setError(
+        error.response?.data?.message ||
+          "Failed to load your connected coaches."
+      );
+    } finally {
+      setLoadingConnections(false);
+    }
+  };
+
+  // ==========================================
+  // INITIAL LOAD
+  // ==========================================
+
   useEffect(() => {
     fetchConnectionRequests();
+    fetchConnections();
   }, []);
 
-  const handleRequest = async (connectionId, action) => {
+  // ==========================================
+  // ACCEPT / REJECT REQUEST
+  // ==========================================
+
+  const handleRequest = async (
+    connectionId,
+    action
+  ) => {
     try {
       setRespondingId(connectionId);
       setError("");
@@ -88,16 +161,28 @@ const AthleteConnections = () => {
         getAuthConfig()
       );
 
+      // Remove request from pending list
       setRequests((prevRequests) =>
         prevRequests.filter(
-          (request) => request._id !== connectionId
+          (request) =>
+            request._id !== connectionId
         )
       );
 
-      setSuccessMessage(
-        response.data.message ||
-          `Connection request ${action}.`
-      );
+      if (action === "accepted") {
+        setSuccessMessage(
+          response.data.message ||
+            "Connection request accepted successfully."
+        );
+
+        // Refresh connected coaches
+        await fetchConnections();
+      } else {
+        setSuccessMessage(
+          response.data.message ||
+            "Connection request rejected."
+        );
+      }
     } catch (error) {
       console.error(
         "Respond to connection request error:",
@@ -113,12 +198,66 @@ const AthleteConnections = () => {
     }
   };
 
+  // ==========================================
+  // DISCONNECT COACH
+  // ==========================================
+
+  const handleDisconnect = async (
+    connectionId
+  ) => {
+    try {
+      setDisconnectingId(connectionId);
+      setError("");
+      setSuccessMessage("");
+
+      const response = await axios.delete(
+        `${API}/connections/disconnect/${connectionId}`,
+        getAuthConfig()
+      );
+
+      // Remove connection from UI
+      setConnections((prevConnections) =>
+        prevConnections.filter(
+          (connection) =>
+            connection._id !== connectionId
+        )
+      );
+
+      setSuccessMessage(
+        response.data.message ||
+          "Coach disconnected successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Disconnect coach error:",
+        error
+      );
+
+      setError(
+        error.response?.data?.message ||
+          "Failed to disconnect coach."
+      );
+    } finally {
+      setDisconnectingId(null);
+    }
+  };
+
+  // ==========================================
+  // FORMAT DATE
+  // ==========================================
+
   const formatDate = (date) => {
     if (!date) {
       return "";
     }
 
-    return new Date(date).toLocaleDateString(
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "";
+    }
+
+    return parsedDate.toLocaleDateString(
       "en-IN",
       {
         day: "2-digit",
@@ -128,14 +267,27 @@ const AthleteConnections = () => {
     );
   };
 
+  // ==========================================
+  // RENDER
+  // ==========================================
+
   return (
     <div className="athlete-profile-view-page">
+
       <AthleteSidebar />
 
       <main className="athlete-profile-view-content">
+
         <div className="profile-view-container">
+
+          {/* ==========================================
+              PAGE HEADING
+          ========================================== */}
+
           <div className="page-heading">
+
             <div>
+
               <span className="page-eyebrow">
                 ATHLYX
               </span>
@@ -143,10 +295,16 @@ const AthleteConnections = () => {
               <h1>Connections</h1>
 
               <p>
-                Manage connection requests from coaches.
+                Manage your connections with coaches.
               </p>
+
             </div>
+
           </div>
+
+          {/* ==========================================
+              ERROR MESSAGE
+          ========================================== */}
 
           {error && (
             <div className="profile-error">
@@ -154,51 +312,77 @@ const AthleteConnections = () => {
             </div>
           )}
 
+          {/* ==========================================
+              SUCCESS MESSAGE
+          ========================================== */}
+
           {successMessage && (
             <div className="profile-view-section">
+
               <div className="availability-status">
+
                 <FiCheck />
+
                 {successMessage}
+
               </div>
+
             </div>
           )}
 
-          {loading ? (
-            <section className="profile-view-section">
-              <h2>Loading Connections</h2>
+          {/* ==========================================
+              PENDING COACH REQUESTS
+          ========================================== */}
 
-              <p className="profile-bio">
-                Please wait while we load your
-                connection requests.
-              </p>
-            </section>
-          ) : requests.length === 0 ? (
-            <section className="profile-view-section">
-              <h2>Connection Requests</h2>
+          <section className="profile-view-section">
+
+            <div className="connections-heading">
+
+              <div>
+
+                <h2>
+                  Pending Requests
+                </h2>
+
+                <p className="profile-bio">
+                  Coaches who want to connect
+                  with you.
+                </p>
+
+              </div>
+
+              <span className="connections-count">
+                {requests.length}
+              </span>
+
+            </div>
+
+            {loadingRequests ? (
 
               <div className="availability-status">
+
+                <FiClock />
+
+                Loading connection requests...
+
+              </div>
+
+            ) : requests.length === 0 ? (
+
+              <div className="availability-status">
+
                 <FiUsers />
-                No pending connection requests.
-              </div>
-            </section>
-          ) : (
-            <section className="profile-view-section">
-              <div className="connections-heading">
-                <div>
-                  <h2>Pending Requests</h2>
 
-                  <p className="profile-bio">
-                    Coaches who want to connect with you.
-                  </p>
-                </div>
+                No pending coach requests.
 
-                <span className="connections-count">
-                  {requests.length}
-                </span>
               </div>
+
+            ) : (
 
               <div className="connections-list">
+
                 {requests.map((request) => {
+
                   const coach = request.coach;
 
                   return (
@@ -206,25 +390,42 @@ const AthleteConnections = () => {
                       className="connection-card"
                       key={request._id}
                     >
+
+                      {/* ==========================================
+                          COACH INFORMATION
+                      ========================================== */}
+
                       <div className="connection-card-info">
+
                         <div className="profile-view-photo connection-photo">
+
                           {coach?.profilePic ? (
+
                             <img
                               src={coach.profilePic}
                               alt={
-                                coach.name || "Coach"
+                                coach.name ||
+                                "Coach"
                               }
                             />
+
                           ) : (
+
                             <div className="profile-view-placeholder">
-                              <FiUsers />
+
+                              <FiUser />
+
                             </div>
+
                           )}
+
                         </div>
 
                         <div className="profile-view-user-info">
+
                           <h2>
-                            {coach?.name || "Coach"}
+                            {coach?.name ||
+                              "Coach"}
                           </h2>
 
                           <p>
@@ -240,43 +441,70 @@ const AthleteConnections = () => {
                           )}
 
                           <div className="connection-meta">
+
                             {coach?.experience !==
                               undefined && (
+
                               <span>
+
                                 <FiAward />
+
                                 {coach.experience}{" "}
+
                                 {coach.experience === 1
                                   ? "Year"
                                   : "Years"}{" "}
+
                                 Experience
+
                               </span>
+
                             )}
 
                             {request.createdAt && (
+
                               <span>
+
                                 <FiClock />
+
                                 {formatDate(
                                   request.createdAt
                                 )}
+
                               </span>
+
                             )}
 
                             {coach?.address?.city && (
+
                               <span>
+
                                 <FiMapPin />
+
                                 {coach.address.city}
+
                               </span>
+
                             )}
+
                           </div>
+
                         </div>
+
                       </div>
 
+                      {/* ==========================================
+                          REQUEST ACTIONS
+                      ========================================== */}
+
                       <div className="connection-actions">
+
                         <button
                           type="button"
                           className="connection-reject-btn"
                           disabled={
-                            respondingId === request._id
+                            respondingId ===
+                            request._id
                           }
                           onClick={() =>
                             handleRequest(
@@ -285,18 +513,22 @@ const AthleteConnections = () => {
                             )
                           }
                         >
+
                           <FiX />
 
-                          {respondingId === request._id
+                          {respondingId ===
+                          request._id
                             ? "Processing..."
                             : "Reject"}
+
                         </button>
 
                         <button
                           type="button"
                           className="connection-accept-btn"
                           disabled={
-                            respondingId === request._id
+                            respondingId ===
+                            request._id
                           }
                           onClick={() =>
                             handleRequest(
@@ -305,21 +537,257 @@ const AthleteConnections = () => {
                             )
                           }
                         >
+
                           <FiCheck />
 
-                          {respondingId === request._id
+                          {respondingId ===
+                          request._id
                             ? "Processing..."
                             : "Accept"}
+
                         </button>
+
                       </div>
+
                     </div>
                   );
                 })}
+
               </div>
-            </section>
-          )}
+
+            )}
+
+          </section>
+
+          {/* ==========================================
+              MY CONNECTED COACHES
+          ========================================== */}
+
+          <section className="profile-view-section">
+
+            <div className="connections-heading">
+
+              <div>
+
+                <h2>
+                  My Coaches
+                </h2>
+
+                <p className="profile-bio">
+                  Coaches you are currently
+                  connected with.
+                </p>
+
+              </div>
+
+              <span className="connections-count">
+                {connections.length}
+              </span>
+
+            </div>
+
+            {loadingConnections ? (
+
+              <div className="availability-status">
+
+                <FiClock />
+
+                Loading your coaches...
+
+              </div>
+
+            ) : connections.length === 0 ? (
+
+              <div className="availability-status">
+
+                <FiUsers />
+
+                You don't have any connected
+                coaches yet.
+
+              </div>
+
+            ) : (
+
+              <div className="connections-list">
+
+                {connections.map((connection) => {
+
+                  const coach =
+                    connection.coach;
+
+                  return (
+                    <div
+                      className="connection-card"
+                      key={connection._id}
+                    >
+
+                      {/* ==========================================
+                          COACH INFORMATION
+                      ========================================== */}
+
+                      <div className="connection-card-info">
+
+                        <div className="profile-view-photo connection-photo">
+
+                          {coach?.profilePic ? (
+
+                            <img
+                              src={coach.profilePic}
+                              alt={
+                                coach.name ||
+                                "Coach"
+                              }
+                            />
+
+                          ) : (
+
+                            <div className="profile-view-placeholder">
+
+                              <FiUser />
+
+                            </div>
+
+                          )}
+
+                        </div>
+
+                        <div className="profile-view-user-info">
+
+                          <h2>
+                            {coach?.name ||
+                              "Coach"}
+                          </h2>
+
+                          <p>
+                            Coach
+                          </p>
+
+                          {coach?.sport && (
+
+                            <span>
+                              {coach.sport}
+                            </span>
+
+                          )}
+
+                          {coach?.specialization &&
+                            !coach?.sport && (
+
+                            <span>
+                              {coach.specialization}
+                            </span>
+
+                          )}
+
+                          {coach?.organization && (
+
+                            <span>
+                              {coach.organization}
+                            </span>
+
+                          )}
+
+                          <div className="connection-meta">
+
+                            {coach?.experience !==
+                              undefined && (
+
+                              <span>
+
+                                <FiAward />
+
+                                {coach.experience}{" "}
+
+                                {coach.experience === 1
+                                  ? "Year"
+                                  : "Years"}{" "}
+
+                                Experience
+
+                              </span>
+
+                            )}
+
+                            {coach?.address?.city && (
+
+                              <span>
+
+                                <FiMapPin />
+
+                                {coach.address.city}
+
+                              </span>
+
+                            )}
+
+                            {connection.updatedAt && (
+
+                              <span>
+
+                                <FiCheck />
+
+                                Connected{" "}
+
+                                {formatDate(
+                                  connection.updatedAt
+                                )}
+
+                              </span>
+
+                            )}
+
+                          </div>
+
+                        </div>
+
+                      </div>
+
+                      {/* ==========================================
+                          ONLY DISCONNECT BUTTON
+                      ========================================== */}
+
+                      <div className="connection-actions">
+
+                        <button
+                          type="button"
+                          className="connection-reject-btn"
+                          disabled={
+                            disconnectingId ===
+                            connection._id
+                          }
+                          onClick={() =>
+                            handleDisconnect(
+                              connection._id
+                            )
+                          }
+                        >
+
+                          <FiTrash2 />
+
+                          {disconnectingId ===
+                          connection._id
+                            ? "Removing..."
+                            : "Disconnect"}
+
+                        </button>
+
+                      </div>
+
+                    </div>
+                  );
+                })}
+
+              </div>
+
+            )}
+
+          </section>
+
         </div>
+
       </main>
+
     </div>
   );
 };

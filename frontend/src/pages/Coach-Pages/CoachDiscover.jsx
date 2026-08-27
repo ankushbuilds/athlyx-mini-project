@@ -9,6 +9,8 @@ import {
 } from "react-icons/fi";
 import CoachSidebar from "../../components/CoachSidebar";
 
+const API = "http://localhost:5000/api";
+
 const CoachDiscover = () => {
   const navigate = useNavigate();
 
@@ -18,9 +20,23 @@ const CoachDiscover = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // ==========================================
+  // CONNECTION STATUS
+  // ==========================================
+
+  const [connectionStatuses, setConnectionStatuses] = useState({});
+
+  // ==========================================
+  // LOAD ATHLETES
+  // ==========================================
+
   useEffect(() => {
     loadAthletes();
   }, []);
+
+  // ==========================================
+  // FILTER ATHLETES
+  // ==========================================
 
   useEffect(() => {
     const searchValue = search.trim().toLowerCase();
@@ -71,6 +87,10 @@ const CoachDiscover = () => {
     setFilteredAthletes(filtered);
   }, [search, athletes]);
 
+  // ==========================================
+  // LOAD ATHLETES
+  // ==========================================
+
   const loadAthletes = async () => {
     const token = localStorage.getItem("token");
 
@@ -86,7 +106,7 @@ const CoachDiscover = () => {
       setError("");
 
       const response = await axios.get(
-        "http://localhost:5000/api/athletes/get-all",
+        `${API}/athletes/get-all`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -102,6 +122,51 @@ const CoachDiscover = () => {
 
       setAthletes(allAthletes);
       setFilteredAthletes(allAthletes);
+
+      // ==========================================
+      // FETCH CONNECTION STATUS FOR EACH ATHLETE
+      // ==========================================
+
+      const statusResults = await Promise.all(
+        allAthletes.map(async (athlete) => {
+          try {
+            const statusResponse = await axios.get(
+              `${API}/connections/status/${athlete._id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`
+                }
+              }
+            );
+
+            return {
+              athleteId: athlete._id,
+              status:
+                statusResponse.data?.status || "none"
+            };
+          } catch (statusError) {
+            console.error(
+              `Failed to get connection status for athlete ${athlete._id}:`,
+              statusError
+            );
+
+            return {
+              athleteId: athlete._id,
+              status: "none"
+            };
+          }
+        })
+      );
+
+      const statusMap = {};
+
+      statusResults.forEach(
+        ({ athleteId, status }) => {
+          statusMap[athleteId] = status;
+        }
+      );
+
+      setConnectionStatuses(statusMap);
     } catch (error) {
       console.error(
         "Failed to load athletes:",
@@ -124,12 +189,16 @@ const CoachDiscover = () => {
 
       setError(
         error.response?.data?.message ||
-        "Failed to load athletes."
+          "Failed to load athletes."
       );
     } finally {
       setLoading(false);
     }
   };
+
+  // ==========================================
+  // ATHLETE NAME
+  // ==========================================
 
   const getAthleteName = (athlete) => {
     return (
@@ -139,6 +208,10 @@ const CoachDiscover = () => {
     );
   };
 
+  // ==========================================
+  // PROFILE PIC
+  // ==========================================
+
   const getProfilePic = (athlete) => {
     return (
       athlete?.user?.profilePic ||
@@ -146,6 +219,10 @@ const CoachDiscover = () => {
       ""
     );
   };
+
+  // ==========================================
+  // LOCATION
+  // ==========================================
 
   const getLocation = (athlete) => {
     const city =
@@ -165,35 +242,93 @@ const CoachDiscover = () => {
     );
   };
 
+  // ==========================================
+  // SKILLS
+  // ==========================================
+
   const getSkills = (athlete) => {
     return Array.isArray(athlete?.skills)
       ? athlete.skills
       : [];
   };
 
+  // ==========================================
+  // CONNECTION STATUS TEXT
+  // ==========================================
+
+  const getConnectionStatus = (athlete) => {
+    const status =
+      connectionStatuses[athlete._id];
+
+    if (status === "accepted") {
+      return "Connected";
+    }
+
+    if (status === "pending") {
+      return "Pending";
+    }
+
+    return "Available";
+  };
+
+  // ==========================================
+  // CONNECTION STATUS CLASS
+  // ==========================================
+
+  const getConnectionStatusClass = (athlete) => {
+    const status =
+      connectionStatuses[athlete._id];
+
+    if (status === "accepted") {
+      return "connected";
+    }
+
+    if (status === "pending") {
+      return "pending";
+    }
+
+    return "available";
+  };
+
+  // ==========================================
+  // RENDER
+  // ==========================================
+
   return (
     <div className="coach-athletes-page">
+
       <CoachSidebar />
 
       <main className="coach-athletes-content">
+
         <div className="coach-athletes-container">
 
+          {/* ======================================
+              HEADER
+          ====================================== */}
+
           <div className="coach-athletes-header">
+
             <div>
+
               <span className="coach-athletes-eyebrow">
                 ATHLETE DISCOVERY
               </span>
 
-              <h1>Discover Athletes</h1>
+              <h1>
+                Discover Athletes
+              </h1>
 
               <p>
                 Explore athletes and discover
                 talent across different sports.
               </p>
+
             </div>
 
             {!loading && !error && (
               <div className="coach-athletes-count">
+
                 <span>
                   {filteredAthletes.length}
                 </span>
@@ -203,9 +338,15 @@ const CoachDiscover = () => {
                     ? "Athlete"
                     : "Athletes"}
                 </small>
+
               </div>
             )}
+
           </div>
+
+          {/* ======================================
+              ERROR
+          ====================================== */}
 
           {error && (
             <div className="coach-athletes-error">
@@ -213,8 +354,13 @@ const CoachDiscover = () => {
             </div>
           )}
 
+          {/* ======================================
+              LOADING
+          ====================================== */}
+
           {loading && (
             <div className="coach-athletes-loading">
+
               <div className="loading-spinner"></div>
 
               <h2>
@@ -225,13 +371,25 @@ const CoachDiscover = () => {
                 Please wait while we load
                 available athletes.
               </p>
+
             </div>
           )}
 
+          {/* ======================================
+              CONTENT
+          ====================================== */}
+
           {!loading && !error && (
             <>
+
+              {/* ======================================
+                  TOOLBAR
+              ====================================== */}
+
               <div className="coach-athletes-toolbar">
+
                 <div className="coach-athletes-sport">
+
                   <span>
                     ATHLETES AVAILABLE
                   </span>
@@ -239,9 +397,11 @@ const CoachDiscover = () => {
                   <strong>
                     All Sports
                   </strong>
+
                 </div>
 
                 <div className="coach-athletes-search">
+
                   <FiSearch size={18} />
 
                   <input
@@ -264,11 +424,18 @@ const CoachDiscover = () => {
                       ×
                     </button>
                   )}
+
                 </div>
+
               </div>
+
+              {/* ======================================
+                  EMPTY
+              ====================================== */}
 
               {filteredAthletes.length === 0 && (
                 <div className="coach-athletes-empty">
+
                   <div className="empty-icon">
                     <FiUser size={30} />
                   </div>
@@ -293,13 +460,20 @@ const CoachDiscover = () => {
                       Clear Search
                     </button>
                   )}
+
                 </div>
               )}
 
+              {/* ======================================
+                  ATHLETE GRID
+              ====================================== */}
+
               {filteredAthletes.length > 0 && (
                 <div className="coach-athletes-grid">
+
                   {filteredAthletes.map(
                     (athlete) => {
+
                       const profilePic =
                         getProfilePic(
                           athlete
@@ -310,16 +484,35 @@ const CoachDiscover = () => {
                           athlete
                         );
 
+                      const connectionStatus =
+                        getConnectionStatus(
+                          athlete
+                        );
+
+                      const connectionClass =
+                        getConnectionStatusClass(
+                          athlete
+                        );
+
                       return (
                         <div
                           key={athlete._id}
                           className="coach-athlete-card"
                           onClick={() =>
-                            navigate(`/profile/athlete/${athlete._id}`)
+                            navigate(
+                              `/profile/athlete/${athlete._id}`
+                            )
                           }
                         >
+
+                          {/* ==================================
+                              CARD TOP
+                          ================================== */}
+
                           <div className="athlete-card-top">
+
                             <div className="athlete-avatar">
+
                               {profilePic ? (
                                 <img
                                   src={profilePic}
@@ -332,15 +525,29 @@ const CoachDiscover = () => {
                                   size={25}
                                 />
                               )}
+
                             </div>
 
-                            <div className="athlete-card-status">
+                            {/* CONNECTION STATUS */}
+
+                            <div
+                              className={`athlete-card-status ${connectionClass}`}
+                            >
+
                               <span></span>
-                              Available
+
+                              {connectionStatus}
+
                             </div>
+
                           </div>
 
+                          {/* ==================================
+                              ATHLETE INFO
+                          ================================== */}
+
                           <div className="athlete-card-info">
+
                             <h3>
                               {getAthleteName(
                                 athlete
@@ -351,19 +558,28 @@ const CoachDiscover = () => {
                               {athlete.position ||
                                 "Athlete"}
                             </p>
+
                           </div>
 
+                          {/* ==================================
+                              DETAILS
+                          ================================== */}
+
                           <div className="athlete-card-details">
+
                             <div className="athlete-detail">
+
                               <FiAward size={16} />
 
                               <span>
                                 {athlete.sport ||
                                   "Sport not available"}
                               </span>
+
                             </div>
 
                             <div className="athlete-detail">
+
                               <FiMapPin size={16} />
 
                               <span>
@@ -371,11 +587,18 @@ const CoachDiscover = () => {
                                   athlete
                                 )}
                               </span>
+
                             </div>
+
                           </div>
+
+                          {/* ==================================
+                              SKILLS
+                          ================================== */}
 
                           {skills.length > 0 && (
                             <div className="athlete-skills">
+
                               {skills
                                 .slice(0, 3)
                                 .map(
@@ -391,18 +614,23 @@ const CoachDiscover = () => {
                                   )
                                 )}
 
-                              {skills.length >
-                                3 && (
-                                  <span>
-                                    +
-                                    {skills.length -
-                                      3}
-                                  </span>
-                                )}
+                              {skills.length > 3 && (
+                                <span>
+                                  +
+                                  {skills.length -
+                                    3}
+                                </span>
+                              )}
+
                             </div>
                           )}
 
+                          {/* ==================================
+                              FOOTER
+                          ================================== */}
+
                           <div className="athlete-card-footer">
+
                             <span>
                               View Profile
                             </span>
@@ -410,17 +638,24 @@ const CoachDiscover = () => {
                             <span className="arrow">
                               →
                             </span>
+
                           </div>
+
                         </div>
                       );
                     }
                   )}
+
                 </div>
               )}
+
             </>
           )}
+
         </div>
+
       </main>
+
     </div>
   );
 };

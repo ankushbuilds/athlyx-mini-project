@@ -18,10 +18,12 @@ import {
   FiX,
   FiUserPlus
 } from "react-icons/fi";
+
 import {
   PDFDownloadLink,
   PDFViewer
 } from "@react-pdf/renderer";
+
 import AthleteSidebar from "../../components/AthleteSidebar";
 import CoachSidebar from "../../components/CoachSidebar";
 import AthleteResume from "../../components/AthleteResume";
@@ -37,6 +39,7 @@ const AthleteProfileView = () => {
   const [athlete, setAthlete] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [showResumeModal, setShowResumeModal] = useState(false);
 
   const [sendingRequest, setSendingRequest] = useState(false);
@@ -45,10 +48,28 @@ const AthleteProfileView = () => {
 
   const [currentUserRole, setCurrentUserRole] = useState("");
 
+  // ==========================================
+  // SHOWCASE
+  // ==========================================
+
+  const [showcasePosts, setShowcasePosts] = useState([]);
+  const [showcaseLoading, setShowcaseLoading] = useState(false);
+  const [showcaseError, setShowcaseError] = useState("");
+
+  // ==========================================
+  // FETCH PROFILE
+  // ==========================================
+
   useEffect(() => {
-    const user = JSON.parse(
-      localStorage.getItem("user")
-    );
+    const storedUser = localStorage.getItem("user");
+
+    let user = null;
+
+    try {
+      user = storedUser ? JSON.parse(storedUser) : null;
+    } catch (error) {
+      console.error("Invalid user data in localStorage");
+    }
 
     if (user?.role) {
       setCurrentUserRole(user.role);
@@ -56,6 +77,10 @@ const AthleteProfileView = () => {
 
     fetchAthleteProfile();
   }, [athleteId]);
+
+  // ==========================================
+  // FETCH ATHLETE PROFILE
+  // ==========================================
 
   const fetchAthleteProfile = async () => {
     try {
@@ -80,11 +105,31 @@ const AthleteProfileView = () => {
           }
         );
 
-        setAthlete(response.data.athlete);
+        const athleteData = response.data?.athlete;
 
-        const user = JSON.parse(
-          localStorage.getItem("user")
-        );
+        setAthlete(athleteData);
+
+        // ==========================================
+        // FETCH SHOWCASE POSTS
+        // ==========================================
+
+        fetchShowcasePosts(athleteId, token);
+
+        // ==========================================
+        // CONNECTION STATUS
+        // ==========================================
+
+        const storedUser = localStorage.getItem("user");
+
+        let user = null;
+
+        try {
+          user = storedUser
+            ? JSON.parse(storedUser)
+            : null;
+        } catch (error) {
+          user = null;
+        }
 
         if (user?.role === "coach") {
           try {
@@ -130,8 +175,16 @@ const AthleteProfileView = () => {
           }
         );
 
-        setAthlete(response.data.athlete);
+        setAthlete(response.data?.athlete);
         setConnectionStatus("none");
+
+        // Own profile posts
+        if (response.data?.athlete?._id) {
+          fetchShowcasePosts(
+            response.data.athlete._id,
+            token
+          );
+        }
       }
     } catch (error) {
       console.error(
@@ -154,9 +207,7 @@ const AthleteProfileView = () => {
       }
 
       if (error.response?.status === 404) {
-        setError(
-          "Athlete profile not found."
-        );
+        setError("Athlete profile not found.");
         return;
       }
 
@@ -168,6 +219,53 @@ const AthleteProfileView = () => {
       setLoading(false);
     }
   };
+
+  // ==========================================
+  // FETCH SHOWCASE POSTS
+  // ==========================================
+
+  const fetchShowcasePosts = async (
+    athleteIdToFetch,
+    token
+  ) => {
+    try {
+      setShowcaseLoading(true);
+      setShowcaseError("");
+
+      const response = await axios.get(
+        `${API}/showcase/athlete/${athleteIdToFetch}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setShowcasePosts(
+        Array.isArray(response.data?.posts)
+          ? response.data.posts
+          : []
+      );
+    } catch (error) {
+      console.error(
+        "Failed to fetch showcase posts:",
+        error
+      );
+
+      setShowcasePosts([]);
+
+      setShowcaseError(
+        error.response?.data?.message ||
+          "Failed to load showcase posts."
+      );
+    } finally {
+      setShowcaseLoading(false);
+    }
+  };
+
+  // ==========================================
+  // SEND CONNECTION REQUEST
+  // ==========================================
 
   const sendConnectionRequest = async () => {
     if (
@@ -249,6 +347,10 @@ const AthleteProfileView = () => {
     }
   };
 
+  // ==========================================
+  // FORMAT HELPERS
+  // ==========================================
+
   const formatGender = (gender) => {
     if (!gender) {
       return "Not added";
@@ -275,57 +377,84 @@ const AthleteProfileView = () => {
     );
   };
 
+  // ==========================================
+  // RESUME DATA
+  // ==========================================
+
   const resumeData = athlete
     ? {
         name:
           athlete.user?.name ||
           "Athlete",
+
         email:
           athlete.user?.email || "",
+
         profilePic:
           athlete.user?.profilePic || "",
+
         dateOfBirth:
           athlete.dateOfBirth || "",
+
         gender:
           athlete.gender || "",
+
         phone:
           athlete.phone || "",
+
         city:
           athlete.address?.city || "",
+
         state:
           athlete.address?.state || "",
+
         country:
           athlete.address?.country ||
           "India",
+
         sport:
           athlete.sport || "",
+
         position:
           athlete.position || "",
+
         experience:
           athlete.experience ?? 0,
+
         skills:
           athlete.skills || [],
+
         bio:
           athlete.bio || "",
+
         height:
           athlete.height || "",
+
         weight:
           athlete.weight || "",
+
         achievements:
           athlete.achievements || [],
+
         socialLinks: {
           instagram:
-            athlete.socialLinks
-              ?.instagram || "",
+            athlete.socialLinks?.instagram ||
+            "",
+
           facebook:
-            athlete.socialLinks
-              ?.facebook || "",
+            athlete.socialLinks?.facebook ||
+            "",
+
           youtube:
-            athlete.socialLinks
-              ?.youtube || ""
+            athlete.socialLinks?.youtube ||
+            ""
         }
       }
     : {};
+
+  // ==========================================
+  // SIDEBAR
+  // ==========================================
 
   const renderSidebar = () => {
     if (
@@ -373,6 +502,10 @@ const AthleteProfileView = () => {
     connectionStatus === "pending" ||
     connectionStatus === "connected";
 
+  // ==========================================
+  // LOADING
+  // ==========================================
+
   if (loading) {
     return (
       <div className="athlete-profile-view-page">
@@ -397,6 +530,10 @@ const AthleteProfileView = () => {
       </div>
     );
   }
+
+  // ==========================================
+  // ERROR
+  // ==========================================
 
   if (error) {
     return (
@@ -434,6 +571,10 @@ const AthleteProfileView = () => {
     );
   }
 
+  // ==========================================
+  // PROFILE DATA
+  // ==========================================
+
   const profilePic =
     athlete.user?.profilePic || "";
 
@@ -445,12 +586,20 @@ const AthleteProfileView = () => {
     .filter(Boolean)
     .join(", ");
 
+  // ==========================================
+  // RENDER
+  // ==========================================
+
   return (
     <div className="athlete-profile-view-page">
       {renderSidebar()}
 
       <main className="athlete-profile-view-content">
         <div className="profile-view-container">
+
+          {/* ======================================
+              PAGE HEADER
+          ====================================== */}
 
           <div className="page-heading profile-page-heading">
             <div>
@@ -491,7 +640,7 @@ const AthleteProfileView = () => {
                   }
                 >
                   {connectionStatus ===
-                    "connected" ? (
+                  "connected" ? (
                     <FiCheckCircle />
                   ) : (
                     <FiUserPlus />
@@ -500,7 +649,6 @@ const AthleteProfileView = () => {
                   {getConnectionButtonText()}
                 </button>
               )}
-
             </div>
           </div>
 
@@ -510,6 +658,10 @@ const AthleteProfileView = () => {
                 {requestError}
               </div>
             )}
+
+          {/* ======================================
+              PROFILE HEADER
+          ====================================== */}
 
           <section className="profile-view-header">
             <div className="profile-view-photo">
@@ -548,6 +700,10 @@ const AthleteProfileView = () => {
               </span>
             </div>
           </section>
+
+          {/* ======================================
+              PERSONAL INFORMATION
+          ====================================== */}
 
           <section className="profile-view-section">
             <h2>Personal Information</h2>
@@ -623,6 +779,10 @@ const AthleteProfileView = () => {
             </div>
           </section>
 
+          {/* ======================================
+              SPORTS INFORMATION
+          ====================================== */}
+
           <section className="profile-view-section">
             <h2>Sports Information</h2>
 
@@ -671,6 +831,10 @@ const AthleteProfileView = () => {
             </div>
           </section>
 
+          {/* ======================================
+              LOCATION
+          ====================================== */}
+
           <section className="profile-view-section">
             <h2>Location</h2>
 
@@ -708,6 +872,10 @@ const AthleteProfileView = () => {
             </div>
           </section>
 
+          {/* ======================================
+              AVAILABILITY
+          ====================================== */}
+
           <section className="profile-view-section">
             <h2>Availability</h2>
 
@@ -725,6 +893,10 @@ const AthleteProfileView = () => {
               )}
             </div>
           </section>
+
+          {/* ======================================
+              SKILLS
+          ====================================== */}
 
           <section className="profile-view-section">
             <h2>Skills</h2>
@@ -745,6 +917,10 @@ const AthleteProfileView = () => {
               )}
             </div>
           </section>
+
+          {/* ======================================
+              ACHIEVEMENTS
+          ====================================== */}
 
           <section className="profile-view-section">
             <h2>Achievements</h2>
@@ -791,6 +967,10 @@ const AthleteProfileView = () => {
             )}
           </section>
 
+          {/* ======================================
+              ABOUT
+          ====================================== */}
+
           <section className="profile-view-section">
             <h2>About</h2>
 
@@ -799,6 +979,10 @@ const AthleteProfileView = () => {
                 "No bio added yet."}
             </div>
           </section>
+
+          {/* ======================================
+              SOCIAL LINKS
+          ====================================== */}
 
           <section className="profile-view-section">
             <h2>Social Links</h2>
@@ -885,6 +1069,142 @@ const AthleteProfileView = () => {
             </div>
           </section>
 
+          {/* ======================================
+              SHOWCASE
+              IMPORTANT: PUBLIC PROFILE ONLY
+          ====================================== */}
+
+          {isPublicProfile && (
+            <section className="profile-view-section">
+              <h2>Showcase</h2>
+
+              {showcaseLoading && (
+                <p className="profile-bio">
+                  Loading showcase posts...
+                </p>
+              )}
+
+              {!showcaseLoading &&
+                showcaseError && (
+                  <div className="profile-error">
+                    {showcaseError}
+                  </div>
+                )}
+
+              {!showcaseLoading &&
+                !showcaseError &&
+                showcasePosts.length === 0 && (
+                  <p className="profile-bio">
+                    No showcase posts yet.
+                  </p>
+                )}
+
+              {!showcaseLoading &&
+                showcasePosts.length > 0 && (
+                  <div className="athlete-showcase-grid">
+
+                    {showcasePosts.map(
+                      (post) => (
+                        <div
+                          className="athlete-showcase-card"
+                          key={post._id}
+                        >
+
+                          {/* ==========================
+                              MEDIA
+                          ========================== */}
+
+                          {post.media?.length > 0 && (
+                            <div className="athlete-showcase-media">
+
+                              {post.media.map(
+                                (
+                                  media,
+                                  index
+                                ) => (
+                                  <div
+                                    className="athlete-showcase-media-item"
+                                    key={
+                                      media.fileId ||
+                                      index
+                                    }
+                                  >
+
+                                    {media.type ===
+                                    "video" ? (
+                                      <video
+                                        src={
+                                          media.url
+                                        }
+                                        controls
+                                        preload="metadata"
+                                      />
+                                    ) : (
+                                      <img
+                                        src={
+                                          media.url
+                                        }
+                                        alt={
+                                          post.caption ||
+                                          "Athlete showcase"
+                                        }
+                                      />
+                                    )}
+
+                                  </div>
+                                )
+                              )}
+
+                            </div>
+                          )}
+
+                          {/* ==========================
+                              CAPTION + DATE
+                          ========================== */}
+
+                          {(post.caption ||
+                            post.createdAt) && (
+                            <div className="athlete-showcase-info">
+
+                              {/* LEFT */}
+                              {post.caption && (
+                                <p className="athlete-showcase-caption">
+                                  {post.caption}
+                                </p>
+                              )}
+
+                              {/* RIGHT */}
+                              {post.createdAt && (
+                                <span className="athlete-showcase-date">
+                                  {new Date(
+                                    post.createdAt
+                                  ).toLocaleDateString(
+                                    "en-IN",
+                                    {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric"
+                                    }
+                                  )}
+                                </span>
+                              )}
+
+                            </div>
+                          )}
+
+                        </div>
+                      )
+                    )}
+
+                  </div>
+                )}
+            </section>
+          )}
+
+          {/* ======================================
+              EDIT PROFILE
+          ====================================== */}
+
           {!isPublicProfile && (
             <div className="profile-bottom-actions">
               <button
@@ -903,6 +1223,10 @@ const AthleteProfileView = () => {
 
         </div>
       </main>
+
+      {/* ==========================================
+          RESUME MODAL
+      ========================================== */}
 
       {!isPublicProfile &&
         showResumeModal && (

@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   FiSearch,
   FiMapPin,
@@ -8,44 +10,76 @@ import {
 import AthleteSidebar from "../../components/AthleteSidebar";
 
 const Discover = () => {
+  const navigate = useNavigate();
+
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
 
-  const people = [
-    {
-      id: 1,
-      name: "Rahul Sharma",
-      role: "Football Coach",
-      location: "Delhi, India",
-      sport: "Football"
-    },
-    {
-      id: 2,
-      name: "Arjun Verma",
-      role: "Cricket Coach",
-      location: "Noida, India",
-      sport: "Cricket"
-    },
-    {
-      id: 3,
-      name: "Vikas Singh",
-      role: "Athletics Coach",
-      location: "Lucknow, India",
-      sport: "Athletics"
-    }
-  ];
+  const [coaches, setCoaches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filteredPeople = people.filter((person) => {
+  // ==========================================
+  // FETCH COACHES
+  // ==========================================
+
+  useEffect(() => {
+    const fetchCoaches = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await axios.get(
+          "http://localhost:5000/api/users/coaches"
+        );
+
+        if (response.data.success) {
+          setCoaches(response.data.coaches || []);
+        } else {
+          setCoaches([]);
+        }
+      } catch (err) {
+        console.error("Error fetching coaches:", err);
+
+        setError(
+          err.response?.data?.message ||
+            "Failed to load coaches"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCoaches();
+  }, []);
+
+  // ==========================================
+  // FILTER COACHES
+  // ==========================================
+
+  const filteredPeople = coaches.filter((coach) => {
+    const searchText = search.toLowerCase();
+
     const matchesSearch =
-      person.name.toLowerCase().includes(search.toLowerCase()) ||
-      person.role.toLowerCase().includes(search.toLowerCase()) ||
-      person.sport.toLowerCase().includes(search.toLowerCase());
+      coach.name?.toLowerCase().includes(searchText) ||
+      coach.sport?.toLowerCase().includes(searchText) ||
+      coach.specialization?.toLowerCase().includes(searchText) ||
+      coach.organization?.toLowerCase().includes(searchText);
 
     const matchesCategory =
-      category === "All" || person.sport === category;
+      category === "All" ||
+      coach.sport === category;
 
     return matchesSearch && matchesCategory;
   });
+
+  // ==========================================
+  // VIEW COACH PROFILE
+  // ==========================================
+
+const handleViewProfile = (coachId) => {
+  navigate(`/profile/coach/${coachId}`);
+};
 
   return (
     <div className="dashboard-layout">
@@ -53,10 +87,15 @@ const Discover = () => {
 
       <main className="discover-page">
         <div className="discover-content">
+
           <div className="discover-header">
             <div>
-              <span className="page-eyebrow">CONNECT • EXPLORE • GROW</span>
+              <span className="page-eyebrow">
+                CONNECT • EXPLORE • GROW
+              </span>
+
               <h1>Discover</h1>
+
               <p>
                 Find coaches, athletes and academies that match your goals.
               </p>
@@ -64,8 +103,10 @@ const Discover = () => {
           </div>
 
           <div className="discover-toolbar">
+
             <div className="discover-search">
               <FiSearch />
+
               <input
                 type="text"
                 placeholder="Search people, sports or roles..."
@@ -83,13 +124,19 @@ const Discover = () => {
               <option value="Cricket">Cricket</option>
               <option value="Football">Football</option>
               <option value="Athletics">Athletics</option>
+              <option value="Basketball">Basketball</option>
+              <option value="Hockey">Hockey</option>
             </select>
+
           </div>
 
           <div className="discover-section-heading">
             <div>
               <h2>Recommended for you</h2>
-              <p>People and professionals you may want to connect with.</p>
+
+              <p>
+                People and professionals you may want to connect with.
+              </p>
             </div>
 
             <span className="discover-result-count">
@@ -97,44 +144,130 @@ const Discover = () => {
             </span>
           </div>
 
-          <div className="discover-grid">
-            {filteredPeople.map((person) => (
-              <article className="discover-card" key={person.id}>
-                <div className="discover-card-top">
-                  <div className="discover-avatar">
-                    {person.name.charAt(0)}
-                  </div>
+          {/* ==========================================
+              LOADING
+          ========================================== */}
 
-                  <span className="discover-sport">
-                    {person.sport}
-                  </span>
-                </div>
-
-                <div className="discover-card-body">
-                  <h3>{person.name}</h3>
-                  <p className="discover-role">{person.role}</p>
-
-                  <div className="discover-location">
-                    <FiMapPin />
-                    <span>{person.location}</span>
-                  </div>
-                </div>
-
-                <button className="discover-card-btn">
-                  View Profile
-                  <FiArrowRight />
-                </button>
-              </article>
-            ))}
-          </div>
-
-          {filteredPeople.length === 0 && (
+          {loading && (
             <div className="discover-empty">
               <FiUsers />
-              <h3>No results found</h3>
-              <p>Try changing your search or filter.</p>
+
+              <h3>Loading coaches...</h3>
+
+              <p>
+                Please wait while we find coaches for you.
+              </p>
             </div>
           )}
+
+          {/* ==========================================
+              ERROR
+          ========================================== */}
+
+          {!loading && error && (
+            <div className="discover-empty">
+              <FiUsers />
+
+              <h3>Unable to load coaches</h3>
+
+              <p>{error}</p>
+            </div>
+          )}
+
+          {/* ==========================================
+              COACH CARDS
+          ========================================== */}
+
+          {!loading &&
+            !error &&
+            filteredPeople.length > 0 && (
+              <div className="discover-grid">
+
+                {filteredPeople.map((coach) => (
+                  <article
+                    className="discover-card"
+                    key={coach._id}
+                  >
+
+                    <div className="discover-card-top">
+
+                      <div className="discover-avatar">
+                        {coach.profilePic ? (
+                          <img
+                            src={coach.profilePic}
+                            alt={coach.name}
+                          />
+                        ) : (
+                          coach.name?.charAt(0).toUpperCase()
+                        )}
+                      </div>
+
+                      <span className="discover-sport">
+                        {coach.sport || "Coach"}
+                      </span>
+
+                    </div>
+
+                    <div className="discover-card-body">
+
+                      <h3>
+                        {coach.name}
+                      </h3>
+
+                      <p className="discover-role">
+                        {coach.specialization || "Coach"}
+                      </p>
+
+                      {coach.address?.city && (
+                        <div className="discover-location">
+                          <FiMapPin />
+
+                          <span>
+                            {coach.address.city}
+                            {coach.address.state
+                              ? `, ${coach.address.state}`
+                              : ""}
+                          </span>
+                        </div>
+                      )}
+
+                    </div>
+
+                    <button
+                      className="discover-card-btn"
+                      onClick={() =>
+                        handleViewProfile(coach._id)
+                      }
+                    >
+                      View Profile
+
+                      <FiArrowRight />
+                    </button>
+
+                  </article>
+                ))}
+
+              </div>
+            )}
+
+          {/* ==========================================
+              NO RESULTS
+          ========================================== */}
+
+          {!loading &&
+            !error &&
+            filteredPeople.length === 0 && (
+              <div className="discover-empty">
+                <FiUsers />
+
+                <h3>No results found</h3>
+
+                <p>
+                  Try changing your search or filter.
+                </p>
+              </div>
+            )}
+
         </div>
       </main>
     </div>
