@@ -262,9 +262,56 @@ const deleteShowcasePost = async (req, res) => {
     }
 };
 
+const getAthletePublicShowcasePosts = async (req, res) => {
+    try {
+        const { athleteId } = req.params;
+
+        const athlete = await Athlete.findById(athleteId);
+
+        if (!athlete) {
+            return res.status(404).json({
+                success: false,
+                message: "Athlete not found"
+            });
+        }
+
+        const posts = await Showcase.find({
+            athlete: athlete._id,
+            visibility: "public"
+        })
+            .populate({
+                path: "athlete",
+                populate: {
+                    path: "user",
+                    select: "name profilePic"
+                }
+            })
+            .sort({
+                createdAt: -1
+            });
+
+        return res.status(200).json({
+            success: true,
+            posts
+        });
+    } catch (error) {
+        console.error(
+            "Get Athlete Public Showcase Posts Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch athlete showcase posts",
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createShowcasePost,
     getMyShowcasePosts,
     updateShowcasePost,
-    deleteShowcasePost
+    deleteShowcasePost,
+    getAthletePublicShowcasePosts
 };

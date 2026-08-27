@@ -1,12 +1,15 @@
 const express = require("express");
+
 const router = express.Router();
 
 const authMiddleware = require("../middleware/auth.middleware");
+
 const showcaseUpload = require("../middleware/showcaseUpload.middleware");
 
 const {
     createShowcasePost,
     getMyShowcasePosts,
+    getAthletePublicShowcasePosts,
     updateShowcasePost,
     deleteShowcasePost
 } = require("../controllers/showcase.controller");
@@ -22,6 +25,16 @@ router.get(
     "/my-posts",
     authMiddleware,
     getMyShowcasePosts
+);
+
+// ==========================================
+// GET ATHLETE PUBLIC SHOWCASE POSTS
+// ==========================================
+
+router.get(
+    "/athlete/:athleteId",
+    authMiddleware,
+    getAthletePublicShowcasePosts
 );
 
 router.put(
