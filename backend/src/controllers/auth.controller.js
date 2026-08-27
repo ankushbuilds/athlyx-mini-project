@@ -2,13 +2,6 @@ const User = require("../models/user.model");
 const Athlete = require("../models/athlete.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { Resend } = require("resend");
-
-// ==========================================
-// RESEND
-// ==========================================
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ==========================================
 // REGISTER USER
@@ -41,74 +34,8 @@ async function registerUser(req, res) {
         const existingUser = await User.findOne({ email });
 
         if (existingUser) {
-
-            // Already verified
-            if (existingUser.emailVerified) {
-                return res.status(400).json({
-                    message: "User already exists"
-                });
-            }
-
-            // ==========================================
-            // USER EXISTS BUT EMAIL NOT VERIFIED
-            // SEND NEW OTP
-            // ==========================================
-
-            const otp = Math.floor(
-                100000 + Math.random() * 900000
-            ).toString();
-
-            const otpExpires = new Date(
-                Date.now() + 10 * 60 * 1000
-            );
-
-            existingUser.name = name;
-
-            existingUser.password = await bcrypt.hash(
-                password,
-                10
-            );
-
-            existingUser.role = role;
-
-            existingUser.emailVerified = false;
-
-            existingUser.emailVerificationOTP = otp;
-
-            existingUser.emailVerificationOTPExpires =
-                otpExpires;
-
-            await existingUser.save();
-
-            // ==========================================
-            // SEND OTP USING RESEND
-            // ==========================================
-
-            const { data, error } = await resend.emails.send({
-                from: "onboarding@resend.dev",
-                to: email,
-                subject: "Athlyx Email Verification OTP",
-                text:
-                    `Your Athlyx verification OTP is ${otp}. ` +
-                    `This OTP will expire in 10 minutes.`
-            });
-
-            if (error) {
-                console.error("Resend email error:", error);
-
-                return res.status(500).json({
-                    success: false,
-                    message: "User saved but OTP email could not be sent",
-                    error: error.message || error
-                });
-            }
-
-            console.log("OTP email sent:", data);
-
-            return res.status(200).json({
-                success: true,
-                otpSent: true,
-                message: "OTP sent to your email"
+            return res.status(400).json({
+                message: "User already exists"
             });
         }
 
@@ -122,18 +49,6 @@ async function registerUser(req, res) {
         );
 
         // ==========================================
-        // GENERATE OTP
-        // ==========================================
-
-        const otp = Math.floor(
-            100000 + Math.random() * 900000
-        ).toString();
-
-        const otpExpires = new Date(
-            Date.now() + 10 * 60 * 1000
-        );
-
-        // ==========================================
         // CREATE USER
         // ==========================================
 
@@ -141,44 +56,12 @@ async function registerUser(req, res) {
             name,
             email,
             password: hashedPassword,
-            role,
-
-            emailVerified: false,
-
-            emailVerificationOTP: otp,
-
-            emailVerificationOTPExpires: otpExpires
+            role
         });
-
-        // ==========================================
-        // SEND OTP USING RESEND
-        // ==========================================
-
-        const { data, error } = await resend.emails.send({
-            from: "onboarding@resend.dev",
-            to: email,
-            subject: "Athlyx Email Verification OTP",
-            text:
-                `Your Athlyx verification OTP is ${otp}. ` +
-                `This OTP will expire in 10 minutes.`
-        });
-
-        if (error) {
-            console.error("Resend email error:", error);
-
-            return res.status(500).json({
-                success: false,
-                message: "User registered but OTP email could not be sent",
-                error: error.message || error
-            });
-        }
-
-        console.log("OTP email sent:", data);
 
         return res.status(201).json({
             success: true,
-            otpSent: true,
-            message: "OTP sent to your email",
+            message: "User registered successfully",
             user: {
                 id: user._id,
                 name: user.name,
@@ -192,207 +75,6 @@ async function registerUser(req, res) {
 
         return res.status(500).json({
             message: "Error registering user",
-            error: error.message
-        });
-    }
-}
-
-// ==========================================
-// VERIFY EMAIL OTP
-// ==========================================
-
-async function verifyEmailOTP(req, res) {
-    try {
-        let { email, otp } = req.body;
-
-        if (!email || !otp) {
-            return res.status(400).json({
-                success: false,
-                message: "Email and OTP are required"
-            });
-        }
-
-        email = email.trim().toLowerCase();
-        otp = otp.toString().trim();
-
-        // ==========================================
-        // FIND USER
-        // ==========================================
-
-        const user = await User.findOne({
-            email
-        });
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        // ==========================================
-        // CHECK ALREADY VERIFIED
-        // ==========================================
-
-        if (user.emailVerified) {
-            return res.status(400).json({
-                success: false,
-                message: "Email is already verified"
-            });
-        }
-
-        // ==========================================
-        // CHECK OTP
-        // ==========================================
-
-        if (user.emailVerificationOTP !== otp) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid OTP"
-            });
-        }
-
-        // ==========================================
-        // CHECK OTP EXPIRY
-        // ==========================================
-
-        if (
-            !user.emailVerificationOTPExpires ||
-            user.emailVerificationOTPExpires < new Date()
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: "OTP has expired"
-            });
-        }
-
-        // ==========================================
-        // VERIFY EMAIL
-        // ==========================================
-
-        user.emailVerified = true;
-
-        user.emailVerificationOTP = "";
-
-        user.emailVerificationOTPExpires = null;
-
-        await user.save();
-
-        return res.status(200).json({
-            success: true,
-            verified: true,
-            message: "Email verified successfully"
-        });
-
-    } catch (error) {
-        console.error("Verify OTP error:", error);
-
-        return res.status(500).json({
-            success: false,
-            message: "OTP verification failed",
-            error: error.message
-        });
-    }
-}
-
-// ==========================================
-// RESEND EMAIL OTP
-// ==========================================
-
-async function resendEmailOTP(req, res) {
-    try {
-        let { email } = req.body;
-
-        if (!email) {
-            return res.status(400).json({
-                success: false,
-                message: "Email is required"
-            });
-        }
-
-        email = email.trim().toLowerCase();
-
-        // ==========================================
-        // FIND USER
-        // ==========================================
-
-        const user = await User.findOne({
-            email
-        });
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        // ==========================================
-        // ALREADY VERIFIED
-        // ==========================================
-
-        if (user.emailVerified) {
-            return res.status(400).json({
-                success: false,
-                message: "Email is already verified"
-            });
-        }
-
-        // ==========================================
-        // GENERATE NEW OTP
-        // ==========================================
-
-        const otp = Math.floor(
-            100000 + Math.random() * 900000
-        ).toString();
-
-        const otpExpires = new Date(
-            Date.now() + 10 * 60 * 1000
-        );
-
-        user.emailVerificationOTP = otp;
-
-        user.emailVerificationOTPExpires =
-            otpExpires;
-
-        await user.save();
-
-        // ==========================================
-        // SEND NEW OTP USING RESEND
-        // ==========================================
-
-        const { data, error } = await resend.emails.send({
-            from: "onboarding@resend.dev",
-            to: email,
-            subject: "Athlyx Email Verification OTP",
-            text:
-                `Your new Athlyx verification OTP is ${otp}. ` +
-                `This OTP will expire in 10 minutes.`
-        });
-
-        if (error) {
-            console.error("Resend email error:", error);
-
-            return res.status(500).json({
-                success: false,
-                message: "OTP generated but email could not be sent",
-                error: error.message || error
-            });
-        }
-
-        console.log("OTP email sent:", data);
-
-        return res.status(200).json({
-            success: true,
-            message: "New OTP sent successfully"
-        });
-
-    } catch (error) {
-        console.error("Resend OTP error:", error);
-
-        return res.status(500).json({
-            success: false,
-            message: "Failed to resend OTP",
             error: error.message
         });
     }
@@ -414,6 +96,10 @@ async function loginUser(req, res) {
 
         email = email.trim().toLowerCase();
 
+        // ==========================================
+        // FIND USER
+        // ==========================================
+
         const user = await User.findOne({ email });
 
         if (!user) {
@@ -423,14 +109,8 @@ async function loginUser(req, res) {
         }
 
         // ==========================================
-        // EMAIL VERIFICATION CHECK
+        // CHECK PASSWORD
         // ==========================================
-
-        if (!user.emailVerified) {
-            return res.status(403).json({
-                message: "Please verify your email before login"
-            });
-        }
 
         const isPasswordValid = await bcrypt.compare(
             password,
@@ -442,6 +122,10 @@ async function loginUser(req, res) {
                 message: "Invalid email or password"
             });
         }
+
+        // ==========================================
+        // GENERATE JWT TOKEN
+        // ==========================================
 
         const token = jwt.sign(
             {
@@ -525,11 +209,19 @@ async function deleteAccount(req, res) {
             });
         }
 
+        // ==========================================
+        // DELETE ATHLETE PROFILE
+        // ==========================================
+
         if (role === "athlete") {
             await Athlete.findOneAndDelete({
                 user: userId
             });
         }
+
+        // ==========================================
+        // DELETE USER
+        // ==========================================
 
         await User.findByIdAndDelete(userId);
 
@@ -586,6 +278,10 @@ const changePassword = async (req, res) => {
             });
         }
 
+        // ==========================================
+        // CHECK CURRENT PASSWORD
+        // ==========================================
+
         const isMatch = await bcrypt.compare(
             currentPassword,
             user.password
@@ -597,6 +293,10 @@ const changePassword = async (req, res) => {
                     "Current password is incorrect"
             });
         }
+
+        // ==========================================
+        // CHECK SAME PASSWORD
+        // ==========================================
 
         const isSamePassword =
             await bcrypt.compare(
@@ -610,6 +310,10 @@ const changePassword = async (req, res) => {
                     "New password must be different"
             });
         }
+
+        // ==========================================
+        // UPDATE PASSWORD
+        // ==========================================
 
         user.password =
             await bcrypt.hash(newPassword, 10);
@@ -662,6 +366,10 @@ const changeEmail = async (req, res) => {
             });
         }
 
+        // ==========================================
+        // CHECK CURRENT PASSWORD
+        // ==========================================
+
         const isPasswordCorrect =
             await bcrypt.compare(
                 currentPassword,
@@ -678,12 +386,20 @@ const changeEmail = async (req, res) => {
         const normalizedEmail =
             newEmail.trim().toLowerCase();
 
+        // ==========================================
+        // CHECK SAME EMAIL
+        // ==========================================
+
         if (normalizedEmail === user.email) {
             return res.status(400).json({
                 message:
                     "New email must be different from current email"
             });
         }
+
+        // ==========================================
+        // CHECK EMAIL EXISTS
+        // ==========================================
 
         const emailExists =
             await User.findOne({
@@ -696,6 +412,10 @@ const changeEmail = async (req, res) => {
                     "Email is already registered"
             });
         }
+
+        // ==========================================
+        // UPDATE EMAIL
+        // ==========================================
 
         user.email = normalizedEmail;
 
@@ -798,9 +518,9 @@ const updateSettings = async (req, res) => {
             emailNotifications
         } = req.body;
 
-        // ------------------------------------------
+        // ==========================================
         // VALIDATE PROFILE VISIBILITY
-        // ------------------------------------------
+        // ==========================================
 
         if (
             profileVisibility !== undefined &&
@@ -814,9 +534,9 @@ const updateSettings = async (req, res) => {
             });
         }
 
-        // ------------------------------------------
+        // ==========================================
         // VALIDATE CONTACT VISIBILITY
-        // ------------------------------------------
+        // ==========================================
 
         if (
             contactVisible !== undefined &&
@@ -828,9 +548,9 @@ const updateSettings = async (req, res) => {
             });
         }
 
-        // ------------------------------------------
+        // ==========================================
         // VALIDATE MESSAGE NOTIFICATIONS
-        // ------------------------------------------
+        // ==========================================
 
         if (
             messageNotifications !== undefined &&
@@ -842,9 +562,9 @@ const updateSettings = async (req, res) => {
             });
         }
 
-        // ------------------------------------------
+        // ==========================================
         // VALIDATE OPPORTUNITY NOTIFICATIONS
-        // ------------------------------------------
+        // ==========================================
 
         if (
             opportunityNotifications !== undefined &&
@@ -856,9 +576,9 @@ const updateSettings = async (req, res) => {
             });
         }
 
-        // ------------------------------------------
+        // ==========================================
         // VALIDATE EMAIL NOTIFICATIONS
-        // ------------------------------------------
+        // ==========================================
 
         if (
             emailNotifications !== undefined &&
@@ -870,9 +590,9 @@ const updateSettings = async (req, res) => {
             });
         }
 
-        // ------------------------------------------
+        // ==========================================
         // FIND USER
-        // ------------------------------------------
+        // ==========================================
 
         const user = await User.findById(
             req.user.id
@@ -884,9 +604,9 @@ const updateSettings = async (req, res) => {
             });
         }
 
-        // ------------------------------------------
+        // ==========================================
         // ROLE CHECK
-        // ------------------------------------------
+        // ==========================================
 
         if (
             user.role !== "athlete" &&
@@ -897,17 +617,17 @@ const updateSettings = async (req, res) => {
             });
         }
 
-        // ------------------------------------------
+        // ==========================================
         // INITIALIZE SETTINGS
-        // ------------------------------------------
+        // ==========================================
 
         if (!user.settings) {
             user.settings = {};
         }
 
-        // ------------------------------------------
+        // ==========================================
         // UPDATE ONLY PROVIDED VALUES
-        // ------------------------------------------
+        // ==========================================
 
         if (profileVisibility !== undefined) {
             user.settings.profileVisibility =
@@ -961,8 +681,6 @@ const updateSettings = async (req, res) => {
 
 module.exports = {
     registerUser,
-    verifyEmailOTP,
-    resendEmailOTP,
     loginUser,
     getCurrentUser,
     deleteAccount,

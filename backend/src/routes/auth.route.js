@@ -16,17 +16,7 @@ router.post(
     authController.registerUser
 );
 
-// Verify Email OTP
-router.post(
-    "/verify-email-otp",
-    authController.verifyEmailOTP
-);
 
-// Resend Email OTP
-router.post(
-    "/resend-email-otp",
-    authController.resendEmailOTP
-);
 
 // Login
 router.post(

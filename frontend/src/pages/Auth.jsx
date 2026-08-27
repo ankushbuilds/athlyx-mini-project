@@ -1,9 +1,7 @@
 import { useState } from "react";
 import {
   loginUser,
-  registerUser,
-  verifyEmailOTP,
-  resendEmailOTP
+  registerUser
 } from "../services/auth.service";
 import { useNavigate } from "react-router-dom";
 
@@ -11,10 +9,6 @@ const Auth = () => {
   const navigate = useNavigate();
 
   const [isLogin, setIsLogin] = useState(true);
-
-  // OTP screen
-  const [otpStep, setOtpStep] = useState(false);
-  const [otp, setOtp] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -42,21 +36,6 @@ const Auth = () => {
 
     setError("");
     setSuccess("");
-  };
-
-  // ==========================================
-  // HANDLE OTP CHANGE
-  // ==========================================
-
-  const handleOtpChange = (e) => {
-    const value = e.target.value;
-
-    // Only allow numbers
-    if (/^\d*$/.test(value) && value.length <= 6) {
-      setOtp(value);
-      setError("");
-      setSuccess("");
-    }
   };
 
   // ==========================================
@@ -141,31 +120,16 @@ const Auth = () => {
 
       console.log("Register response:", data);
 
-      // ==========================================
-      // OTP SENT
-      // ==========================================
+      setSuccess("Account created successfully! You can now login.");
+      setIsLogin(true);
 
-      if (data.otpSent) {
-        setOtpStep(true);
-        setOtp("");
-        setSuccess(
-          "OTP has been sent to your email. Please verify your email."
-        );
-      } else {
-        setSuccess(
-          "Account created successfully! You can now login."
-        );
-
-        setIsLogin(true);
-
-        setFormData({
-          name: "",
-          email: formData.email,
-          password: "",
-          confirmPassword: "",
-          role: "athlete"
-        });
-      }
+      setFormData({
+        name: "",
+        email: formData.email,
+        password: "",
+        confirmPassword: "",
+        role: "athlete"
+      });
 
     } catch (error) {
       console.error("Register error:", error);
@@ -180,110 +144,11 @@ const Auth = () => {
   };
 
   // ==========================================
-  // VERIFY OTP
-  // ==========================================
-
-  const handleVerifyOTP = async (e) => {
-    e.preventDefault();
-
-    setError("");
-    setSuccess("");
-
-    if (!otp) {
-      setError("Please enter the OTP.");
-      return;
-    }
-
-    if (otp.length !== 6) {
-      setError("OTP must be 6 digits.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const data = await verifyEmailOTP({
-        email: formData.email,
-        otp: otp
-      });
-
-      console.log("OTP verification response:", data);
-
-      if (data.success || data.verified) {
-        setSuccess(
-          "Email verified successfully! You can now login."
-        );
-
-        // Go back to login
-        setOtpStep(false);
-        setIsLogin(true);
-
-        setFormData({
-          name: "",
-          email: formData.email,
-          password: "",
-          confirmPassword: "",
-          role: formData.role
-        });
-
-        setOtp("");
-      }
-
-    } catch (error) {
-      console.error("OTP verification error:", error);
-
-      setError(
-        error.response?.data?.message ||
-        "Invalid or expired OTP."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ==========================================
-  // RESEND OTP
-  // ==========================================
-
-  const handleResendOTP = async () => {
-    setError("");
-    setSuccess("");
-
-    try {
-      setLoading(true);
-
-      const data = await resendEmailOTP({
-        email: formData.email
-      });
-
-      console.log("Resend OTP response:", data);
-
-      setSuccess(
-        "A new OTP has been sent to your email."
-      );
-
-      setOtp("");
-
-    } catch (error) {
-      console.error("Resend OTP error:", error);
-
-      setError(
-        error.response?.data?.message ||
-        "Failed to resend OTP."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ==========================================
   // TOGGLE LOGIN / REGISTER
   // ==========================================
 
   const toggleAuth = () => {
     setIsLogin(!isLogin);
-    setOtpStep(false);
-    setOtp("");
 
     setError("");
     setSuccess("");
@@ -296,115 +161,6 @@ const Auth = () => {
       role: "athlete"
     });
   };
-
-  // ==========================================
-  // OTP SCREEN
-  // ==========================================
-
-  if (otpStep) {
-    return (
-      <div className="auth-page">
-        <div className="auth-card">
-
-          <div className="auth-logo-wrapper">
-            <img
-              src="/logo.png"
-              alt="Athlyx"
-              className="auth-logo"
-            />
-          </div>
-
-          <div className="auth-header">
-            <h1>Verify Your Email</h1>
-
-            <p>
-              Enter the 6-digit OTP sent to{" "}
-              <strong>{formData.email}</strong>
-            </p>
-          </div>
-
-          {error && (
-            <div className="auth-message auth-error">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="auth-message auth-success">
-              {success}
-            </div>
-          )}
-
-          <form
-            onSubmit={handleVerifyOTP}
-            className="auth-form"
-          >
-
-            <div className="form-group">
-              <label>Email OTP</label>
-
-              <input
-                type="text"
-                name="otp"
-                value={otp}
-                onChange={handleOtpChange}
-                placeholder="Enter 6-digit OTP"
-                inputMode="numeric"
-                maxLength={6}
-                autoComplete="one-time-code"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="auth-button"
-              disabled={loading}
-            >
-              {loading
-                ? "Verifying..."
-                : "Verify Email"}
-
-              {!loading && <span>→</span>}
-            </button>
-
-          </form>
-
-          <div className="auth-switch">
-
-            <span>Didn't receive the OTP?</span>
-
-            <button
-              type="button"
-              onClick={handleResendOTP}
-              disabled={loading}
-            >
-              Resend OTP
-            </button>
-
-          </div>
-
-          <div className="auth-switch">
-
-            <span>Wrong email?</span>
-
-            <button
-              type="button"
-              onClick={() => {
-                setOtpStep(false);
-                setError("");
-                setSuccess("");
-              }}
-            >
-              Go Back
-            </button>
-
-          </div>
-
-        </div>
-      </div>
-    );
-  }
 
   // ==========================================
   // LOGIN / REGISTER SCREEN
