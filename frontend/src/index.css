@@ -21,11 +21,6 @@
   --app-shadow: 0 22px 60px rgba(0, 0, 0, .34);
 }
 
-body {
-  background: var(--app-bg);
-  color: var(--app-text);
-}
-
 .landing,
 .auth-page,
 .home-page,
@@ -61,8 +56,8 @@ textarea:focus-visible {
 body {
   margin: 0;
   padding: 0;
-  background: #0b0c0e;
-  color: #fff;
+  background: var(--app-bg);
+  color: var(--app-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
@@ -188,7 +183,7 @@ button {
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 14px;
 }
 
 /* ========================================== COMMON MODAL SYSTEM ========================================== */
@@ -851,6 +846,7 @@ button {
 .hero-content h1 span {
   display: block;
   background: linear-gradient(90deg, #fff, #8e8ea5);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -3643,11 +3639,6 @@ button {
   color: #fff;
 }
 
-body {
-  background: var(--app-bg);
-  color: var(--app-text);
-}
-
 .home-page,
 .athlete-dashboard,
 .athlete-profile-page,
@@ -3857,36 +3848,9 @@ body {
 
 
 
-/* More */
-
-
 /* ==========================================
    ATHLYX GRAPHITE + COPPER REFINEMENT
    ========================================== */
-:root {
-  --app-bg: #0b0c0e;
-  --app-surface: #121416;
-  --app-surface-2: #171a1d;
-  --app-surface-3: #1c1f22;
-  --app-card: #171a1d;
-  --app-card-soft: #1d201f;
-  --app-border: #2a2d30;
-  --app-border-soft: #26292b;
-  --app-border-strong: #3a3835;
-  --app-text: #f4efe9;
-  --app-muted: #9c938a;
-  --app-muted-2: #79736c;
-  --app-accent: #c49a6c;
-  --app-accent-hover: #ad8358;
-  --app-danger: #c96863;
-  --app-radius: 14px;
-  --app-shadow: 0 22px 60px rgba(0, 0, 0, .34)
-}
-
-body {
-  background: #0b0c0e;
-  color: #f4efe9
-}
 
 button:focus-visible,
 input:focus-visible,
@@ -4150,11 +4114,11 @@ textarea:focus-visible {
 .section-header button,
 .add-achievement,
 .settings-item > button:not(.settings-toggle):not(.delete-btn) {
-  background: #1c1f22 !important;
-  color: #e7e0d8 !important;
-  border: 1px solid #36383a !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .16) !important;
-  filter: none !important;
+  background: #1c1f22;
+  color: #e7e0d8;
+  border: 1px solid #36383a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .16);
+  filter: none;
   transform: translateY(0);
   transition:
     background-color .22s ease,
@@ -4189,10 +4153,10 @@ textarea:focus-visible {
 .section-header button:hover,
 .add-achievement:hover,
 .settings-item > button:not(.settings-toggle):not(.delete-btn):hover {
-  background: #c49a6c !important;
-  color: #17130f !important;
-  border-color: #c49a6c !important;
-  box-shadow: 0 5px 16px rgba(196, 154, 108, .16) !important;
+  background: #c49a6c;
+  color: #17130f;
+  border-color: #c49a6c;
+  box-shadow: 0 5px 16px rgba(196, 154, 108, .16);
   transform: translateY(-1px);
 }
 
@@ -4221,10 +4185,10 @@ textarea:focus-visible {
 .section-header button:active,
 .add-achievement:active,
 .settings-item > button:not(.settings-toggle):not(.delete-btn):active {
-  background: #b88e63 !important;
-  border-color: #b88e63 !important;
+  background: #b88e63;
+  border-color: #b88e63;
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(196, 154, 108, .12) !important;
+  box-shadow: 0 2px 8px rgba(196, 154, 108, .12);
 }
 
 /* ==========================================
@@ -4268,7 +4232,7 @@ textarea:focus-visible {
 
 .sidebar-item:hover {
   background: rgba(196, 154, 108, .08) !important;
-  color: #c49a6c !important;
+  color: #c49a6c;
 }
 
 /* ==========================================
@@ -4293,7 +4257,7 @@ textarea:focus-visible {
    ========================================== */
 
 .settings-toggle.active {
-  background: #c49a6c !important;
+  background: #c49a6c;
 }
 
 .settings-toggle:not(.active) {
@@ -8160,7 +8124,7 @@ body {
    DISCOVER PAGE
    ========================================================= */
 
-.discover-page {
+.discover-page:has(> .home-header) {
     width: 100%;
     min-height: 100vh;
     margin: 0;
@@ -8176,7 +8140,7 @@ body {
    Navbar uses .home-header from Navbar CSS
    ========================================================= */
 
-.discover-page > .home-header {
+.discover-page:has(> .home-header) > .home-header {
     margin: 0;
 }
 
@@ -8198,7 +8162,7 @@ body {
    HEADER
    ========================================================= */
 
-.discover-header {
+.discover-page:has(> .home-header) > .discover-main > .discover-header {
     width: 100%;
     margin: 0;
     padding: 70px 0 45px;
@@ -8519,7 +8483,7 @@ body {
    CARD TOP
    ========================================================= */
 
-.discover-card-top {
+.discover-page:has(> .home-header) .discover-card-top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -8713,7 +8677,7 @@ body {
    EMPTY / LOADING
    ========================================================= */
 
-.discover-empty {
+.discover-page:has(> .home-header) .discover-empty {
     min-height: 300px;
 
     display: flex;
@@ -8733,7 +8697,7 @@ body {
     text-align: center;
 }
 
-.discover-empty-icon {
+.discover-page:has(> .home-header) .discover-empty-icon {
     width: 58px;
     height: 58px;
 
@@ -8750,19 +8714,19 @@ body {
     color: var(--app-accent, #c49a6c);
 }
 
-.discover-empty-icon svg {
+.discover-page:has(> .home-header) .discover-empty-icon svg {
     width: 23px;
     height: 23px;
 }
 
-.discover-empty h3 {
+.discover-page:has(> .home-header) .discover-empty h3 {
     margin: 0;
 
     font-size: 19px;
     font-weight: 600;
 }
 
-.discover-empty p {
+.discover-page:has(> .home-header) .discover-empty p {
     max-width: 440px;
 
     margin: 9px 0 20px;

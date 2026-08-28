@@ -1,12 +1,13 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
-
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Help from "./pages/Help";
+import Discover from "./pages/Discover";
 
 // ==========================================
 // ATHLETE PAGES
@@ -16,7 +17,7 @@ import AthleteDashboard from "./pages/Athlete-Pages/AthleteDashboard";
 import AthleteProfile from "./pages/Athlete-Pages/AthleteProfile";
 import AthleteProfileView from "./pages/Athlete-Pages/AthleteProfileView";
 import Settings from "./pages/Athlete-Pages/Settings";
-import Discover from "./pages/Athlete-Pages/Discover";
+import AthleteDiscover from "./pages/Athlete-Pages/Discover";
 import Opportunities from "./pages/Athlete-Pages/Opportunities";
 import Showcase from "./pages/Athlete-Pages/Showcase";
 import AthleteConnections from "./pages/Athlete-Pages/AthleteConnections";
@@ -32,6 +33,7 @@ import CoachProfileView from "./pages/Coach-Pages/CoachProfileView";
 import CoachAthletes from "./pages/Coach-Pages/CoachAthletes";
 import CoachDiscover from "./pages/Coach-Pages/CoachDiscover";
 import CoachRequests from "./pages/Coach-Pages/CoachRequests";
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -71,6 +73,12 @@ const App = () => {
           element={<Help />}
         />
 
+        {/* Public Navbar Discover */}
+        <Route
+          path="/discover"
+          element={<Discover />}
+        />
+
         {/* ==========================================
             ATHLETE ROUTES
         ========================================== */}
@@ -108,9 +116,10 @@ const App = () => {
           element={<Settings />}
         />
 
+        {/* Athlete Discover */}
         <Route
           path="/athlete/discover"
-          element={<Discover />}
+          element={<AthleteDiscover />}
         />
 
         <Route
@@ -149,12 +158,7 @@ const App = () => {
           element={<CoachProfileView />}
         />
 
-        {/* ==========================================
-            IMPORTANT
-
-            Athlete viewing a coach profile
-            ========================================== */}
-
+        {/* Athlete viewing a coach profile */}
         <Route
           path="/profile/coach/:coachId"
           element={<CoachProfileView />}
@@ -194,3 +198,4 @@ const App = () => {
 };
 
 export default App;
+
