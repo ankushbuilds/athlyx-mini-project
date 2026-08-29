@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -13,14 +14,27 @@ const Discover = () => {
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
-
   const [coaches, setCoaches] = useState([]);
+  const [athleteSport, setAthleteSport] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   // ==========================================
-  // FETCH COACHES
+  // FORMAT SPORT NAME
+  // ==========================================
+
+  const formatSport = (sport) => {
+    if (!sport) return "";
+
+    return sport
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  // ==========================================
+  // FETCH MATCHING COACHES
   // ==========================================
 
   useEffect(() => {
@@ -29,14 +43,23 @@ const Discover = () => {
         setLoading(true);
         setError("");
 
+        const token = localStorage.getItem("token");
+
         const response = await axios.get(
-          "http://localhost:5000/api/users/coaches"
+          "http://localhost:5000/api/users/coaches",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
         );
 
         if (response.data.success) {
           setCoaches(response.data.coaches || []);
+          setAthleteSport(response.data.sport || "");
         } else {
           setCoaches([]);
+          setAthleteSport("");
         }
       } catch (err) {
         console.error("Error fetching coaches:", err);
@@ -54,32 +77,35 @@ const Discover = () => {
   }, []);
 
   // ==========================================
-  // FILTER COACHES
+  // FILTER COACHES BY SEARCH
   // ==========================================
 
-  const filteredPeople = coaches.filter((coach) => {
-    const searchText = search.toLowerCase();
+  const filteredCoaches = coaches.filter((coach) => {
+    const searchText = search.trim().toLowerCase();
 
-    const matchesSearch =
+    if (!searchText) {
+      return true;
+    }
+
+    return (
       coach.name?.toLowerCase().includes(searchText) ||
       coach.sport?.toLowerCase().includes(searchText) ||
       coach.specialization?.toLowerCase().includes(searchText) ||
-      coach.organization?.toLowerCase().includes(searchText);
-
-    const matchesCategory =
-      category === "All" ||
-      coach.sport === category;
-
-    return matchesSearch && matchesCategory;
+      coach.organization?.toLowerCase().includes(searchText) ||
+      coach.address?.city?.toLowerCase().includes(searchText) ||
+      coach.address?.state?.toLowerCase().includes(searchText)
+    );
   });
+
+  const formattedSport = formatSport(athleteSport);
 
   // ==========================================
   // VIEW COACH PROFILE
   // ==========================================
 
-const handleViewProfile = (coachId) => {
-  navigate(`/profile/coach/${coachId}`);
-};
+  const handleViewProfile = (coachId) => {
+    navigate(`/profile/coach/${coachId}`);
+  };
 
   return (
     <div className="dashboard-layout">
@@ -87,6 +113,10 @@ const handleViewProfile = (coachId) => {
 
       <main className="discover-page">
         <div className="discover-content">
+
+          {/* ==========================================
+              HEADER
+          ========================================== */}
 
           <div className="discover-header">
             <div>
@@ -97,10 +127,14 @@ const handleViewProfile = (coachId) => {
               <h1>Discover</h1>
 
               <p>
-                Find coaches, athletes and academies that match your goals.
+                Find coaches who match your sport and goals.
               </p>
             </div>
           </div>
+
+          {/* ==========================================
+              SEARCH
+          ========================================== */}
 
           <div className="discover-toolbar">
 
@@ -109,39 +143,39 @@ const handleViewProfile = (coachId) => {
 
               <input
                 type="text"
-                placeholder="Search people, sports or roles..."
+                placeholder="Search coaches, specialization or location..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="discover-filter"
-            >
-              <option value="All">All Sports</option>
-              <option value="Cricket">Cricket</option>
-              <option value="Football">Football</option>
-              <option value="Athletics">Athletics</option>
-              <option value="Basketball">Basketball</option>
-              <option value="Hockey">Hockey</option>
-            </select>
-
           </div>
 
+          {/* ==========================================
+              SECTION HEADING
+          ========================================== */}
+
           <div className="discover-section-heading">
+
             <div>
-              <h2>Recommended for you</h2>
+              <h2>
+                {formattedSport
+                  ? `${formattedSport} Coaches`
+                  : "Recommended Coaches"}
+              </h2>
 
               <p>
-                People and professionals you may want to connect with.
+                Coaches relevant to your sport and development.
               </p>
             </div>
 
             <span className="discover-result-count">
-              {filteredPeople.length} results
+              {filteredCoaches.length}{" "}
+              {filteredCoaches.length === 1
+                ? "coach"
+                : "coaches"}
             </span>
+
           </div>
 
           {/* ==========================================
@@ -180,14 +214,16 @@ const handleViewProfile = (coachId) => {
 
           {!loading &&
             !error &&
-            filteredPeople.length > 0 && (
+            filteredCoaches.length > 0 && (
               <div className="discover-grid">
 
-                {filteredPeople.map((coach) => (
+                {filteredCoaches.map((coach) => (
                   <article
                     className="discover-card"
                     key={coach._id}
                   >
+
+                    {/* CARD TOP */}
 
                     <div className="discover-card-top">
 
@@ -198,15 +234,19 @@ const handleViewProfile = (coachId) => {
                             alt={coach.name}
                           />
                         ) : (
-                          coach.name?.charAt(0).toUpperCase()
+                          coach.name
+                            ?.charAt(0)
+                            .toUpperCase()
                         )}
                       </div>
 
                       <span className="discover-sport">
-                        {coach.sport || "Coach"}
+                        {formatSport(coach.sport) || "Coach"}
                       </span>
 
                     </div>
+
+                    {/* CARD BODY */}
 
                     <div className="discover-card-body">
 
@@ -224,6 +264,7 @@ const handleViewProfile = (coachId) => {
 
                           <span>
                             {coach.address.city}
+
                             {coach.address.state
                               ? `, ${coach.address.state}`
                               : ""}
@@ -233,7 +274,10 @@ const handleViewProfile = (coachId) => {
 
                     </div>
 
+                    {/* VIEW PROFILE */}
+
                     <button
+                      type="button"
                       className="discover-card-btn"
                       onClick={() =>
                         handleViewProfile(coach._id)
@@ -256,15 +300,28 @@ const handleViewProfile = (coachId) => {
 
           {!loading &&
             !error &&
-            filteredPeople.length === 0 && (
+            filteredCoaches.length === 0 && (
+
               <div className="discover-empty">
+
                 <FiUsers />
 
-                <h3>No results found</h3>
+                <h3>
+                  {search
+                    ? "No coaches found"
+                    : formattedSport
+                    ? `No ${formattedSport} coaches found`
+                    : "No coaches available"}
+                </h3>
 
                 <p>
-                  Try changing your search or filter.
+                  {search
+                    ? "Try changing your search."
+                    : formattedSport
+                    ? `There are currently no ${formattedSport} coaches available on Athlyx.`
+                    : "Please complete your athlete profile to discover relevant coaches."}
                 </p>
+
               </div>
             )}
 
@@ -275,3 +332,4 @@ const handleViewProfile = (coachId) => {
 };
 
 export default Discover;
+
