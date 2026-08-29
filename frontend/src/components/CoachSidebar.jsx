@@ -1,3 +1,4 @@
+
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   FiGrid,
@@ -6,6 +7,7 @@ import {
   FiCompass,
   FiBriefcase,
   FiUserPlus,
+  FiMessageCircle,
   FiSettings
 } from "react-icons/fi";
 
@@ -17,6 +19,7 @@ const CoachSidebar = () => {
 
   return (
     <aside className="sidebar-icon-only">
+
       <div
         className={`sidebar-item ${
           isActive("/coach/dashboard") ? "active" : ""
@@ -77,6 +80,20 @@ const CoachSidebar = () => {
         <FiUserPlus size={22} />
       </div>
 
+      {/* ======================================================
+          MESSAGES
+      ====================================================== */}
+
+      <div
+        className={`sidebar-item ${
+          isActive("/coach/messages") ? "active" : ""
+        }`}
+        data-tooltip="Messages"
+        onClick={() => navigate("/coach/messages")}
+      >
+        <FiMessageCircle size={22} />
+      </div>
+
       <div
         className={`sidebar-item ${
           isActive("/coach/settings") ? "active" : ""
@@ -86,8 +103,10 @@ const CoachSidebar = () => {
       >
         <FiSettings size={22} />
       </div>
+
     </aside>
   );
 };
 
 export default CoachSidebar;
+

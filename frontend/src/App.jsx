@@ -8,7 +8,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Help from "./pages/Help";
 import Discover from "./pages/Discover";
-
+import Messages from "./components/Messages";
 // ==========================================
 // ATHLETE PAGES
 // ==========================================
@@ -136,6 +136,10 @@ const App = () => {
           path="/athlete/connections"
           element={<AthleteConnections />}
         />
+        <Route
+          path="/athlete/messages"
+          element={<Messages />}
+        />
 
         {/* ==========================================
             COACH ROUTES
@@ -190,6 +194,10 @@ const App = () => {
         <Route
           path="/coach/settings"
           element={<CoachSettings />}
+        />
+        <Route
+          path="/coach/messages"
+          element={<Messages />}
         />
 
       </Routes>
