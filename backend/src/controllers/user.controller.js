@@ -1,4 +1,5 @@
 const User = require("../models/user.model");
+const Athlete = require("../models/athlete.model");
 const imagekit = require("../config/imagekit");
 
 const uploadProfilePic = async (req, res) => {
@@ -39,25 +40,54 @@ const uploadProfilePic = async (req, res) => {
     }
 };
 const getAllCoaches = async (req, res) => {
-  try {
-    const coaches = await User.find({ role: "coach" })
-      .select(
-        "name profilePic sport specialization experience organization bio address isAvailable"
-      )
-      .sort({ createdAt: -1 });
+    try {
+        // Get the logged-in athlete's profile
+        const athlete = await Athlete.findOne({
+            user: req.user.id
+        }).select("sport");
 
-    res.status(200).json({
-      success: true,
-      coaches,
-    });
-  } catch (error) {
-    console.error("Get coaches error:", error);
+        if (!athlete) {
+            return res.status(404).json({
+                success: false,
+                message: "Athlete profile not found"
+            });
+        }
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch coaches",
-    });
-  }
+        // Make sure athlete has a sport
+        if (!athlete.sport) {
+            return res.status(400).json({
+                success: false,
+                message: "Please complete your sport in your profile"
+            });
+        }
+
+        // Find coaches belonging to the same sport
+        const coaches = await User.find({
+            role: "coach",
+            sport: {
+                $regex: `^${athlete.sport.trim()}$`,
+                $options: "i"
+            }
+        })
+            .select(
+                "name profilePic sport specialization experience organization bio address isAvailable"
+            )
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            sport: athlete.sport,
+            coaches
+        });
+
+    } catch (error) {
+        console.error("Get coaches error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch coaches"
+        });
+    }
 };
 async function getCoachById(req, res) {
     try {

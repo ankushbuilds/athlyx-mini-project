@@ -27,6 +27,7 @@ router.post(
 
 router.get(
     "/coaches",
+    authMiddleware,
     userController.getAllCoaches
 );
 
