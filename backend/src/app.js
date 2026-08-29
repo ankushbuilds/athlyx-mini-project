@@ -10,6 +10,7 @@ const showcaseRoutes = require("./routes/showcase.route");
 const coachRoutes = require("./routes/coach.route");
 const coachAthleteRoutes = require("./routes/coachAthlete.route");
 const connectionRoutes = require("./routes/connection.route");
+const chatRoutes = require("./routes/chat.route");
 
 const app = express();
 
@@ -44,5 +45,6 @@ app.use(
     "/api/connections",
     connectionRoutes
 );
+app.use("/api/chat", chatRoutes);
 
 module.exports = app;
