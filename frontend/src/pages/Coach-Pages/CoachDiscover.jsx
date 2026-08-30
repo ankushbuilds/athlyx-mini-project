@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -16,9 +17,17 @@ const CoachDiscover = () => {
 
   const [athletes, setAthletes] = useState([]);
   const [filteredAthletes, setFilteredAthletes] = useState([]);
+
   const [search, setSearch] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // ==========================================
+  // COACH SPORT
+  // ==========================================
+
+  const [coachSport, setCoachSport] = useState("");
 
   // ==========================================
   // CONNECTION STATUS
@@ -27,7 +36,7 @@ const CoachDiscover = () => {
   const [connectionStatuses, setConnectionStatuses] = useState({});
 
   // ==========================================
-  // LOAD ATHLETES
+  // LOAD MATCHING ATHLETES
   // ==========================================
 
   useEffect(() => {
@@ -68,7 +77,9 @@ const CoachDiscover = () => {
         athlete?.address?.state ||
         "";
 
-      const skills = Array.isArray(athlete?.skills)
+      const skills = Array.isArray(
+        athlete?.skills
+      )
         ? athlete.skills.join(" ")
         : "";
 
@@ -81,23 +92,31 @@ const CoachDiscover = () => {
         ${skills}
       `.toLowerCase();
 
-      return searchableText.includes(searchValue);
+      return searchableText.includes(
+        searchValue
+      );
     });
 
     setFilteredAthletes(filtered);
   }, [search, athletes]);
 
   // ==========================================
-  // LOAD ATHLETES
+  // LOAD MATCHING ATHLETES
   // ==========================================
 
   const loadAthletes = async () => {
-    const token = localStorage.getItem("token");
+    const token =
+      localStorage.getItem("token");
+
+    // ==========================================
+    // AUTH CHECK
+    // ==========================================
 
     if (!token) {
       navigate("/auth", {
         replace: true
       });
+
       return;
     }
 
@@ -105,8 +124,12 @@ const CoachDiscover = () => {
       setLoading(true);
       setError("");
 
+      // ==========================================
+      // FETCH ATHLETES MATCHING COACH SPORT
+      // ==========================================
+
       const response = await axios.get(
-        `${API}/athletes/get-all`,
+        `${API}/athletes/matching-athletes`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -114,71 +137,124 @@ const CoachDiscover = () => {
         }
       );
 
-      const allAthletes = Array.isArray(
-        response.data?.athletes
-      )
-        ? response.data.athletes
-        : [];
-
-      setAthletes(allAthletes);
-      setFilteredAthletes(allAthletes);
-
       // ==========================================
-      // FETCH CONNECTION STATUS FOR EACH ATHLETE
+      // GET COACH SPORT
       // ==========================================
 
-      const statusResults = await Promise.all(
-        allAthletes.map(async (athlete) => {
-          try {
-            const statusResponse = await axios.get(
-              `${API}/connections/status/${athlete._id}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`
-                }
-              }
-            );
-
-            return {
-              athleteId: athlete._id,
-              status:
-                statusResponse.data?.status || "none"
-            };
-          } catch (statusError) {
-            console.error(
-              `Failed to get connection status for athlete ${athlete._id}:`,
-              statusError
-            );
-
-            return {
-              athleteId: athlete._id,
-              status: "none"
-            };
-          }
-        })
+      setCoachSport(
+        response.data?.sport || ""
       );
+
+      // ==========================================
+      // GET MATCHING ATHLETES
+      // ==========================================
+
+      const matchingAthletes =
+        Array.isArray(
+          response.data?.athletes
+        )
+          ? response.data.athletes
+          : [];
+
+      setAthletes(
+        matchingAthletes
+      );
+
+      setFilteredAthletes(
+        matchingAthletes
+      );
+
+      // ==========================================
+      // FETCH CONNECTION STATUS
+      // ==========================================
+
+      const statusResults =
+        await Promise.all(
+          matchingAthletes.map(
+            async (athlete) => {
+              try {
+                const statusResponse =
+                  await axios.get(
+                    `${API}/connections/status/${athlete._id}`,
+                    {
+                      headers: {
+                        Authorization: `Bearer ${token}`
+                      }
+                    }
+                  );
+
+                return {
+                  athleteId:
+                    athlete._id,
+
+                  status:
+                    statusResponse
+                      .data
+                      ?.status ||
+                    "none"
+                };
+              } catch (
+                statusError
+              ) {
+                console.error(
+                  `Failed to get connection status for athlete ${athlete._id}:`,
+                  statusError
+                );
+
+                return {
+                  athleteId:
+                    athlete._id,
+
+                  status:
+                    "none"
+                };
+              }
+            }
+          )
+        );
+
+      // ==========================================
+      // CREATE STATUS MAP
+      // ==========================================
 
       const statusMap = {};
 
       statusResults.forEach(
-        ({ athleteId, status }) => {
-          statusMap[athleteId] = status;
+        ({
+          athleteId,
+          status
+        }) => {
+          statusMap[
+            athleteId
+          ] = status;
         }
       );
 
-      setConnectionStatuses(statusMap);
+      setConnectionStatuses(
+        statusMap
+      );
+
     } catch (error) {
       console.error(
-        "Failed to load athletes:",
+        "Failed to load matching athletes:",
         error
       );
+
+      // ==========================================
+      // AUTHORIZATION ERROR
+      // ==========================================
 
       if (
         error.response?.status === 401 ||
         error.response?.status === 403
       ) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        localStorage.removeItem(
+          "token"
+        );
+
+        localStorage.removeItem(
+          "user"
+        );
 
         navigate("/auth", {
           replace: true
@@ -187,10 +263,16 @@ const CoachDiscover = () => {
         return;
       }
 
+      // ==========================================
+      // OTHER ERROR
+      // ==========================================
+
       setError(
-        error.response?.data?.message ||
+        error.response?.data
+          ?.message ||
           "Failed to load athletes."
       );
+
     } finally {
       setLoading(false);
     }
@@ -200,7 +282,9 @@ const CoachDiscover = () => {
   // ATHLETE NAME
   // ==========================================
 
-  const getAthleteName = (athlete) => {
+  const getAthleteName = (
+    athlete
+  ) => {
     return (
       athlete?.user?.name ||
       athlete?.name ||
@@ -212,7 +296,9 @@ const CoachDiscover = () => {
   // PROFILE PIC
   // ==========================================
 
-  const getProfilePic = (athlete) => {
+  const getProfilePic = (
+    athlete
+  ) => {
     return (
       athlete?.user?.profilePic ||
       athlete?.profilePic ||
@@ -224,12 +310,16 @@ const CoachDiscover = () => {
   // LOCATION
   // ==========================================
 
-  const getLocation = (athlete) => {
+  const getLocation = (
+    athlete
+  ) => {
     const city =
-      athlete?.address?.city || "";
+      athlete?.address?.city ||
+      "";
 
     const state =
-      athlete?.address?.state || "";
+      athlete?.address?.state ||
+      "";
 
     if (city && state) {
       return `${city}, ${state}`;
@@ -246,8 +336,12 @@ const CoachDiscover = () => {
   // SKILLS
   // ==========================================
 
-  const getSkills = (athlete) => {
-    return Array.isArray(athlete?.skills)
+  const getSkills = (
+    athlete
+  ) => {
+    return Array.isArray(
+      athlete?.skills
+    )
       ? athlete.skills
       : [];
   };
@@ -256,9 +350,13 @@ const CoachDiscover = () => {
   // CONNECTION STATUS TEXT
   // ==========================================
 
-  const getConnectionStatus = (athlete) => {
+  const getConnectionStatus = (
+    athlete
+  ) => {
     const status =
-      connectionStatuses[athlete._id];
+      connectionStatuses[
+        athlete._id
+      ];
 
     if (status === "accepted") {
       return "Connected";
@@ -275,9 +373,13 @@ const CoachDiscover = () => {
   // CONNECTION STATUS CLASS
   // ==========================================
 
-  const getConnectionStatusClass = (athlete) => {
+  const getConnectionStatusClass = (
+    athlete
+  ) => {
     const status =
-      connectionStatuses[athlete._id];
+      connectionStatuses[
+        athlete._id
+      ];
 
     if (status === "accepted") {
       return "connected";
@@ -320,27 +422,34 @@ const CoachDiscover = () => {
               </h1>
 
               <p>
-                Explore athletes and discover
-                talent across different sports.
+                Explore athletes matching
+                your sport and discover
+                new talent.
               </p>
 
             </div>
 
-            {!loading && !error && (
-              <div className="coach-athletes-count">
+            {!loading &&
+              !error && (
+                <div className="coach-athletes-count">
 
-                <span>
-                  {filteredAthletes.length}
-                </span>
+                  <span>
+                    {
+                      filteredAthletes.length
+                    }
+                  </span>
 
-                <small>
-                  {filteredAthletes.length === 1
-                    ? "Athlete"
-                    : "Athletes"}
-                </small>
+                  <small>
+                    {
+                      filteredAthletes.length ===
+                      1
+                        ? "Athlete"
+                        : "Athletes"
+                    }
+                  </small>
 
-              </div>
-            )}
+                </div>
+              )}
 
           </div>
 
@@ -368,8 +477,8 @@ const CoachDiscover = () => {
               </h2>
 
               <p>
-                Please wait while we load
-                available athletes.
+                Finding athletes matching
+                your sport.
               </p>
 
             </div>
@@ -379,278 +488,309 @@ const CoachDiscover = () => {
               CONTENT
           ====================================== */}
 
-          {!loading && !error && (
-            <>
+          {!loading &&
+            !error && (
+              <>
 
-              {/* ======================================
-                  TOOLBAR
-              ====================================== */}
+                {/* ======================================
+                    TOOLBAR
+                ====================================== */}
 
-              <div className="coach-athletes-toolbar">
+                <div className="coach-athletes-toolbar">
 
-                <div className="coach-athletes-sport">
+                  <div className="coach-athletes-sport">
 
-                  <span>
-                    ATHLETES AVAILABLE
-                  </span>
+                    <span>
+                      ATHLETES AVAILABLE
+                    </span>
 
-                  <strong>
-                    All Sports
-                  </strong>
+                    <strong>
+                      {coachSport ||
+                        "Your Sport"}
+                    </strong>
 
-                </div>
-
-                <div className="coach-athletes-search">
-
-                  <FiSearch size={18} />
-
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) =>
-                      setSearch(e.target.value)
-                    }
-                    placeholder="Search athletes..."
-                  />
-
-                  {search && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSearch("")
-                      }
-                      className="clear-search"
-                    >
-                      ×
-                    </button>
-                  )}
-
-                </div>
-
-              </div>
-
-              {/* ======================================
-                  EMPTY
-              ====================================== */}
-
-              {filteredAthletes.length === 0 && (
-                <div className="coach-athletes-empty">
-
-                  <div className="empty-icon">
-                    <FiUser size={30} />
                   </div>
 
-                  <h2>
-                    No Athletes Found
-                  </h2>
+                  <div className="coach-athletes-search">
 
-                  <p>
-                    Try searching with a
-                    different name, sport,
-                    position, location or skill.
-                  </p>
+                    <FiSearch size={18} />
 
-                  {search && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSearch("")
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) =>
+                        setSearch(
+                          e.target.value
+                        )
                       }
-                    >
-                      Clear Search
-                    </button>
-                  )}
+                      placeholder="Search athletes..."
+                    />
+
+                    {search && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSearch("")
+                        }
+                        className="clear-search"
+                      >
+                        ×
+                      </button>
+                    )}
+
+                  </div>
 
                 </div>
-              )}
 
-              {/* ======================================
-                  ATHLETE GRID
-              ====================================== */}
+                {/* ======================================
+                    EMPTY
+                ====================================== */}
 
-              {filteredAthletes.length > 0 && (
-                <div className="coach-athletes-grid">
+                {filteredAthletes.length ===
+                  0 && (
+                  <div className="coach-athletes-empty">
 
-                  {filteredAthletes.map(
-                    (athlete) => {
+                    <div className="empty-icon">
+                      <FiUser size={30} />
+                    </div>
 
-                      const profilePic =
-                        getProfilePic(
-                          athlete
-                        );
+                    <h2>
+                      No Athletes Found
+                    </h2>
 
-                      const skills =
-                        getSkills(
-                          athlete
-                        );
+                    <p>
+                      {search
+                        ? "Try searching with a different name, position, location or skill."
+                        : coachSport
+                          ? `No athletes found for ${coachSport}.`
+                          : "No matching athletes are available."}
+                    </p>
 
-                      const connectionStatus =
-                        getConnectionStatus(
-                          athlete
-                        );
+                    {search && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSearch("")
+                        }
+                      >
+                        Clear Search
+                      </button>
+                    )}
 
-                      const connectionClass =
-                        getConnectionStatusClass(
-                          athlete
-                        );
+                  </div>
+                )}
 
-                      return (
-                        <div
-                          key={athlete._id}
-                          className="coach-athlete-card"
-                          onClick={() =>
-                            navigate(
-                              `/profile/athlete/${athlete._id}`
-                            )
-                          }
-                        >
+                {/* ======================================
+                    ATHLETE GRID
+                ====================================== */}
 
-                          {/* ==================================
-                              CARD TOP
-                          ================================== */}
+                {filteredAthletes.length >
+                  0 && (
+                  <div className="coach-athletes-grid">
 
-                          <div className="athlete-card-top">
+                    {filteredAthletes.map(
+                      (athlete) => {
 
-                            <div className="athlete-avatar">
+                        const profilePic =
+                          getProfilePic(
+                            athlete
+                          );
 
-                              {profilePic ? (
-                                <img
-                                  src={profilePic}
-                                  alt={getAthleteName(
-                                    athlete
-                                  )}
-                                />
-                              ) : (
-                                <FiUser
-                                  size={25}
-                                />
-                              )}
+                        const skills =
+                          getSkills(
+                            athlete
+                          );
+
+                        const connectionStatus =
+                          getConnectionStatus(
+                            athlete
+                          );
+
+                        const connectionClass =
+                          getConnectionStatusClass(
+                            athlete
+                          );
+
+                        return (
+                          <div
+                            key={
+                              athlete._id
+                            }
+                            className="coach-athlete-card"
+                            onClick={() =>
+                              navigate(
+                                `/profile/athlete/${athlete._id}`
+                              )
+                            }
+                          >
+
+                            {/* ==================================
+                                CARD TOP
+                            ================================== */}
+
+                            <div className="athlete-card-top">
+
+                              <div className="athlete-avatar">
+
+                                {profilePic ? (
+                                  <img
+                                    src={
+                                      profilePic
+                                    }
+                                    alt={getAthleteName(
+                                      athlete
+                                    )}
+                                  />
+                                ) : (
+                                  <FiUser
+                                    size={25}
+                                  />
+                                )}
+
+                              </div>
+
+                              {/* CONNECTION STATUS */}
+
+                              <div
+                                className={`athlete-card-status ${connectionClass}`}
+                              >
+
+                                <span></span>
+
+                                {
+                                  connectionStatus
+                                }
+
+                              </div>
 
                             </div>
 
-                            {/* CONNECTION STATUS */}
+                            {/* ==================================
+                                ATHLETE INFO
+                            ================================== */}
 
-                            <div
-                              className={`athlete-card-status ${connectionClass}`}
-                            >
+                            <div className="athlete-card-info">
 
-                              <span></span>
-
-                              {connectionStatus}
-
-                            </div>
-
-                          </div>
-
-                          {/* ==================================
-                              ATHLETE INFO
-                          ================================== */}
-
-                          <div className="athlete-card-info">
-
-                            <h3>
-                              {getAthleteName(
-                                athlete
-                              )}
-                            </h3>
-
-                            <p className="athlete-position">
-                              {athlete.position ||
-                                "Athlete"}
-                            </p>
-
-                          </div>
-
-                          {/* ==================================
-                              DETAILS
-                          ================================== */}
-
-                          <div className="athlete-card-details">
-
-                            <div className="athlete-detail">
-
-                              <FiAward size={16} />
-
-                              <span>
-                                {athlete.sport ||
-                                  "Sport not available"}
-                              </span>
-
-                            </div>
-
-                            <div className="athlete-detail">
-
-                              <FiMapPin size={16} />
-
-                              <span>
-                                {getLocation(
+                              <h3>
+                                {getAthleteName(
                                   athlete
                                 )}
+                              </h3>
+
+                              <p className="athlete-position">
+                                {
+                                  athlete.position ||
+                                  "Athlete"
+                                }
+                              </p>
+
+                            </div>
+
+                            {/* ==================================
+                                DETAILS
+                            ================================== */}
+
+                            <div className="athlete-card-details">
+
+                              <div className="athlete-detail">
+
+                                <FiAward
+                                  size={16}
+                                />
+
+                                <span>
+                                  {
+                                    athlete.sport ||
+                                    "Sport not available"
+                                  }
+                                </span>
+
+                              </div>
+
+                              <div className="athlete-detail">
+
+                                <FiMapPin
+                                  size={16}
+                                />
+
+                                <span>
+                                  {getLocation(
+                                    athlete
+                                  )}
+                                </span>
+
+                              </div>
+
+                            </div>
+
+                            {/* ==================================
+                                SKILLS
+                            ================================== */}
+
+                            {skills.length >
+                              0 && (
+                              <div className="athlete-skills">
+
+                                {skills
+                                  .slice(
+                                    0,
+                                    3
+                                  )
+                                  .map(
+                                    (
+                                      skill,
+                                      index
+                                    ) => (
+                                      <span
+                                        key={`${skill}-${index}`}
+                                      >
+                                        {
+                                          skill
+                                        }
+                                      </span>
+                                    )
+                                  )}
+
+                                {skills.length >
+                                  3 && (
+                                  <span>
+                                    +
+                                    {
+                                      skills.length -
+                                      3
+                                    }
+                                  </span>
+                                )}
+
+                              </div>
+                            )}
+
+                            {/* ==================================
+                                FOOTER
+                            ================================== */}
+
+                            <div className="athlete-card-footer">
+
+                              <span>
+                                View Profile
+                              </span>
+
+                              <span className="arrow">
+                                →
                               </span>
 
                             </div>
 
                           </div>
+                        );
+                      }
+                    )}
 
-                          {/* ==================================
-                              SKILLS
-                          ================================== */}
+                  </div>
+                )}
 
-                          {skills.length > 0 && (
-                            <div className="athlete-skills">
-
-                              {skills
-                                .slice(0, 3)
-                                .map(
-                                  (
-                                    skill,
-                                    index
-                                  ) => (
-                                    <span
-                                      key={`${skill}-${index}`}
-                                    >
-                                      {skill}
-                                    </span>
-                                  )
-                                )}
-
-                              {skills.length > 3 && (
-                                <span>
-                                  +
-                                  {skills.length -
-                                    3}
-                                </span>
-                              )}
-
-                            </div>
-                          )}
-
-                          {/* ==================================
-                              FOOTER
-                          ================================== */}
-
-                          <div className="athlete-card-footer">
-
-                            <span>
-                              View Profile
-                            </span>
-
-                            <span className="arrow">
-                              →
-                            </span>
-
-                          </div>
-
-                        </div>
-                      );
-                    }
-                  )}
-
-                </div>
-              )}
-
-            </>
-          )}
+              </>
+            )}
 
         </div>
 
@@ -661,3 +801,4 @@ const CoachDiscover = () => {
 };
 
 export default CoachDiscover;
+

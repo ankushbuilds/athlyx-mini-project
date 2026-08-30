@@ -1,10 +1,18 @@
+
 const Athlete = require("../models/athlete.model");
+const User = require("../models/user.model");
+
+// ==========================================
+// CREATE ATHLETE
+// ==========================================
 
 async function createAthlete(req, res) {
     try {
         const userId = req.user.id;
 
-        const existingAthlete = await Athlete.findOne({ user: userId });
+        const existingAthlete = await Athlete.findOne({
+            user: userId
+        });
 
         if (existingAthlete) {
             return res.status(400).json({
@@ -29,7 +37,11 @@ async function createAthlete(req, res) {
             isAvailable
         } = req.body;
 
-        if (!sport || typeof sport !== "string" || !sport.trim()) {
+        if (
+            !sport ||
+            typeof sport !== "string" ||
+            !sport.trim()
+        ) {
             return res.status(400).json({
                 message: "Sport is required"
             });
@@ -37,111 +49,185 @@ async function createAthlete(req, res) {
 
         const athlete = await Athlete.create({
             user: userId,
-            dateOfBirth: dateOfBirth || undefined,
-            gender: gender || undefined,
-            phone: phone || undefined,
+
+            dateOfBirth:
+                dateOfBirth || undefined,
+
+            gender:
+                gender || undefined,
+
+            phone:
+                phone || undefined,
+
             address: {
-                city: address?.city || "",
-                state: address?.state || "",
-                country: address?.country || "India"
+                city:
+                    address?.city || "",
+
+                state:
+                    address?.state || "",
+
+                country:
+                    address?.country || "India"
             },
-            sport: sport.trim(),
-            position: position || undefined,
+
+            sport:
+                sport.trim(),
+
+            position:
+                position || undefined,
+
             experience:
-                experience !== undefined && experience !== ""
+                experience !== undefined &&
+                experience !== ""
                     ? Number(experience)
                     : 0,
-            achievements: Array.isArray(achievements)
-                ? achievements
-                : [],
-            skills: Array.isArray(skills)
-                ? skills
-                : [],
-            bio: bio || undefined,
+
+            achievements:
+                Array.isArray(achievements)
+                    ? achievements
+                    : [],
+
+            skills:
+                Array.isArray(skills)
+                    ? skills
+                    : [],
+
+            bio:
+                bio || undefined,
+
             height:
-                height !== undefined && height !== ""
+                height !== undefined &&
+                height !== ""
                     ? Number(height)
                     : undefined,
+
             weight:
-                weight !== undefined && weight !== ""
+                weight !== undefined &&
+                weight !== ""
                     ? Number(weight)
                     : undefined,
+
             socialLinks: {
-                instagram: socialLinks?.instagram || "",
-                facebook: socialLinks?.facebook || "",
-                youtube: socialLinks?.youtube || ""
+                instagram:
+                    socialLinks?.instagram || "",
+
+                facebook:
+                    socialLinks?.facebook || "",
+
+                youtube:
+                    socialLinks?.youtube || ""
             },
+
             isAvailable:
                 typeof isAvailable === "boolean"
                     ? isAvailable
                     : true
         });
 
-        const populatedAthlete = await Athlete.findById(athlete._id)
-            .populate("user", "name email role profilePic");
+        const populatedAthlete =
+            await Athlete.findById(
+                athlete._id
+            ).populate(
+                "user",
+                "name email role profilePic"
+            );
 
         return res.status(201).json({
-            message: "Athlete profile created successfully",
-            athlete: populatedAthlete
+            message:
+                "Athlete profile created successfully",
+
+            athlete:
+                populatedAthlete
         });
+
     } catch (error) {
-        console.error("Create athlete error:", error);
+        console.error(
+            "Create athlete error:",
+            error
+        );
 
         if (error.code === 11000) {
             return res.status(400).json({
-                message: "Athlete profile already exists"
+                message:
+                    "Athlete profile already exists"
             });
         }
 
         return res.status(500).json({
-            message: "Error creating athlete profile",
-            error: error.message
+            message:
+                "Error creating athlete profile",
+
+            error:
+                error.message
         });
     }
 }
+
+
+// ==========================================
+// GET MY ATHLETE PROFILE
+// ==========================================
 
 async function getMyAthleteProfile(req, res) {
     try {
         const userId = req.user.id;
 
-        const athlete = await Athlete.findOne({
-            user: userId
-        }).populate(
-            "user",
-            "name email role profilePic"
-        );
+        const athlete =
+            await Athlete.findOne({
+                user: userId
+            }).populate(
+                "user",
+                "name email role profilePic"
+            );
 
         if (!athlete) {
             return res.status(404).json({
-                message: "Athlete profile not found"
+                message:
+                    "Athlete profile not found"
             });
         }
 
         return res.status(200).json({
-            message: "Athlete profile fetched successfully",
+            message:
+                "Athlete profile fetched successfully",
+
             athlete
         });
+
     } catch (error) {
-        console.error("Get athlete profile error:", error);
+        console.error(
+            "Get athlete profile error:",
+            error
+        );
 
         return res.status(500).json({
-            message: "Error fetching athlete profile",
-            error: error.message
+            message:
+                "Error fetching athlete profile",
+
+            error:
+                error.message
         });
     }
 }
+
+
+// ==========================================
+// UPDATE MY ATHLETE PROFILE
+// ==========================================
 
 async function updateMyAthleteProfile(req, res) {
     try {
         const userId = req.user.id;
 
-        const athlete = await Athlete.findOne({
-            user: userId
-        });
+        const athlete =
+            await Athlete.findOne({
+                user: userId
+            });
 
         if (!athlete) {
             return res.status(404).json({
-                message: "Athlete profile not found"
+                message:
+                    "Athlete profile not found"
             });
         }
 
@@ -162,14 +248,26 @@ async function updateMyAthleteProfile(req, res) {
             isAvailable
         } = req.body;
 
+        // ==========================================
+        // SPORT VALIDATION
+        // ==========================================
+
         if (
             sport !== undefined &&
-            (typeof sport !== "string" || !sport.trim())
+            (
+                typeof sport !== "string" ||
+                !sport.trim()
+            )
         ) {
             return res.status(400).json({
-                message: "Sport is required"
+                message:
+                    "Sport is required"
             });
         }
+
+        // ==========================================
+        // DATE OF BIRTH
+        // ==========================================
 
         if (dateOfBirth !== undefined) {
             athlete.dateOfBirth =
@@ -178,12 +276,20 @@ async function updateMyAthleteProfile(req, res) {
                     : dateOfBirth;
         }
 
+        // ==========================================
+        // GENDER
+        // ==========================================
+
         if (gender !== undefined) {
             athlete.gender =
                 gender === ""
                     ? undefined
                     : gender;
         }
+
+        // ==========================================
+        // PHONE
+        // ==========================================
 
         if (phone !== undefined) {
             athlete.phone =
@@ -192,16 +298,22 @@ async function updateMyAthleteProfile(req, res) {
                     : phone;
         }
 
+        // ==========================================
+        // ADDRESS
+        // ==========================================
+
         if (address !== undefined) {
             athlete.address = {
                 city:
                     address.city !== undefined
                         ? address.city
                         : athlete.address?.city || "",
+
                 state:
                     address.state !== undefined
                         ? address.state
                         : athlete.address?.state || "",
+
                 country:
                     address.country !== undefined
                         ? address.country
@@ -209,9 +321,18 @@ async function updateMyAthleteProfile(req, res) {
             };
         }
 
+        // ==========================================
+        // SPORT
+        // ==========================================
+
         if (sport !== undefined) {
-            athlete.sport = sport.trim();
+            athlete.sport =
+                sport.trim();
         }
+
+        // ==========================================
+        // POSITION
+        // ==========================================
 
         if (position !== undefined) {
             athlete.position =
@@ -220,12 +341,20 @@ async function updateMyAthleteProfile(req, res) {
                     : position;
         }
 
+        // ==========================================
+        // EXPERIENCE
+        // ==========================================
+
         if (experience !== undefined) {
             athlete.experience =
                 experience === ""
                     ? 0
                     : Number(experience);
         }
+
+        // ==========================================
+        // ACHIEVEMENTS
+        // ==========================================
 
         if (achievements !== undefined) {
             athlete.achievements =
@@ -234,12 +363,20 @@ async function updateMyAthleteProfile(req, res) {
                     : [];
         }
 
+        // ==========================================
+        // SKILLS
+        // ==========================================
+
         if (skills !== undefined) {
             athlete.skills =
                 Array.isArray(skills)
                     ? skills
                     : [];
         }
+
+        // ==========================================
+        // BIO
+        // ==========================================
 
         if (bio !== undefined) {
             athlete.bio =
@@ -248,12 +385,20 @@ async function updateMyAthleteProfile(req, res) {
                     : bio;
         }
 
+        // ==========================================
+        // HEIGHT
+        // ==========================================
+
         if (height !== undefined) {
             athlete.height =
                 height === ""
                     ? undefined
                     : Number(height);
         }
+
+        // ==========================================
+        // WEIGHT
+        // ==========================================
 
         if (weight !== undefined) {
             athlete.weight =
@@ -262,22 +407,32 @@ async function updateMyAthleteProfile(req, res) {
                     : Number(weight);
         }
 
+        // ==========================================
+        // SOCIAL LINKS
+        // ==========================================
+
         if (socialLinks !== undefined) {
             athlete.socialLinks = {
                 instagram:
                     socialLinks.instagram !== undefined
                         ? socialLinks.instagram
                         : athlete.socialLinks?.instagram || "",
+
                 facebook:
                     socialLinks.facebook !== undefined
                         ? socialLinks.facebook
                         : athlete.socialLinks?.facebook || "",
+
                 youtube:
                     socialLinks.youtube !== undefined
                         ? socialLinks.youtube
                         : athlete.socialLinks?.youtube || ""
             };
         }
+
+        // ==========================================
+        // AVAILABILITY
+        // ==========================================
 
         if (isAvailable !== undefined) {
             athlete.isAvailable =
@@ -288,17 +443,22 @@ async function updateMyAthleteProfile(req, res) {
 
         await athlete.save();
 
-        const updatedAthlete = await Athlete.findById(
-            athlete._id
-        ).populate(
-            "user",
-            "name email role profilePic"
-        );
+        const updatedAthlete =
+            await Athlete.findById(
+                athlete._id
+            ).populate(
+                "user",
+                "name email role profilePic"
+            );
 
         return res.status(200).json({
-            message: "Athlete profile updated successfully",
-            athlete: updatedAthlete
+            message:
+                "Athlete profile updated successfully",
+
+            athlete:
+                updatedAthlete
         });
+
     } catch (error) {
         console.error(
             "Update athlete profile error:",
@@ -306,14 +466,19 @@ async function updateMyAthleteProfile(req, res) {
         );
 
         return res.status(500).json({
-            message: "Error updating athlete profile",
-            error: error.message
+            message:
+                "Error updating athlete profile",
+
+            error:
+                error.message
         });
     }
 }
 
 
-
+// ==========================================
+// GET ALL ATHLETES
+// ==========================================
 
 async function getAllAthletes(req, res) {
     try {
@@ -328,9 +493,9 @@ async function getAllAthletes(req, res) {
 
         const filter = {};
 
-        /* ==========================================
-           SPORT FILTER
-           ========================================== */
+        // ==========================================
+        // SPORT FILTER
+        // ==========================================
 
         if (sport && sport.trim()) {
             filter.sport = {
@@ -339,9 +504,9 @@ async function getAllAthletes(req, res) {
             };
         }
 
-        /* ==========================================
-           CITY FILTER
-           ========================================== */
+        // ==========================================
+        // CITY FILTER
+        // ==========================================
 
         if (city && city.trim()) {
             filter["address.city"] = {
@@ -350,9 +515,9 @@ async function getAllAthletes(req, res) {
             };
         }
 
-        /* ==========================================
-           STATE FILTER
-           ========================================== */
+        // ==========================================
+        // STATE FILTER
+        // ==========================================
 
         if (state && state.trim()) {
             filter["address.state"] = {
@@ -361,9 +526,9 @@ async function getAllAthletes(req, res) {
             };
         }
 
-        /* ==========================================
-           POSITION FILTER
-           ========================================== */
+        // ==========================================
+        // POSITION FILTER
+        // ==========================================
 
         if (position && position.trim()) {
             filter.position = {
@@ -372,81 +537,119 @@ async function getAllAthletes(req, res) {
             };
         }
 
-        /* ==========================================
-           EXPERIENCE FILTER
-           ========================================== */
+        // ==========================================
+        // EXPERIENCE FILTER
+        // ==========================================
 
-        if (experience !== undefined && experience !== "") {
-            const experienceValue = Number(experience);
+        if (
+            experience !== undefined &&
+            experience !== ""
+        ) {
+            const experienceValue =
+                Number(experience);
 
-            if (!Number.isNaN(experienceValue)) {
+            if (
+                !Number.isNaN(
+                    experienceValue
+                )
+            ) {
                 filter.experience = {
                     $gte: experienceValue
                 };
             }
         }
 
-        /* ==========================================
-           SEARCH USER + ATHLETE DATA
-           ========================================== */
+        // ==========================================
+        // FETCH ATHLETES
+        // ==========================================
 
-        let athletesQuery = Athlete.find(filter);
-
-        const athletes = await athletesQuery
-            .populate(
-                "user",
-                "name email role profilePic"
-            );
-
-        /* ==========================================
-           SEARCH FILTER
-           ========================================== */
-
-        let filteredAthletes = athletes;
-
-        if (search && search.trim()) {
-            const searchValue = search.trim().toLowerCase();
-
-            filteredAthletes = athletes.filter((athlete) => {
-                const user = athlete.user || {};
-
-                const name = (
-                    user.name || ""
-                ).toLowerCase();
-
-                const athleteSport = (
-                    athlete.sport || ""
-                ).toLowerCase();
-
-                const athletePosition = (
-                    athlete.position || ""
-                ).toLowerCase();
-
-                const city = (
-                    athlete.address?.city || ""
-                ).toLowerCase();
-
-                const state = (
-                    athlete.address?.state || ""
-                ).toLowerCase();
-
-                return (
-                    name.includes(searchValue) ||
-                    athleteSport.includes(searchValue) ||
-                    athletePosition.includes(searchValue) ||
-                    city.includes(searchValue) ||
-                    state.includes(searchValue)
+        const athletes =
+            await Athlete.find(filter)
+                .populate(
+                    "user",
+                    "name email role profilePic"
                 );
-            });
+
+        // ==========================================
+        // SEARCH FILTER
+        // ==========================================
+
+        let filteredAthletes =
+            athletes;
+
+        if (
+            search &&
+            search.trim()
+        ) {
+            const searchValue =
+                search
+                    .trim()
+                    .toLowerCase();
+
+            filteredAthletes =
+                athletes.filter(
+                    (athlete) => {
+                        const user =
+                            athlete.user || {};
+
+                        const name =
+                            (
+                                user.name || ""
+                            ).toLowerCase();
+
+                        const athleteSport =
+                            (
+                                athlete.sport || ""
+                            ).toLowerCase();
+
+                        const athletePosition =
+                            (
+                                athlete.position || ""
+                            ).toLowerCase();
+
+                        const city =
+                            (
+                                athlete.address?.city ||
+                                ""
+                            ).toLowerCase();
+
+                        const state =
+                            (
+                                athlete.address?.state ||
+                                ""
+                            ).toLowerCase();
+
+                        return (
+                            name.includes(
+                                searchValue
+                            ) ||
+
+                            athleteSport.includes(
+                                searchValue
+                            ) ||
+
+                            athletePosition.includes(
+                                searchValue
+                            ) ||
+
+                            city.includes(
+                                searchValue
+                            ) ||
+
+                            state.includes(
+                                searchValue
+                            )
+                        );
+                    }
+                );
         }
 
-        /* ==========================================
-           RESPONSE
-           ========================================== */
-
         return res.status(200).json({
-            count: filteredAthletes.length,
-            athletes: filteredAthletes
+            count:
+                filteredAthletes.length,
+
+            athletes:
+                filteredAthletes
         });
 
     } catch (error) {
@@ -456,12 +659,123 @@ async function getAllAthletes(req, res) {
         );
 
         return res.status(500).json({
-            message: "Error fetching athletes",
-            error: error.message
+            message:
+                "Error fetching athletes",
+
+            error:
+                error.message
         });
     }
 }
 
+
+// ==========================================
+// GET ATHLETES MATCHING LOGGED-IN COACH SPORT
+// ==========================================
+
+async function getMatchingAthletes(req, res) {
+    try {
+        const userId = req.user.id;
+
+        // ==========================================
+        // GET LOGGED-IN USER / COACH
+        // ==========================================
+
+        const coach =
+            await User.findById(
+                userId
+            ).select(
+                "name email role sport profilePic"
+            );
+
+        if (!coach) {
+            return res.status(404).json({
+                success: false,
+                message:
+                    "Coach not found"
+            });
+        }
+
+        // ==========================================
+        // VERIFY COACH ROLE
+        // ==========================================
+
+        if (coach.role !== "coach") {
+            return res.status(403).json({
+                success: false,
+                message:
+                    "Only coaches can access matching athletes"
+            });
+        }
+
+        // ==========================================
+        // VERIFY COACH SPORT
+        // ==========================================
+
+        if (
+            !coach.sport ||
+            !coach.sport.trim()
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Coach sport is not available"
+            });
+        }
+
+        // ==========================================
+        // FIND ATHLETES WITH SAME SPORT
+        // ==========================================
+
+        const athletes =
+            await Athlete.find({
+                sport: {
+                    $regex:
+                        `^${coach.sport.trim()}$`,
+                    $options: "i"
+                }
+            }).populate(
+                "user",
+                "name email role profilePic"
+            );
+
+        // ==========================================
+        // RESPONSE
+        // ==========================================
+
+        return res.status(200).json({
+            success: true,
+
+            sport:
+                coach.sport.trim(),
+
+            count:
+                athletes.length,
+
+            athletes
+        });
+
+    } catch (error) {
+        console.error(
+            "Get matching athletes error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Error fetching matching athletes",
+
+            error:
+                error.message
+        });
+    }
+}
+
+
+// ==========================================
+// GET ATHLETE BY ID
+// ==========================================
 
 async function getAthleteById(req, res) {
     try {
@@ -470,26 +784,30 @@ async function getAthleteById(req, res) {
             req.user.role !== "athlete"
         ) {
             return res.status(403).json({
-                message: "You are not allowed to view athlete profiles"
+                message:
+                    "You are not allowed to view athlete profiles"
             });
         }
 
-        const athlete = await Athlete.findById(
-            req.params.id
-        ).populate(
-            "user",
-            "name email role profilePic"
-        );
+        const athlete =
+            await Athlete.findById(
+                req.params.id
+            ).populate(
+                "user",
+                "name email role profilePic"
+            );
 
         if (!athlete) {
             return res.status(404).json({
-                message: "Athlete not found"
+                message:
+                    "Athlete not found"
             });
         }
 
         return res.status(200).json({
             athlete
         });
+
     } catch (error) {
         console.error(
             "Get athlete by ID error:",
@@ -497,16 +815,26 @@ async function getAthleteById(req, res) {
         );
 
         return res.status(500).json({
-            message: "Error fetching athlete",
-            error: error.message
+            message:
+                "Error fetching athlete",
+
+            error:
+                error.message
         });
     }
 }
+
+
+// ==========================================
+// EXPORTS
+// ==========================================
 
 module.exports = {
     createAthlete,
     getMyAthleteProfile,
     updateMyAthleteProfile,
     getAllAthletes,
+    getMatchingAthletes,
     getAthleteById
 };
+

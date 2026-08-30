@@ -482,6 +482,37 @@ async function markMessagesAsRead(req, res) {
         });
     }
 }
+// ======================================================
+// GET TOTAL UNREAD MESSAGE COUNT
+// ======================================================
+
+async function getUnreadMessageCount(req, res) {
+    try {
+        const userId = req.user.id;
+
+        const unreadCount = await Message.countDocuments({
+            receiver: userId,
+            read: false
+        });
+
+        return res.status(200).json({
+            success: true,
+            unreadCount
+        });
+
+    } catch (error) {
+        console.error(
+            "Get unread message count error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to get unread message count",
+            error: error.message
+        });
+    }
+}
 
 
 // ======================================================
@@ -493,5 +524,6 @@ module.exports = {
     getMyConversations,
     getConversationMessages,
     sendMessage,
-    markMessagesAsRead
+    markMessagesAsRead,
+    getUnreadMessageCount
 };

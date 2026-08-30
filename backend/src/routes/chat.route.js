@@ -3,7 +3,6 @@ const express = require("express");
 const router = express.Router();
 
 const chatController = require("../controllers/chat.controller");
-
 const authMiddleware = require("../middleware/auth.middleware");
 
 // ======================================================
@@ -22,6 +21,17 @@ router.get(
     "/conversations",
     authMiddleware,
     chatController.getMyConversations
+);
+
+// ======================================================
+// UNREAD MESSAGE NOTIFICATION
+// ======================================================
+
+// Get total unread messages for logged-in user
+router.get(
+    "/unread-count",
+    authMiddleware,
+    chatController.getUnreadMessageCount
 );
 
 // ======================================================

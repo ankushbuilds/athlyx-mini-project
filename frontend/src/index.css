@@ -8864,3 +8864,115 @@ body {
     }
 }
 
+
+/* ==========================================================
+   ATHLETE SIDEBAR - MESSAGE NOTIFICATION BADGE
+   FINAL VERSION
+ 
+   ========================================================== */
+
+/* ----------------------------------------------------------
+   SIDEBAR ITEM POSITIONING
+   ---------------------------------------------------------- */
+
+.sidebar-icon-only .sidebar-item {
+    position: relative;
+}
+
+
+/* ----------------------------------------------------------
+   MESSAGE ICON WRAPPER
+   ---------------------------------------------------------- */
+
+.sidebar-icon-only .sidebar-message-icon {
+    position: relative;
+
+    width: 22px;
+    height: 22px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+}
+
+
+/* ----------------------------------------------------------
+   MESSAGE NOTIFICATION BADGE
+   ---------------------------------------------------------- */
+
+.sidebar-icon-only .sidebar-message-badge {
+    position: absolute;
+
+    top: -9px;
+    right: -11px;
+
+    min-width: 18px;
+    height: 18px;
+
+    padding: 0 4px;
+
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+
+    /* Badge appearance */
+    background: #c49a6c !important;
+    color: #080b10 !important;
+
+    border: 2px solid #080b10;
+    border-radius: 999px;
+
+    /* Number appearance */
+    font-family: Arial, sans-serif !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    text-align: center;
+
+    white-space: nowrap;
+
+    /* Prevent inherited box/text problems */
+    box-sizing: border-box;
+
+    /* Keep badge above icon */
+    z-index: 9999;
+
+    /* ------------------------------------------------------
+       IMPORTANT: PREVENT TYPING / CARET / TEXT SELECTION
+       ------------------------------------------------------ */
+
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+
+    caret-color: transparent !important;
+
+    /* Badge should never behave like an input/text element */
+    pointer-events: none;
+
+    cursor: default;
+
+    /* Prevent accidental text decoration */
+    text-decoration: none !important;
+
+    /* Prevent unwanted inherited spacing */
+    letter-spacing: 0 !important;
+    word-spacing: 0 !important;
+}
+
+
+/* ----------------------------------------------------------
+   EXTRA SAFETY FOR BADGE CONTENT
+   ---------------------------------------------------------- */
+
+.sidebar-icon-only .sidebar-message-badge::selection {
+    background: transparent;
+}
+
+.sidebar-icon-only .sidebar-message-badge::-moz-selection {
+    background: transparent;
+}
+
