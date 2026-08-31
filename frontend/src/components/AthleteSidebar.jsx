@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -11,7 +10,8 @@ import {
   FiSettings,
   FiAward,
   FiUsers,
-  FiMessageCircle
+  FiMessageCircle,
+  FiTarget
 } from "react-icons/fi";
 
 const API = "http://localhost:5000/api";
@@ -74,8 +74,6 @@ const AthleteSidebar = () => {
         if (isMounted) {
           setUnreadCount(count);
 
-          // Save latest count so it survives
-          // sidebar remounts / route changes
           localStorage.setItem(
             UNREAD_COUNT_KEY,
             String(count)
@@ -89,16 +87,10 @@ const AthleteSidebar = () => {
       }
     };
 
-    // ====================================================
-    // INITIAL FETCH
-    // ====================================================
-
+    // Initial fetch
     fetchUnreadCount();
 
-    // ====================================================
-    // CHECK FOR NEW MESSAGES EVERY 5 SECONDS
-    // ====================================================
-
+    // Check for new messages every 5 seconds
     const interval = setInterval(
       fetchUnreadCount,
       5000
@@ -135,6 +127,7 @@ const AthleteSidebar = () => {
         <FiGrid size={22} />
       </div>
 
+
       {/* ==================================================
           MY PROFILE
       ================================================== */}
@@ -152,6 +145,7 @@ const AthleteSidebar = () => {
       >
         <FiUser size={22} />
       </div>
+
 
       {/* ==================================================
           DISCOVER
@@ -171,6 +165,7 @@ const AthleteSidebar = () => {
         <FiCompass size={22} />
       </div>
 
+
       {/* ==================================================
           OPPORTUNITIES
       ================================================== */}
@@ -188,6 +183,7 @@ const AthleteSidebar = () => {
       >
         <FiBriefcase size={22} />
       </div>
+
 
       {/* ==================================================
           SHOWCASE
@@ -207,6 +203,26 @@ const AthleteSidebar = () => {
         <FiAward size={22} />
       </div>
 
+
+      {/* ==================================================
+          CHALLENGES
+      ================================================== */}
+
+      <div
+        className={`sidebar-item ${
+          isActive("/athlete/challenges")
+            ? "active"
+            : ""
+        }`}
+        data-tooltip="Challenges"
+        onClick={() =>
+          navigate("/athlete/challenges")
+        }
+      >
+        <FiTarget size={22} />
+      </div>
+
+
       {/* ==================================================
           CONNECTIONS
       ================================================== */}
@@ -224,6 +240,7 @@ const AthleteSidebar = () => {
       >
         <FiUsers size={22} />
       </div>
+
 
       {/* ==================================================
           MESSAGES
@@ -259,6 +276,7 @@ const AthleteSidebar = () => {
         </div>
       </div>
 
+
       {/* ==================================================
           SETTINGS
       ================================================== */}
@@ -282,4 +300,3 @@ const AthleteSidebar = () => {
 };
 
 export default AthleteSidebar;
-

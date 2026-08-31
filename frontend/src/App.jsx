@@ -21,6 +21,7 @@ import AthleteDiscover from "./pages/Athlete-Pages/Discover";
 import Opportunities from "./pages/Athlete-Pages/Opportunities";
 import Showcase from "./pages/Athlete-Pages/Showcase";
 import AthleteConnections from "./pages/Athlete-Pages/AthleteConnections";
+import Challenges from "./pages/Athlete-Pages/Challenges";
 
 // ==========================================
 // COACH PAGES
@@ -140,7 +141,10 @@ const App = () => {
           path="/athlete/messages"
           element={<Messages />}
         />
-
+        <Route
+          path="/athlete/challenges"
+          element={<Challenges />}
+        />
         {/* ==========================================
             COACH ROUTES
         ========================================== */}
