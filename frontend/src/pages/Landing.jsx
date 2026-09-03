@@ -46,7 +46,7 @@ const Landing = () => {
         <div className="landing-title">
           <h1>
             {animatedTitle}
-            <span className="typewriter-cursor">|</span>
+           
           </h1>
 
           {isComplete && (

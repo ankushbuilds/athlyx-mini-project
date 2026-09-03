@@ -426,7 +426,8 @@ const updateChallengeProgress = async (req, res) => {
            ====================================================== */
 
         await athleteChallenge.save();
-
+        console.log("UPDATED FROM BACKEND:", athleteChallenge);
+console.log("UPDATED PROGRESS:", athleteChallenge.progress);
 
         /* ======================================================
            RESPONSE

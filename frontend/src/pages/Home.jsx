@@ -29,7 +29,7 @@ const Home = () => {
                 className="primary-btn"
                 onClick={() => navigate("/auth")}
               >
-                Get Started
+              Join Athlyx
               </button>
 
               <button
@@ -220,7 +220,7 @@ const Home = () => {
           </p>
 
           <button onClick={() => navigate("/auth")}>
-            Get Started
+            Join Now
           </button>
         </section>
       </main>

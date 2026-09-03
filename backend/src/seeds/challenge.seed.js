@@ -1,51 +1,58 @@
 const mongoose = require("mongoose");
 const Challenge = require("../models/challenge.model");
+const AthleteChallenge = require("../models/athleteChallenge.model");
+
 require("dotenv").config();
 
 const challenges = [
     {
-        title: "100 Push-ups",
-        description: "Complete 100 push-ups during the week.",
+        title: "1000 Push-ups",
+        description:
+            "Complete 1000 push-ups throughout the week.",
         category: "Strength",
-        target: 100,
-        unit: "reps",
-        difficulty: "Easy",
-        xpReward: 50
-    },
-
-    {
-        title: "200 Squats",
-        description: "Complete 200 bodyweight squats during the week.",
-        category: "Strength",
-        target: 200,
+        target: 1000,
         unit: "reps",
         difficulty: "Medium",
         xpReward: 100
     },
 
     {
-        title: "10 KM Running",
-        description: "Complete a total of 10 kilometers of running during the week.",
+        title: "1000 Squats",
+        description:
+            "Complete 1000 bodyweight squats throughout the week.",
+        category: "Strength",
+        target: 1000,
+        unit: "reps",
+        difficulty: "Medium",
+        xpReward: 100
+    },
+
+    {
+        title: "25 KM Running",
+        description:
+            "Complete a total of 25 kilometers of running throughout the week.",
         category: "Endurance",
-        target: 10,
+        target: 25,
         unit: "km",
         difficulty: "Medium",
-        xpReward: 100
+        xpReward: 120
     },
 
     {
-        title: "60 Minutes Stretching",
-        description: "Complete 60 minutes of stretching during the week.",
+        title: "150 Minutes Stretching",
+        description:
+            "Complete 150 minutes of stretching throughout the week.",
         category: "Flexibility",
-        target: 60,
+        target: 150,
         unit: "minutes",
-        difficulty: "Easy",
-        xpReward: 50
+        difficulty: "Medium",
+        xpReward: 100
     },
 
     {
         title: "5 Active Days",
-        description: "Stay physically active for at least 5 days this week.",
+        description:
+            "Stay physically active for at least 5 days this week.",
         category: "Consistency",
         target: 5,
         unit: "days",
@@ -54,48 +61,42 @@ const challenges = [
     },
 
     {
-        title: "50,000 Steps",
-        description: "Complete 50,000 steps throughout the week.",
+        title: "100000 Steps",
+        description:
+            "Complete 100,000 steps throughout the week.",
         category: "Endurance",
-        target: 50000,
+        target: 100000,
         unit: "steps",
         difficulty: "Hard",
         xpReward: 150
     },
 
     {
-        title: "5-Minute Plank",
-        description: "Complete a total of 5 minutes of plank exercises.",
+        title: "100-Minute Plank",
+        description:
+            "Complete a total of 100 minutes of plank exercises throughout the week.",
         category: "Strength",
-        target: 300,
+        target: 6000,
         unit: "seconds",
         difficulty: "Hard",
         xpReward: 150
     },
 
     {
-        title: "3 Recovery Sessions",
-        description: "Complete 3 recovery or mobility sessions during the week.",
+        title: "4 Recovery Sessions",
+        description:
+            "Complete 4 recovery or mobility sessions during the week.",
         category: "Recovery",
-        target: 3,
+        target: 4,
         unit: "days",
-        difficulty: "Easy",
-        xpReward: 50
-    },
-
-    {
-        title: "120 Minutes Training",
-        description: "Complete at least 120 minutes of physical training this week.",
-        category: "Consistency",
-        target: 120,
-        unit: "minutes",
         difficulty: "Medium",
         xpReward: 100
     },
 
     {
         title: "7 Days Hydration",
-        description: "Maintain your daily hydration goal for all 7 days.",
+        description:
+            "Meet your daily hydration goal for all 7 days of the week.",
         category: "Wellness",
         target: 7,
         unit: "days",
@@ -110,20 +111,59 @@ const seedChallenges = async () => {
 
         console.log("MongoDB connected.");
 
-        await Challenge.deleteMany({});
+        // =====================================================
+        // DELETE OLD ATHLETE CHALLENGE ASSIGNMENTS
+        // =====================================================
 
-        await Challenge.insertMany(challenges);
+        const deletedAssignments =
+            await AthleteChallenge.deleteMany({});
 
-        console.log(`${challenges.length} challenges inserted successfully.`);
+        console.log(
+            `${deletedAssignments.deletedCount} old athlete challenge assignments deleted.`
+        );
+
+        // =====================================================
+        // DELETE OLD CHALLENGES
+        // =====================================================
+
+        const deletedChallenges =
+            await Challenge.deleteMany({});
+
+        console.log(
+            `${deletedChallenges.deletedCount} old challenges deleted.`
+        );
+
+        // =====================================================
+        // INSERT NEW CHALLENGES
+        // =====================================================
+
+        const insertedChallenges =
+            await Challenge.insertMany(challenges);
+
+        console.log(
+            `${insertedChallenges.length} challenges inserted successfully.`
+        );
+
+        // =====================================================
+        // CLOSE CONNECTION
+        // =====================================================
 
         await mongoose.connection.close();
 
         console.log("MongoDB connection closed.");
-        process.exit(0);
-    } catch (error) {
-        console.error("Challenge seeding failed:", error);
 
-        await mongoose.connection.close();
+        process.exit(0);
+
+    } catch (error) {
+
+        console.error(
+            "Challenge seeding failed:",
+            error
+        );
+
+        if (mongoose.connection.readyState !== 0) {
+            await mongoose.connection.close();
+        }
 
         process.exit(1);
     }

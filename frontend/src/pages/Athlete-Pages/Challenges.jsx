@@ -6,7 +6,6 @@ import AthleteSidebar from "../../components/AthleteSidebar";
 const API = "http://localhost:5000/api";
 
 const Challenges = () => {
-
     const [challenges, setChallenges] = useState([]);
     const [stats, setStats] = useState(null);
 
@@ -17,7 +16,25 @@ const Challenges = () => {
     const [error, setError] = useState("");
 
     // ======================================================
-    // FETCH CHALLENGES + STATS
+    // AUTH CONFIG
+    // ======================================================
+
+    const getAuthConfig = () => {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            throw new Error("Please login again.");
+        }
+
+        return {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        };
+    };
+
+    // ======================================================
+    // FETCH CHALLENGES
     // ======================================================
 
     const fetchChallenges = async () => {
@@ -25,54 +42,56 @@ const Challenges = () => {
             setLoading(true);
             setError("");
 
-            const token = localStorage.getItem("token");
+            const config = getAuthConfig();
 
-            if (!token) {
-                setError("Please login again.");
-                return;
-            }
-
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            };
-
-            const [
-                challengeResponse,
-                statsResponse
-            ] = await Promise.all([
-                axios.get(
-                    `${API}/challenges/weekly`,
-                    config
-                ),
-                axios.get(
-                    `${API}/challenges/stats`,
-                    config
-                )
-            ]);
+            const [challengeResponse, statsResponse] =
+                await Promise.all([
+                    axios.get(
+                        `${API}/challenges/weekly`,
+                        config
+                    ),
+                    axios.get(
+                        `${API}/challenges/stats`,
+                        config
+                    )
+                ]);
 
             const weeklyChallenges =
-                challengeResponse.data.challenges || [];
+                challengeResponse.data?.challenges || [];
 
-            setChallenges(weeklyChallenges);
+            /*
+             * Remove broken assignments whose challenge
+             * was deleted from the Challenge collection.
+             *
+             * This prevents:
+             * Cannot read properties of null
+             */
+
+            const validChallenges =
+                weeklyChallenges.filter(
+                    (item) => item?.challenge
+                );
+
+            setChallenges(validChallenges);
 
             setStats(
-                statsResponse.data.stats || null
+                statsResponse.data?.stats || null
             );
 
-            // Keep input values synced with backend
+            // ==================================================
+            // SYNC INPUT VALUES
+            // ==================================================
+
             const initialProgress = {};
 
-            weeklyChallenges.forEach((item) => {
+            validChallenges.forEach((item) => {
                 initialProgress[item._id] =
-                    item.progress;
+                    item.progress ?? 0;
             });
 
             setProgressValues(initialProgress);
 
         } catch (error) {
-
             console.error(
                 "Fetch challenges error:",
                 error
@@ -80,6 +99,7 @@ const Challenges = () => {
 
             setError(
                 error.response?.data?.message ||
+                error.message ||
                 "Failed to load challenges."
             );
 
@@ -88,69 +108,108 @@ const Challenges = () => {
         }
     };
 
+    // ======================================================
+    // INITIAL LOAD
+    // ======================================================
 
     useEffect(() => {
         fetchChallenges();
     }, []);
 
-
     // ======================================================
     // PROGRESS PERCENTAGE
     // ======================================================
 
-    const getProgressPercentage = (challenge) => {
+    const getProgressPercentage = (item) => {
+        if (!item?.challenge) {
+            return 0;
+        }
 
-        if (!challenge.challenge?.target) {
+        const target = Number(
+            item.challenge.target
+        );
+
+        const progress = Number(
+            item.progress || 0
+        );
+
+        if (!target || target <= 0) {
             return 0;
         }
 
         return Math.min(
-            (challenge.progress /
-                challenge.challenge.target) *
-                100,
+            (progress / target) * 100,
             100
         );
     };
 
-
     // ======================================================
-    // HANDLE PROGRESS INPUT
+    // HANDLE INPUT CHANGE
     // ======================================================
 
     const handleProgressChange = (
         assignmentId,
         value
     ) => {
-
         setProgressValues((previous) => ({
             ...previous,
             [assignmentId]: value
         }));
-    };
 
+        setError("");
+    };
 
     // ======================================================
     // UPDATE PROGRESS
     // ======================================================
 
     const handleUpdateProgress = async (item) => {
-
         try {
+            setError("");
 
-            const token = localStorage.getItem("token");
-
-            if (!token) {
-                setError("Please login again.");
+            // Safety check
+            if (!item?.challenge?._id) {
+                setError(
+                    "Challenge information is missing. Please refresh the page."
+                );
                 return;
             }
 
-            const value = Number(
-                progressValues[item._id]
-            );
+            const config = getAuthConfig();
+
+            const rawValue =
+                progressValues[item._id];
+
+            // ==================================================
+            // EMPTY INPUT
+            // ==================================================
+
+            if (
+                rawValue === "" ||
+                rawValue === undefined ||
+                rawValue === null
+            ) {
+                setError(
+                    "Please enter your progress."
+                );
+                return;
+            }
+
+            const value = Number(rawValue);
+
+            const currentProgress =
+                Number(item.progress || 0);
+
+            const target =
+                Number(item.challenge.target);
+
+            // ==================================================
+            // VALIDATE NUMBER
+            // ==================================================
 
             if (
                 Number.isNaN(value) ||
-                value < 0
+                !Number.isFinite(value)
             ) {
                 setError(
                     "Please enter a valid progress value."
@@ -158,74 +217,202 @@ const Challenges = () => {
                 return;
             }
 
+            // ==================================================
+            // NEGATIVE VALUE
+            // ==================================================
+
+            if (value < 0) {
+                setError(
+                    "Progress cannot be negative."
+                );
+                return;
+            }
+
+            // ==================================================
+            // PREVENT DECREASING PROGRESS
+            // ==================================================
+
+            if (value < currentProgress) {
+                setError(
+                    `Progress cannot be less than your current progress (${currentProgress}).`
+                );
+                return;
+            }
+
+            // ==================================================
+            // PREVENT EXCEEDING TARGET
+            // ==================================================
+
+            if (value > target) {
+                setError(
+                    `Progress cannot exceed the target of ${target}.`
+                );
+                return;
+            }
+
+            // ==================================================
+            // SET UPDATING STATE
+            // ==================================================
+
             setUpdating((previous) => ({
                 ...previous,
                 [item._id]: true
             }));
+
+            console.log(
+                "================================"
+            );
+
+            console.log(
+                "Updating challenge:",
+                item.challenge._id
+            );
+
+            console.log(
+                "Assignment ID:",
+                item._id
+            );
+
+            console.log(
+                "Current progress:",
+                currentProgress
+            );
+
+            console.log(
+                "New progress:",
+                value
+            );
+
+            console.log(
+                "Target:",
+                target
+            );
+
+            console.log(
+                "Request body:",
+                {
+                    progress: value
+                }
+            );
+
+            console.log(
+                "================================"
+            );
+
+            // ==================================================
+            // SEND UPDATE REQUEST
+            // ==================================================
 
             const response = await axios.put(
                 `${API}/challenges/${item.challenge._id}/progress`,
                 {
                     progress: value
                 },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
+                config
             );
+
+            console.log(
+                "Backend update response:",
+                response.data
+            );
+
+            // ==================================================
+            // GET UPDATED ASSIGNMENT
+            // ==================================================
 
             const updatedChallenge =
-                response.data.challenge;
+                response.data?.challenge;
 
-            // Update only the changed challenge
+            if (!updatedChallenge) {
+                throw new Error(
+                    "Updated challenge was not returned by server."
+                );
+            }
+
+            /*
+             * The backend should return the populated
+             * challenge object.
+             *
+             * If it does not, keep the old challenge
+             * object so the UI doesn't crash.
+             */
+
+            const normalizedChallenge = {
+                ...updatedChallenge,
+                challenge:
+                    updatedChallenge.challenge ||
+                    item.challenge
+            };
+
+            // ==================================================
+            // UPDATE CHALLENGE IN STATE
+            // ==================================================
+
             setChallenges((previous) =>
-                previous.map((challenge) =>
-                    challenge._id === item._id
-                        ? updatedChallenge
-                        : challenge
+                previous.map((existingItem) =>
+                    existingItem._id === item._id
+                        ? normalizedChallenge
+                        : existingItem
                 )
             );
+
+            // ==================================================
+            // UPDATE INPUT
+            // ==================================================
 
             setProgressValues((previous) => ({
                 ...previous,
                 [item._id]:
-                    updatedChallenge.progress
+                    normalizedChallenge.progress ?? value
             }));
 
-            // Refresh stats because completion
-            // can change XP / completed count / streak
+            // ==================================================
+            // REFRESH STATS
+            // ==================================================
+
             const statsResponse =
                 await axios.get(
                     `${API}/challenges/stats`,
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${token}`
-                        }
-                    }
+                    config
                 );
 
             setStats(
-                statsResponse.data.stats || null
+                statsResponse.data?.stats || null
             );
 
-            setError("");
+            // ==================================================
+            // SUCCESS MESSAGE
+            // ==================================================
+
+            if (
+                normalizedChallenge.status ===
+                "completed"
+            ) {
+                setError(
+                    "Challenge completed successfully! 🎉"
+                );
+            } else {
+                setError("");
+            }
 
         } catch (error) {
-
             console.error(
                 "Update challenge progress error:",
                 error
             );
 
+            console.error(
+                "Backend response:",
+                error.response?.data
+            );
+
             setError(
                 error.response?.data?.message ||
+                error.message ||
                 "Failed to update challenge progress."
             );
 
         } finally {
-
             setUpdating((previous) => ({
                 ...previous,
                 [item._id]: false
@@ -233,6 +420,9 @@ const Challenges = () => {
         }
     };
 
+    // ======================================================
+    // RENDER
+    // ======================================================
 
     return (
         <div className="dashboard-layout">
@@ -250,14 +440,17 @@ const Challenges = () => {
                     <div className="challenges-header">
 
                         <div>
+
                             <h1>
                                 Weekly Challenges
                             </h1>
 
                             <p>
-                                Stay active, complete challenges
-                                and earn XP every week.
+                                Stay active, complete
+                                challenges and earn XP
+                                every week.
                             </p>
+
                         </div>
 
                     </div>
@@ -268,6 +461,7 @@ const Challenges = () => {
                     ===================================== */}
 
                     {stats && (
+
                         <div className="challenge-stats">
 
                             <div className="challenge-stat-card">
@@ -277,7 +471,7 @@ const Challenges = () => {
                                 </span>
 
                                 <strong>
-                                    {stats.totalXP}
+                                    {stats.totalXP ?? 0}
                                 </strong>
 
                             </div>
@@ -290,7 +484,7 @@ const Challenges = () => {
                                 </span>
 
                                 <strong>
-                                    {stats.challengesCompleted}
+                                    {stats.challengesCompleted ?? 0}
                                 </strong>
 
                             </div>
@@ -303,7 +497,7 @@ const Challenges = () => {
                                 </span>
 
                                 <strong>
-                                    {stats.currentStreak}
+                                    {stats.currentStreak ?? 0}
                                 </strong>
 
                             </div>
@@ -316,23 +510,26 @@ const Challenges = () => {
                                 </span>
 
                                 <strong>
-                                    {stats.longestStreak}
+                                    {stats.longestStreak ?? 0}
                                 </strong>
 
                             </div>
 
                         </div>
+
                     )}
 
 
                     {/* =====================================
-                        ERROR
+                        ERROR / SUCCESS
                     ===================================== */}
 
                     {!loading && error && (
+
                         <div className="challenges-error">
                             {error}
                         </div>
+
                     )}
 
 
@@ -341,9 +538,11 @@ const Challenges = () => {
                     ===================================== */}
 
                     {loading && (
+
                         <div className="challenges-loading">
                             Loading challenges...
                         </div>
+
                     )}
 
 
@@ -362,11 +561,12 @@ const Challenges = () => {
                                 </h3>
 
                                 <p>
-                                    Check back later for new
-                                    weekly challenges.
+                                    Check back later for
+                                    new weekly challenges.
                                 </p>
 
                             </div>
+
                         )}
 
 
@@ -380,6 +580,16 @@ const Challenges = () => {
                             <div className="challenges-grid">
 
                                 {challenges.map((item) => {
+
+                                    /*
+                                     * Extra safety:
+                                     * If somehow challenge becomes
+                                     * null, don't render that card.
+                                     */
+
+                                    if (!item?.challenge) {
+                                        return null;
+                                    }
 
                                     const challenge =
                                         item.challenge;
@@ -396,9 +606,12 @@ const Challenges = () => {
                                     const currentValue =
                                         progressValues[
                                             item._id
-                                        ] ?? item.progress;
+                                        ] ??
+                                        item.progress ??
+                                        0;
 
                                     return (
+
                                         <div
                                             className={`challenge-card ${
                                                 completed
@@ -408,30 +621,39 @@ const Challenges = () => {
                                             key={item._id}
                                         >
 
-                                            {/* CATEGORY */}
+                                            {/* =================================
+                                                CATEGORY + DIFFICULTY
+                                            ================================= */}
 
                                             <div className="challenge-card-top">
 
                                                 <span className="challenge-category">
-                                                    {
-                                                        challenge.category
-                                                    }
+
+                                                    {challenge.category}
+
                                                 </span>
+
 
                                                 <span
                                                     className={`challenge-difficulty ${
-                                                        challenge.difficulty?.toLowerCase()
+                                                        challenge.difficulty
+                                                            ?.toLowerCase() ||
+                                                        ""
                                                     }`}
                                                 >
+
                                                     {
                                                         challenge.difficulty
                                                     }
+
                                                 </span>
 
                                             </div>
 
 
-                                            {/* TITLE */}
+                                            {/* =================================
+                                                TITLE
+                                            ================================= */}
 
                                             <h2>
                                                 {
@@ -440,7 +662,9 @@ const Challenges = () => {
                                             </h2>
 
 
-                                            {/* DESCRIPTION */}
+                                            {/* =================================
+                                                DESCRIPTION
+                                            ================================= */}
 
                                             <p>
                                                 {
@@ -449,12 +673,17 @@ const Challenges = () => {
                                             </p>
 
 
-                                            {/* TARGET */}
+                                            {/* =================================
+                                                TARGET
+                                            ================================= */}
 
                                             <div className="challenge-target">
 
                                                 <strong>
-                                                    {item.progress}
+                                                    {
+                                                        item.progress ??
+                                                        0
+                                                    }
                                                 </strong>
 
                                                 <span>
@@ -470,7 +699,9 @@ const Challenges = () => {
                                             </div>
 
 
-                                            {/* PROGRESS */}
+                                            {/* =================================
+                                                PROGRESS BAR
+                                            ================================= */}
 
                                             <div className="challenge-progress">
 
@@ -486,19 +717,25 @@ const Challenges = () => {
 
                                                 </div>
 
+
                                                 <span>
-                                                    {Math.round(
-                                                        percentage
-                                                    )}
+                                                    {
+                                                        Math.round(
+                                                            percentage
+                                                        )
+                                                    }
                                                     %
                                                 </span>
 
                                             </div>
 
 
-                                            {/* UPDATE PROGRESS */}
+                                            {/* =================================
+                                                UPDATE PROGRESS
+                                            ================================= */}
 
                                             {!completed && (
+
                                                 <div className="challenge-update">
 
                                                     <input
@@ -519,6 +756,7 @@ const Challenges = () => {
                                                         placeholder="Enter progress"
                                                     />
 
+
                                                     <button
                                                         type="button"
                                                         onClick={() =>
@@ -532,44 +770,61 @@ const Challenges = () => {
                                                             ]
                                                         }
                                                     >
-                                                        {updating[
-                                                            item._id
-                                                        ]
-                                                            ? "Updating..."
-                                                            : "Update Progress"}
+
+                                                        {
+                                                            updating[
+                                                                item._id
+                                                            ]
+                                                                ? "Updating..."
+                                                                : "Update Progress"
+                                                        }
+
                                                     </button>
 
                                                 </div>
+
                                             )}
 
 
-                                            {/* FOOTER */}
+                                            {/* =================================
+                                                FOOTER
+                                            ================================= */}
 
                                             <div className="challenge-card-footer">
 
                                                 <span>
-                                                    +{
+                                                    +
+                                                    {
                                                         challenge.xpReward
-                                                    } XP
+                                                    }{" "}
+                                                    XP
                                                 </span>
 
+
                                                 {completed ? (
+
                                                     <span className="challenge-completed">
                                                         Completed
                                                     </span>
+
                                                 ) : (
+
                                                     <span>
                                                         In Progress
                                                     </span>
+
                                                 )}
 
                                             </div>
 
                                         </div>
+
                                     );
+
                                 })}
 
                             </div>
+
                         )}
 
                 </div>
