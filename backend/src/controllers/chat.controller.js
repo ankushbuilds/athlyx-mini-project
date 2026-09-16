@@ -63,6 +63,23 @@ async function checkAcceptedConnection(userId, otherUserId) {
 
 
 // ======================================================
+// HELPER: CREATE DETERMINISTIC PARTICIPANT KEY
+// ======================================================
+
+function createParticipantKey(userId, otherUserId) {
+    const participantIds = [
+        userId.toString(),
+        otherUserId.toString()
+    ].sort();
+
+    return {
+        participantIds,
+        participantKey: participantIds.join("_")
+    };
+}
+
+
+// ======================================================
 // CREATE / GET CONVERSATION
 // ======================================================
 
@@ -77,6 +94,7 @@ async function getOrCreateConversation(req, res) {
             });
         }
 
+        // Check accepted athlete ↔ coach connection
         const connectionCheck =
             await checkAcceptedConnection(
                 userId,
@@ -89,15 +107,13 @@ async function getOrCreateConversation(req, res) {
             });
         }
 
-        // Create deterministic key so A ↔ B
-        // and B ↔ A always use the same conversation
-        const participantIds = [
-            userId.toString(),
-            otherUserId.toString()
-        ].sort();
-
-        const participantKey =
-            participantIds.join("_");
+        const {
+            participantIds,
+            participantKey
+        } = createParticipantKey(
+            userId,
+            otherUserId
+        );
 
         let conversation =
             await Conversation.findOne({
@@ -114,13 +130,11 @@ async function getOrCreateConversation(req, res) {
 
         // Create conversation if it doesn't exist
         if (!conversation) {
-            conversation = await Conversation.create({
-                participants: [
-                    participantIds[0],
-                    participantIds[1]
-                ],
-                participantKey
-            });
+            conversation =
+                await Conversation.create({
+                    participants: participantIds,
+                    participantKey
+                });
 
             conversation =
                 await Conversation.findById(
@@ -129,6 +143,10 @@ async function getOrCreateConversation(req, res) {
                 .populate(
                     "participants",
                     "name email role profilePic"
+                )
+                .populate(
+                    "lastMessage",
+                    "sender receiver text read createdAt"
                 );
         }
 
@@ -150,15 +168,122 @@ async function getOrCreateConversation(req, res) {
 }
 
 
-
-
 // ======================================================
 // GET MY CONVERSATIONS
+// ======================================================
+//
+// IMPORTANT:
+//
+// This now shows ALL accepted connections,
+// even if they have never sent a message.
+//
+// Coach:
+//     connected athletes → Messages
+//
+// Athlete:
+//     connected coaches → Messages
+//
 // ======================================================
 
 async function getMyConversations(req, res) {
     try {
         const userId = req.user.id;
+
+        // ==================================================
+        // GET LOGGED-IN USER
+        // ==================================================
+
+        const currentUser =
+            await User.findById(userId);
+
+        if (!currentUser) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+
+        // ==================================================
+        // GET ACCEPTED CONNECTIONS
+        // ==================================================
+
+        let connections = [];
+
+        if (currentUser.role === "coach") {
+
+            // Coach → get connected athletes
+            connections =
+                await Connection.find({
+                    coach: userId,
+                    status: "accepted"
+                }).select("athlete");
+
+        } else if (currentUser.role === "athlete") {
+
+            // Athlete → get connected coaches
+            connections =
+                await Connection.find({
+                    athlete: userId,
+                    status: "accepted"
+                }).select("coach");
+
+        } else {
+            return res.status(200).json({
+                count: 0,
+                conversations: []
+            });
+        }
+
+        // ==================================================
+        // GET CONNECTED USER IDS
+        // ==================================================
+
+        const connectedUserIds =
+            connections.map(connection => {
+
+                if (currentUser.role === "coach") {
+                    return connection.athlete;
+                }
+
+                return connection.coach;
+            });
+
+
+        // ==================================================
+        // CREATE CONVERSATION FOR EACH CONNECTION
+        // IF IT DOESN'T EXIST
+        // ==================================================
+
+        for (const connectedUserId of connectedUserIds) {
+
+            const {
+                participantIds,
+                participantKey
+            } = createParticipantKey(
+                userId,
+                connectedUserId
+            );
+
+            await Conversation.findOneAndUpdate(
+                {
+                    participantKey
+                },
+                {
+                    $setOnInsert: {
+                        participants: participantIds,
+                        participantKey
+                    }
+                },
+                {
+                    new: true,
+                    upsert: true
+                }
+            );
+        }
+
+
+        // ==================================================
+        // GET ALL USER CONVERSATIONS
+        // ==================================================
 
         const conversations =
             await Conversation.find({
@@ -177,27 +302,37 @@ async function getMyConversations(req, res) {
                 updatedAt: -1
             });
 
+
         // ==================================================
-        // ADD UNREAD COUNT FOR CURRENT USER
+        // ADD UNREAD COUNT
         // ==================================================
 
         const conversationsWithUnreadCount =
             await Promise.all(
-                conversations.map(async conversation => {
 
-                    const unreadCount =
-                        await Message.countDocuments({
-                            conversation: conversation._id,
-                            receiver: userId,
-                            read: false
-                        });
+                conversations.map(
+                    async conversation => {
 
-                    return {
-                        ...conversation.toObject(),
-                        unreadCount
-                    };
-                })
+                        const unreadCount =
+                            await Message.countDocuments({
+                                conversation:
+                                    conversation._id,
+                                receiver: userId,
+                                read: false
+                            });
+
+                        return {
+                            ...conversation.toObject(),
+                            unreadCount
+                        };
+                    }
+                )
             );
+
+
+        // ==================================================
+        // RETURN
+        // ==================================================
 
         return res.status(200).json({
             count:
@@ -231,6 +366,7 @@ async function getMyConversations(req, res) {
 async function getConversationMessages(req, res) {
     try {
         const userId = req.user.id;
+
         const conversationId =
             req.params.conversationId;
 
@@ -302,6 +438,7 @@ async function getConversationMessages(req, res) {
 async function sendMessage(req, res) {
     try {
         const senderId = req.user.id;
+
         const conversationId =
             req.params.conversationId;
 
@@ -352,7 +489,6 @@ async function sendMessage(req, res) {
             });
         }
 
-        // IMPORTANT:
         // Check connection is still accepted
         const connectionCheck =
             await checkAcceptedConnection(
@@ -424,6 +560,7 @@ async function sendMessage(req, res) {
 async function markMessagesAsRead(req, res) {
     try {
         const userId = req.user.id;
+
         const conversationId =
             req.params.conversationId;
 
@@ -482,6 +619,8 @@ async function markMessagesAsRead(req, res) {
         });
     }
 }
+
+
 // ======================================================
 // GET TOTAL UNREAD MESSAGE COUNT
 // ======================================================
@@ -490,10 +629,11 @@ async function getUnreadMessageCount(req, res) {
     try {
         const userId = req.user.id;
 
-        const unreadCount = await Message.countDocuments({
-            receiver: userId,
-            read: false
-        });
+        const unreadCount =
+            await Message.countDocuments({
+                receiver: userId,
+                read: false
+            });
 
         return res.status(200).json({
             success: true,
@@ -508,7 +648,8 @@ async function getUnreadMessageCount(req, res) {
 
         return res.status(500).json({
             success: false,
-            message: "Failed to get unread message count",
+            message:
+                "Failed to get unread message count",
             error: error.message
         });
     }

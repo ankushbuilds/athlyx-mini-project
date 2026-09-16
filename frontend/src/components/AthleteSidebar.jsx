@@ -39,19 +39,25 @@ const AthleteSidebar = () => {
   });
 
   // ======================================================
+  // COACH REQUEST COUNT
+  // ======================================================
+
+  const [requestCount, setRequestCount] = useState(0);
+
+  // ======================================================
   // ACTIVE SIDEBAR ITEM
   // ======================================================
 
   const isActive = (path) => location.pathname === path;
 
   // ======================================================
-  // FETCH UNREAD MESSAGE COUNT
+  // FETCH UNREAD MESSAGES + COACH REQUESTS
   // ======================================================
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchUnreadCount = async () => {
+    const fetchSidebarCounts = async () => {
       try {
         const token = localStorage.getItem("token");
 
@@ -59,40 +65,73 @@ const AthleteSidebar = () => {
           return;
         }
 
-        const response = await axios.get(
+        const headers = {
+          Authorization: `Bearer ${token}`
+        };
+
+        // ================================================
+        // FETCH UNREAD MESSAGE COUNT
+        // ================================================
+
+        const messageResponse = await axios.get(
           `${API}/chat/unread-count`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+            headers
           }
         );
 
-        const count =
-          Number(response.data?.unreadCount) || 0;
+        const messageCount =
+          Number(
+            messageResponse.data?.unreadCount
+          ) || 0;
+
+        // ================================================
+        // FETCH COACH REQUEST COUNT
+        // ================================================
+
+        const requestResponse = await axios.get(
+          `${API}/connections/athlete/requests`,
+          {
+            headers
+          }
+        );
+
+        const coachRequestCount =
+          Number(
+            requestResponse.data?.count
+          ) || 0;
+
+        // ================================================
+        // UPDATE STATE
+        // ================================================
 
         if (isMounted) {
-          setUnreadCount(count);
+          setUnreadCount(messageCount);
+
+          setRequestCount(
+            coachRequestCount
+          );
 
           localStorage.setItem(
             UNREAD_COUNT_KEY,
-            String(count)
+            String(messageCount)
           );
         }
+
       } catch (error) {
         console.error(
-          "Failed to fetch unread message count:",
+          "Failed to fetch sidebar counts:",
           error
         );
       }
     };
 
     // Initial fetch
-    fetchUnreadCount();
+    fetchSidebarCounts();
 
-    // Check for new messages every 5 seconds
+    // Check every 5 seconds
     const interval = setInterval(
-      fetchUnreadCount,
+      fetchSidebarCounts,
       5000
     );
 
@@ -238,7 +277,23 @@ const AthleteSidebar = () => {
           navigate("/athlete/connections")
         }
       >
-        <FiUsers size={22} />
+        <div className="sidebar-message-icon">
+
+          <FiUsers size={22} />
+
+          {/* ==================================================
+              COACH REQUEST BADGE
+          ================================================== */}
+
+          {requestCount > 0 && (
+            <span className="sidebar-message-badge">
+              {requestCount > 99
+                ? "99+"
+                : requestCount}
+            </span>
+          )}
+
+        </div>
       </div>
 
 
@@ -262,7 +317,7 @@ const AthleteSidebar = () => {
           <FiMessageCircle size={22} />
 
           {/* ==================================================
-              UNREAD BADGE
+              UNREAD MESSAGE BADGE
           ================================================== */}
 
           {unreadCount > 0 && (
