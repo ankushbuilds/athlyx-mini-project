@@ -1,26 +1,3 @@
-/* ==========================================
-   ATHLYX DESIGN TOKENS
-   ========================================== */
-:root {
-  --app-bg: #0b0c0e;
-  --app-surface: #121416;
-  --app-surface-2: #171a1d;
-  --app-surface-3: #1c1f22;
-  --app-card: #171a1d;
-  --app-card-soft: #1d201f;
-  --app-border: #2a2d30;
-  --app-border-soft: #26292b;
-  --app-border-strong: #3a3835;
-  --app-text: #f4efe9;
-  --app-muted: #9c938a;
-  --app-muted-2: #79736c;
-  --app-accent: #c49a6c;
-  --app-accent-hover: #ad8358;
-  --app-danger: #c96863;
-  --app-radius: 14px;
-  --app-shadow: 0 22px 60px rgba(0, 0, 0, .34);
-}
-
 .landing,
 .auth-page,
 .home-page,
@@ -9535,5 +9512,989 @@ body {
         margin-left: 0;
         margin-right: 0;
         padding: 22px 18px 30px;
+    }
+}
+
+
+/* =========================================================
+   ACADEMY PROFILE
+   ========================================================= */
+
+.coach-athletes-content {
+    flex: 1;
+    min-width: 0;
+    padding: 32px 36px 50px;
+    background: #111111;
+    color: #f2f2f2;
+    overflow-y: auto;
+}
+
+.coach-athletes-container {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.coach-athletes-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.coach-athletes-eyebrow {
+    display: block;
+    margin-bottom: 7px;
+    color: #c49a6c;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+}
+
+.coach-athletes-header h1 {
+    margin: 0;
+    color: #f5f5f5;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.coach-athletes-header p {
+    margin: 9px 0 0;
+    color: #8e8e8e;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   MAIN PROFILE CARD
+   ========================================================= */
+
+.coach-athlete-card {
+    position: relative;
+    width: 100%;
+    padding: 30px;
+    margin-bottom: 24px;
+
+    background: #181818;
+    border: 1px solid #292929;
+    border-radius: 16px;
+
+    box-sizing: border-box;
+    transition:
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.coach-athlete-card:hover {
+    border-color: #3a3027;
+}
+
+
+/* =========================================================
+   PROFILE TOP
+   ========================================================= */
+
+.athlete-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.athlete-avatar {
+    width: 92px;
+    height: 92px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    overflow: hidden;
+    border-radius: 14px;
+
+    background: #222222;
+    border: 1px solid #353535;
+
+    color: #c49a6c;
+}
+
+.athlete-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+/* =========================================================
+   AVAILABILITY
+   ========================================================= */
+
+.athlete-card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 7px 11px;
+
+    border-radius: 20px;
+
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.athlete-card-status.connected {
+    color: #c8c8c8;
+    background: #202020;
+    border: 1px solid #303030;
+}
+
+.athlete-card-status span {
+    width: 7px;
+    height: 7px;
+
+    display: block;
+
+    border-radius: 50%;
+    background: #c49a6c;
+}
+
+
+/* =========================================================
+   BASIC INFO
+   ========================================================= */
+
+.athlete-card-info {
+    margin-bottom: 22px;
+}
+
+.athlete-card-info h3 {
+    margin: 0 0 6px;
+
+    color: #f5f5f5;
+    font-size: 25px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.athlete-position {
+    margin: 0;
+
+    color: #a7a7a7;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   DETAILS
+   ========================================================= */
+
+.athlete-card-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+
+    padding-top: 20px;
+
+    border-top: 1px solid #292929;
+}
+
+.athlete-detail {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 12px 14px;
+
+    background: #202020;
+    border: 1px solid #2b2b2b;
+    border-radius: 10px;
+
+    color: #a9a9a9;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.athlete-detail svg {
+    flex-shrink: 0;
+    color: #c49a6c;
+}
+
+.athlete-detail span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   PROFILE SECTIONS
+   ========================================================= */
+
+.coach-athletes-section {
+    width: 100%;
+    margin-bottom: 20px;
+    padding: 25px 27px;
+
+    background: #181818;
+    border: 1px solid #292929;
+    border-radius: 14px;
+
+    box-sizing: border-box;
+}
+
+.coach-athletes-section .coach-athletes-header {
+    margin-bottom: 18px;
+    padding-bottom: 15px;
+
+    border-bottom: 1px solid #292929;
+}
+
+.coach-athletes-section .coach-athletes-header h2 {
+    margin: 0;
+
+    color: #eeeeee;
+    font-size: 19px;
+    font-weight: 650;
+    line-height: 1.3;
+}
+
+.coach-athletes-section > p {
+    margin: 0;
+
+    color: #a3a3a3;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+
+/* =========================================================
+   SKILLS / PROGRAMS / FACILITIES / ACHIEVEMENTS
+   ========================================================= */
+
+.athlete-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.athlete-skills span,
+.athlete-skills a {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 9px 13px;
+
+    background: #202020;
+    border: 1px solid #303030;
+    border-radius: 8px;
+
+    color: #c7c7c7;
+    font-size: 13px;
+    font-weight: 500;
+
+    text-decoration: none;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.athlete-skills span svg,
+.athlete-skills a svg {
+    flex-shrink: 0;
+    color: #c49a6c;
+}
+
+.athlete-skills a:hover {
+    background: #26221e;
+    border-color: #8f6f4d;
+    color: #e7e7e7;
+}
+
+
+/* =========================================================
+   SOCIAL LINKS
+   ========================================================= */
+
+.coach-athletes-section .athlete-skills a {
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   BOTTOM EDIT BUTTON
+   ========================================================= */
+
+.profile-action-bottom {
+    display: flex;
+    justify-content: flex-end;
+
+    margin-top: 28px;
+    padding-top: 22px;
+
+    border-top: 1px solid #292929;
+}
+
+.bottom-edit-profile-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    min-height: 42px;
+    padding: 0 18px;
+
+    background: #c49a6c;
+    border: 1px solid #c49a6c;
+    border-radius: 8px;
+
+    color: #111111;
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.bottom-edit-profile-btn:hover {
+    background: #d2aa7c;
+    border-color: #d2aa7c;
+    transform: translateY(-1px);
+}
+
+.bottom-edit-profile-btn:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.coach-athletes-loading {
+    min-height: 60vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+}
+
+.coach-athletes-loading h2 {
+    margin: 16px 0 6px;
+
+    color: #eeeeee;
+    font-size: 20px;
+}
+
+.coach-athletes-loading p {
+    margin: 0;
+
+    color: #888888;
+    font-size: 14px;
+}
+
+.loading-spinner {
+    width: 34px;
+    height: 34px;
+
+    border: 3px solid #292929;
+    border-top-color: #c49a6c;
+    border-radius: 50%;
+
+    animation: academyProfileSpin 0.8s linear infinite;
+}
+
+@keyframes academyProfileSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* =========================================================
+   ERROR / EMPTY
+   ========================================================= */
+
+.coach-athletes-empty {
+    min-height: 55vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding: 40px;
+
+    text-align: center;
+
+    background: #181818;
+    border: 1px solid #292929;
+    border-radius: 14px;
+}
+
+.empty-icon {
+    width: 58px;
+    height: 58px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 18px;
+
+    background: #222222;
+    border: 1px solid #353535;
+    border-radius: 50%;
+
+    color: #c49a6c;
+}
+
+.coach-athletes-empty h2 {
+    margin: 0 0 8px;
+
+    color: #eeeeee;
+    font-size: 21px;
+}
+
+.coach-athletes-empty p {
+    max-width: 450px;
+    margin: 0 0 20px;
+
+    color: #8f8f8f;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.coach-athletes-empty button {
+    min-height: 40px;
+    padding: 0 17px;
+
+    background: #252525;
+    border: 1px solid #383838;
+    border-radius: 8px;
+
+    color: #d5d5d5;
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.coach-athletes-empty button:hover {
+    background: #2b2b2b;
+    border-color: #c49a6c;
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+    .coach-athletes-content {
+        padding: 25px 22px 40px;
+    }
+
+    .coach-athlete-card {
+        padding: 24px;
+    }
+
+    .athlete-card-details {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .coach-athletes-content {
+        padding: 20px 15px 35px;
+    }
+
+    .coach-athletes-header h1 {
+        font-size: 27px;
+    }
+
+    .coach-athletes-section {
+        padding: 20px;
+    }
+
+    .coach-athlete-card {
+        padding: 20px;
+    }
+
+    .athlete-avatar {
+        width: 76px;
+        height: 76px;
+    }
+
+    .athlete-card-info h3 {
+        font-size: 21px;
+    }
+
+    .athlete-card-top {
+        align-items: flex-start;
+    }
+
+    .profile-action-bottom {
+        justify-content: stretch;
+    }
+
+    .bottom-edit-profile-btn {
+        width: 100%;
+    }
+}
+
+
+/* =========================================================
+   ACADEMY PROFILE EDIT / CREATE
+   ========================================================= */
+
+.athlete-profile-page {
+    flex: 1;
+    min-width: 0;
+
+    padding: 34px 36px 50px;
+
+    background: #111111;
+    color: #f2f2f2;
+
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.profile-form-container {
+    width: 100%;
+    max-width: 920px;
+
+    margin: 0 auto;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.profile-form-header {
+    margin-bottom: 28px;
+}
+
+.profile-form-header .page-eyebrow {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #c49a6c;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+}
+
+.profile-form-header h1 {
+    margin: 0;
+
+    color: #f5f5f5;
+
+    font-size: 31px;
+    font-weight: 700;
+
+    line-height: 1.25;
+}
+
+.profile-form-header p {
+    margin: 9px 0 0;
+
+    color: #8f8f8f;
+
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.profile-form {
+    width: 100%;
+
+    padding: 30px;
+
+    background: #181818;
+
+    border: 1px solid #292929;
+    border-radius: 15px;
+
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   FORM GROUP
+   ========================================================= */
+
+.profile-form .form-group {
+    margin-bottom: 22px;
+}
+
+.profile-form .form-group:last-of-type {
+    margin-bottom: 0;
+}
+
+.profile-form label:not(.checkbox-label) {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #d5d5d5;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.profile-form input[type="text"],
+.profile-form input[type="number"],
+.profile-form input[type="email"],
+.profile-form textarea {
+    width: 100%;
+
+    padding: 12px 14px;
+
+    background: #202020;
+
+    border: 1px solid #333333;
+    border-radius: 8px;
+
+    outline: none;
+
+    color: #eeeeee;
+
+    font-family: inherit;
+    font-size: 14px;
+
+    box-sizing: border-box;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+.profile-form input[type="text"]:hover,
+.profile-form input[type="number"]:hover,
+.profile-form input[type="email"]:hover,
+.profile-form textarea:hover {
+    border-color: #444444;
+}
+
+.profile-form input[type="text"]:focus,
+.profile-form input[type="number"]:focus,
+.profile-form input[type="email"]:focus,
+.profile-form textarea:focus {
+    background: #222222;
+
+    border-color: #c49a6c;
+
+    box-shadow: 0 0 0 2px rgba(196, 154, 108, 0.08);
+}
+
+.profile-form input::placeholder,
+.profile-form textarea::placeholder {
+    color: #666666;
+}
+
+.profile-form textarea {
+    min-height: 125px;
+
+    resize: vertical;
+
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   SMALL HELP TEXT
+   ========================================================= */
+
+.profile-form .form-group small {
+    display: block;
+
+    margin-top: 7px;
+
+    color: #777777;
+
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   AVAILABILITY
+   ========================================================= */
+
+.profile-form .checkbox-label {
+    display: flex !important;
+    align-items: center;
+
+    gap: 10px;
+
+    margin: 0;
+
+    color: #bdbdbd;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    cursor: pointer;
+}
+
+.profile-form .checkbox-label input {
+    width: 16px;
+    height: 16px;
+
+    margin: 0;
+
+    accent-color: #c49a6c;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.profile-error {
+    margin-bottom: 20px;
+
+    padding: 12px 15px;
+
+    background: #241b18;
+
+    border: 1px solid #4a3027;
+    border-radius: 8px;
+
+    color: #d7a68c;
+
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   SUCCESS
+   ========================================================= */
+
+.profile-success {
+    margin-bottom: 20px;
+
+    padding: 12px 15px;
+
+    background: #1d241f;
+
+    border: 1px solid #344638;
+    border-radius: 8px;
+
+    color: #a8c2ad;
+
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   FORM ACTIONS
+   ========================================================= */
+
+.profile-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    margin-top: 30px;
+    padding-top: 22px;
+
+    border-top: 1px solid #2a2a2a;
+}
+
+
+/* =========================================================
+   CANCEL
+   ========================================================= */
+
+.cancel-profile-btn {
+    min-height: 42px;
+
+    padding: 0 18px;
+
+    background: #222222;
+
+    border: 1px solid #353535;
+    border-radius: 8px;
+
+    color: #bdbdbd;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.cancel-profile-btn:hover {
+    background: #292929;
+
+    border-color: #484848;
+
+    color: #eeeeee;
+}
+
+.cancel-profile-btn:disabled {
+    opacity: 0.5;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   SAVE / CREATE / UPDATE
+   ========================================================= */
+
+.save-profile-btn {
+    min-height: 42px;
+
+    padding: 0 20px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #c49a6c;
+
+    border: 1px solid #c49a6c;
+    border-radius: 8px;
+
+    color: #111111;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.save-profile-btn:hover:not(:disabled) {
+    background: #d2aa7c;
+
+    border-color: #d2aa7c;
+
+    transform: translateY(-1px);
+}
+
+.save-profile-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.save-profile-btn:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+    transform: none;
+}
+
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.profile-form-container .coach-athletes-loading {
+    min-height: 55vh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #999999;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+    .athlete-profile-page {
+        padding: 28px 22px 40px;
+    }
+
+    .profile-form {
+        padding: 25px;
+    }
+}
+
+@media (max-width: 600px) {
+    .athlete-profile-page {
+        padding: 22px 15px 35px;
+    }
+
+    .profile-form-header h1 {
+        font-size: 26px;
+    }
+
+    .profile-form {
+        padding: 20px;
+    }
+
+    .profile-form-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .cancel-profile-btn,
+    .save-profile-btn {
+        width: 100%;
     }
 }
