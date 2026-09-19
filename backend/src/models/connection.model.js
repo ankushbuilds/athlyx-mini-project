@@ -47,8 +47,11 @@ const connectionSchema = new mongoose.Schema(
 );
 
 
-// Exactly two participants must exist
-connectionSchema.pre("validate", function (next) {
+// =========================================================
+// EXACTLY TWO PARTICIPANTS MUST EXIST
+// =========================================================
+
+connectionSchema.pre("validate", function () {
     const participants = [
         this.coach,
         this.academy,
@@ -56,18 +59,17 @@ connectionSchema.pre("validate", function (next) {
     ].filter(Boolean);
 
     if (participants.length !== 2) {
-        return next(
-            new Error(
-                "A connection must have exactly two participants"
-            )
+        throw new Error(
+            "A connection must have exactly two participants"
         );
     }
-
-    next();
 });
 
 
-// Coach ↔ Athlete
+// =========================================================
+// COACH ↔ ATHLETE
+// =========================================================
+
 connectionSchema.index(
     { coach: 1, athlete: 1 },
     {
@@ -80,7 +82,10 @@ connectionSchema.index(
 );
 
 
-// Academy ↔ Athlete
+// =========================================================
+// ACADEMY ↔ ATHLETE
+// =========================================================
+
 connectionSchema.index(
     { academy: 1, athlete: 1 },
     {
@@ -93,7 +98,10 @@ connectionSchema.index(
 );
 
 
-// Academy ↔ Coach
+// =========================================================
+// ACADEMY ↔ COACH
+// =========================================================
+
 connectionSchema.index(
     { academy: 1, coach: 1 },
     {
