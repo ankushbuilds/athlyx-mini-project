@@ -9,6 +9,7 @@ import {
 
 import AthleteSidebar from "./AthleteSidebar";
 import CoachSidebar from "./CoachSidebar";
+import AcademySidebar from "./AcademySidebar";
 import "./Messages.css";
 
 const API = "http://localhost:5000/api";
@@ -705,27 +706,21 @@ const Messages = () => {
     // SIDEBAR
     // ======================================================
 
-    const renderSidebar = () => {
-        if (
-            user?.role ===
-            "athlete"
-        ) {
-            return (
-                <AthleteSidebar />
-            );
-        }
+   const renderSidebar = () => {
+    if (user?.role === "athlete") {
+        return <AthleteSidebar />;
+    }
 
-        if (
-            user?.role ===
-            "coach"
-        ) {
-            return (
-                <CoachSidebar />
-            );
-        }
+    if (user?.role === "coach") {
+        return <CoachSidebar />;
+    }
 
-        return null;
-    };
+    if (user?.role === "academy") {
+        return <AcademySidebar />;
+    }
+
+    return null;
+};
 
 
     // ======================================================

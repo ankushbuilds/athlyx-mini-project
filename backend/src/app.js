@@ -12,7 +12,7 @@ const coachAthleteRoutes = require("./routes/coachAthlete.route");
 const connectionRoutes = require("./routes/connection.route");
 const chatRoutes = require("./routes/chat.route");
 const challengeRoutes = require("./routes/challenge.route");
-
+const academyRoutes = require("./routes/academy.route");
 const app = express();
 
 app.use(cors());
@@ -48,5 +48,6 @@ app.use(
 );
 app.use("/api/chat", chatRoutes);
 app.use("/api/challenges", challengeRoutes);
+app.use("/api/academies", academyRoutes);
 
 module.exports = app;

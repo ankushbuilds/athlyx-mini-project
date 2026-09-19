@@ -1,5 +1,8 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+// ==========================================
+// PUBLIC PAGES
+// ==========================================
 
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
@@ -8,7 +11,9 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Help from "./pages/Help";
 import Discover from "./pages/Discover";
+
 import Messages from "./components/Messages";
+
 // ==========================================
 // ATHLETE PAGES
 // ==========================================
@@ -34,6 +39,19 @@ import CoachProfileView from "./pages/Coach-Pages/CoachProfileView";
 import CoachAthletes from "./pages/Coach-Pages/CoachAthletes";
 import CoachDiscover from "./pages/Coach-Pages/CoachDiscover";
 import CoachRequests from "./pages/Coach-Pages/CoachRequests";
+
+// ==========================================
+// ACADEMY PAGES
+// ==========================================
+
+import AcademyDashboard from "./pages/Academy-Pages/AcademyDashboard";
+import AcademyProfile from "./pages/Academy-Pages/AcademyProfile";
+import AcademyProfileEdit from "./pages/Academy-Pages/AcademyProfileEdit";
+import AcademyAthletes from "./pages/Academy-Pages/AcademyAthletes";
+import AcademyDiscover from "./pages/Academy-Pages/AcademyDiscover";
+import AcademyRequest from "./pages/Academy-Pages/AcademyRequest";
+import AcademySettings from "./pages/Academy-Pages/AcademySettings";
+
 
 const App = () => {
   return (
@@ -74,11 +92,11 @@ const App = () => {
           element={<Help />}
         />
 
-        {/* Public Navbar Discover */}
         <Route
           path="/discover"
           element={<Discover />}
         />
+
 
         {/* ==========================================
             ATHLETE ROUTES
@@ -94,19 +112,16 @@ const App = () => {
           element={<AthleteProfile />}
         />
 
-        {/* Athlete's own profile */}
         <Route
           path="/athlete/my-profile"
           element={<AthleteProfileView />}
         />
 
-        {/* Coach viewing athlete profile */}
         <Route
           path="/coach/athletes/:athleteId"
           element={<AthleteProfileView />}
         />
 
-        {/* General public athlete profile */}
         <Route
           path="/profile/athlete/:athleteId"
           element={<AthleteProfileView />}
@@ -117,7 +132,6 @@ const App = () => {
           element={<Settings />}
         />
 
-        {/* Athlete Discover */}
         <Route
           path="/athlete/discover"
           element={<AthleteDiscover />}
@@ -137,14 +151,18 @@ const App = () => {
           path="/athlete/connections"
           element={<AthleteConnections />}
         />
+
         <Route
           path="/athlete/messages"
           element={<Messages />}
         />
+
         <Route
           path="/athlete/challenges"
           element={<Challenges />}
         />
+
+
         {/* ==========================================
             COACH ROUTES
         ========================================== */}
@@ -154,25 +172,21 @@ const App = () => {
           element={<CoachDashboard />}
         />
 
-        {/* Coach edit profile */}
         <Route
           path="/coach/profile"
           element={<CoachProfile />}
         />
 
-        {/* Coach's own profile */}
         <Route
           path="/coach/my-profile"
           element={<CoachProfileView />}
         />
 
-        {/* Athlete viewing a coach profile */}
         <Route
           path="/profile/coach/:coachId"
           element={<CoachProfileView />}
         />
 
-        {/* Coach connected athletes */}
         <Route
           path="/coach/athletes"
           element={<CoachAthletes />}
@@ -185,9 +199,7 @@ const App = () => {
 
         <Route
           path="/coach/opportunities"
-          element={
-            <div>Opportunities</div>
-          }
+          element={<div>Opportunities</div>}
         />
 
         <Route
@@ -199,9 +211,69 @@ const App = () => {
           path="/coach/settings"
           element={<CoachSettings />}
         />
+
         <Route
           path="/coach/messages"
           element={<Messages />}
+        />
+
+
+        {/* ==========================================
+            ACADEMY ROUTES
+        ========================================== */}
+
+        {/* Academy Dashboard */}
+        <Route
+          path="/academy/dashboard"
+          element={<AcademyDashboard />}
+        />
+
+        {/* Academy Create Profile */}
+        <Route
+          path="/academy/create-profile"
+          element={<AcademyProfileEdit />}
+        />
+
+        {/* Academy Own Profile */}
+        <Route
+          path="/academy/my-profile"
+          element={<AcademyProfile />}
+        />
+
+        {/* Academy Edit Profile */}
+        <Route
+          path="/academy/edit-profile"
+          element={<AcademyProfileEdit />}
+        />
+
+        {/* Academy Connected Athletes */}
+        <Route
+          path="/academy/athletes"
+          element={<AcademyAthletes />}
+        />
+
+        {/* Academy Discover */}
+        <Route
+          path="/academy/discover"
+          element={<AcademyDiscover />}
+        />
+
+        {/* Academy Connection Requests */}
+        <Route
+          path="/academy/requests"
+          element={<AcademyRequest />}
+        />
+
+        {/* Academy Messages */}
+        <Route
+          path="/academy/messages"
+          element={<Messages />}
+        />
+
+        {/* Academy Settings */}
+        <Route
+          path="/academy/settings"
+          element={<AcademySettings />}
         />
 
       </Routes>
@@ -210,4 +282,3 @@ const App = () => {
 };
 
 export default App;
-

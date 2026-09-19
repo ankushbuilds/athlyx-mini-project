@@ -1,3 +1,26 @@
+/* ==========================================
+   ATHLYX DESIGN TOKENS
+   ========================================== */
+:root {
+  --app-bg: #0b0c0e;
+  --app-surface: #121416;
+  --app-surface-2: #171a1d;
+  --app-surface-3: #1c1f22;
+  --app-card: #171a1d;
+  --app-card-soft: #1d201f;
+  --app-border: #2a2d30;
+  --app-border-soft: #26292b;
+  --app-border-strong: #3a3835;
+  --app-text: #f4efe9;
+  --app-muted: #9c938a;
+  --app-muted-2: #79736c;
+  --app-accent: #c49a6c;
+  --app-accent-hover: #ad8358;
+  --app-danger: #c96863;
+  --app-radius: 14px;
+  --app-shadow: 0 22px 60px rgba(0, 0, 0, .34);
+}
+
 .landing,
 .auth-page,
 .home-page,

@@ -24,8 +24,10 @@ import {
   PDFViewer
 } from "@react-pdf/renderer";
 
+
 import AthleteSidebar from "../../components/AthleteSidebar";
 import CoachSidebar from "../../components/CoachSidebar";
+import AcademySidebar from "../../components/AcademySidebar";
 import AthleteResume from "../../components/AthleteResume";
 
 const API = "http://localhost:5000/api";
@@ -456,20 +458,28 @@ const AthleteProfileView = () => {
   // SIDEBAR
   // ==========================================
 
-  const renderSidebar = () => {
-    if (
-      isPublicProfile &&
-      currentUserRole === "coach"
-    ) {
-      return <CoachSidebar />;
-    }
-
-    return <AthleteSidebar />;
-  };
-
-  const showConnectButton =
+const renderSidebar = () => {
+  if (
     isPublicProfile &&
-    currentUserRole === "coach";
+    currentUserRole === "coach"
+  ) {
+    return <CoachSidebar />;
+  }
+
+  if (
+    isPublicProfile &&
+    currentUserRole === "academy"
+  ) {
+    return <AcademySidebar />;
+  }
+
+  return <AthleteSidebar />;
+};
+
+const showConnectButton =
+  isPublicProfile &&
+  (currentUserRole === "coach" ||
+    currentUserRole === "academy");
 
   const getConnectionButtonText = () => {
     if (

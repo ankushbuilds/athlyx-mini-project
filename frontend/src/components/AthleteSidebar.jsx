@@ -48,7 +48,8 @@ const AthleteSidebar = () => {
   // ACTIVE SIDEBAR ITEM
   // ======================================================
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) =>
+    location.pathname === path;
 
   // ======================================================
   // FETCH UNREAD MESSAGES + COACH REQUESTS
@@ -59,7 +60,47 @@ const AthleteSidebar = () => {
 
     const fetchSidebarCounts = async () => {
       try {
-        const token = localStorage.getItem("token");
+        // ==================================================
+        // GET CURRENT USER
+        // ==================================================
+
+        const storedUser =
+          localStorage.getItem("user");
+
+        let user = null;
+
+        try {
+          user = storedUser
+            ? JSON.parse(storedUser)
+            : null;
+        } catch (error) {
+          console.error(
+            "Invalid user data in localStorage"
+          );
+
+          return;
+        }
+
+        // ==================================================
+        // IMPORTANT:
+        // ATHLETE SIDEBAR SHOULD ONLY WORK FOR ATHLETE
+        // ==================================================
+
+        if (user?.role !== "athlete") {
+          console.warn(
+            "AthleteSidebar skipped because current user role is:",
+            user?.role
+          );
+
+          return;
+        }
+
+        // ==================================================
+        // TOKEN
+        // ==================================================
+
+        const token =
+          localStorage.getItem("token");
 
         if (!token) {
           return;
@@ -69,53 +110,92 @@ const AthleteSidebar = () => {
           Authorization: `Bearer ${token}`
         };
 
-        // ================================================
+        // ==================================================
         // FETCH UNREAD MESSAGE COUNT
-        // ================================================
+        // ==================================================
 
-        const messageResponse = await axios.get(
-          `${API}/chat/unread-count`,
-          {
-            headers
+        try {
+          const messageResponse =
+            await axios.get(
+              `${API}/chat/unread-count`,
+              {
+                headers,
+                timeout: 10000
+              }
+            );
+
+          const messageCount =
+            Number(
+              messageResponse.data?.unreadCount
+            ) || 0;
+
+          if (isMounted) {
+            setUnreadCount(messageCount);
+
+            localStorage.setItem(
+              UNREAD_COUNT_KEY,
+              String(messageCount)
+            );
           }
-        );
+        } catch (messageError) {
+          console.error(
+            "Failed to fetch unread message count:",
+            messageError
+          );
+        }
 
-        const messageCount =
-          Number(
-            messageResponse.data?.unreadCount
-          ) || 0;
-
-        // ================================================
+        // ==================================================
         // FETCH COACH REQUEST COUNT
-        // ================================================
+        // ==================================================
 
-        const requestResponse = await axios.get(
-          `${API}/connections/athlete/requests`,
-          {
-            headers
+        try {
+          const requestResponse =
+            await axios.get(
+              `${API}/connections/athlete/requests`,
+              {
+                headers,
+                timeout: 10000
+              }
+            );
+
+          const coachRequestCount =
+            Number(
+              requestResponse.data?.count
+            ) || 0;
+
+          if (isMounted) {
+            setRequestCount(
+              coachRequestCount
+            );
           }
-        );
+        } catch (requestError) {
+          // ================================================
+          // If somehow a non-athlete token reaches here,
+          // don't break the complete sidebar.
+          // ================================================
 
-        const coachRequestCount =
-          Number(
-            requestResponse.data?.count
-          ) || 0;
+          if (
+            requestError.response?.status === 401
+          ) {
+            console.warn(
+              "AthleteSidebar authentication expired."
+            );
+          } else if (
+            requestError.response?.status === 403
+          ) {
+            console.warn(
+              "AthleteSidebar: current account is not allowed to access athlete requests."
+            );
 
-        // ================================================
-        // UPDATE STATE
-        // ================================================
-
-        if (isMounted) {
-          setUnreadCount(messageCount);
-
-          setRequestCount(
-            coachRequestCount
-          );
-
-          localStorage.setItem(
-            UNREAD_COUNT_KEY,
-            String(messageCount)
-          );
+            if (isMounted) {
+              setRequestCount(0);
+            }
+          } else {
+            console.error(
+              "Failed to fetch coach request count:",
+              requestError
+            );
+          }
         }
 
       } catch (error) {
@@ -126,10 +206,16 @@ const AthleteSidebar = () => {
       }
     };
 
-    // Initial fetch
+    // ======================================================
+    // INITIAL FETCH
+    // ======================================================
+
     fetchSidebarCounts();
 
-    // Check every 5 seconds
+    // ======================================================
+    // REFRESH EVERY 5 SECONDS
+    // ======================================================
+
     const interval = setInterval(
       fetchSidebarCounts,
       5000
@@ -166,7 +252,6 @@ const AthleteSidebar = () => {
         <FiGrid size={22} />
       </div>
 
-
       {/* ==================================================
           MY PROFILE
       ================================================== */}
@@ -184,7 +269,6 @@ const AthleteSidebar = () => {
       >
         <FiUser size={22} />
       </div>
-
 
       {/* ==================================================
           DISCOVER
@@ -204,7 +288,6 @@ const AthleteSidebar = () => {
         <FiCompass size={22} />
       </div>
 
-
       {/* ==================================================
           OPPORTUNITIES
       ================================================== */}
@@ -222,7 +305,6 @@ const AthleteSidebar = () => {
       >
         <FiBriefcase size={22} />
       </div>
-
 
       {/* ==================================================
           SHOWCASE
@@ -242,7 +324,6 @@ const AthleteSidebar = () => {
         <FiAward size={22} />
       </div>
 
-
       {/* ==================================================
           CHALLENGES
       ================================================== */}
@@ -260,7 +341,6 @@ const AthleteSidebar = () => {
       >
         <FiTarget size={22} />
       </div>
-
 
       {/* ==================================================
           CONNECTIONS
@@ -281,9 +361,9 @@ const AthleteSidebar = () => {
 
           <FiUsers size={22} />
 
-          {/* ==================================================
+          {/* ==============================================
               COACH REQUEST BADGE
-          ================================================== */}
+          ============================================== */}
 
           {requestCount > 0 && (
             <span className="sidebar-message-badge">
@@ -295,7 +375,6 @@ const AthleteSidebar = () => {
 
         </div>
       </div>
-
 
       {/* ==================================================
           MESSAGES
@@ -316,9 +395,9 @@ const AthleteSidebar = () => {
 
           <FiMessageCircle size={22} />
 
-          {/* ==================================================
+          {/* ==============================================
               UNREAD MESSAGE BADGE
-          ================================================== */}
+          ============================================== */}
 
           {unreadCount > 0 && (
             <span className="sidebar-message-badge">
@@ -330,7 +409,6 @@ const AthleteSidebar = () => {
 
         </div>
       </div>
-
 
       {/* ==================================================
           SETTINGS

@@ -1,6 +1,7 @@
 
 const Athlete = require("../models/athlete.model");
 const User = require("../models/user.model");
+const Academy = require("../models/academy.model");
 
 // ==========================================
 // CREATE ATHLETE
@@ -779,10 +780,11 @@ async function getMatchingAthletes(req, res) {
 
 async function getAthleteById(req, res) {
     try {
-        if (
-            req.user.role !== "coach" &&
-            req.user.role !== "athlete"
-        ) {
+       if (
+    req.user.role !== "coach" &&
+    req.user.role !== "athlete" &&
+    req.user.role !== "academy"
+) {
             return res.status(403).json({
                 message:
                     "You are not allowed to view athlete profiles"
@@ -823,6 +825,68 @@ async function getAthleteById(req, res) {
         });
     }
 }
+    // Get athletes matching logged-in academy's sport
+const getAcademyMatchingAthletes = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Only academy can access this endpoint
+    if (req.user.role !== "academy") {
+      return res.status(403).json({
+        message: "Only academies can access matching athletes"
+      });
+    }
+
+    // Find academy profile of logged-in user
+    const academy = await Academy.findOne({
+      user: userId
+    });
+
+    if (!academy) {
+      return res.status(404).json({
+        message: "Academy profile not found"
+      });
+    }
+
+    if (!academy.sport || !academy.sport.trim()) {
+      return res.status(400).json({
+        message: "Please add a sport to your academy profile first"
+      });
+    }
+
+    const academySport = academy.sport.trim();
+
+    // Find athletes having the same sport
+    const athletes = await Athlete.find({
+      sport: {
+        $regex: `^${academySport}$`,
+        $options: "i"
+      }
+    }).populate(
+      "user",
+      "name email role profilePic"
+    );
+
+    return res.status(200).json({
+      success: true,
+      sport: academySport,
+      count: athletes.length,
+      athletes
+    });
+
+  } catch (error) {
+    console.error(
+      "Get academy matching athletes error:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
 
 
 // ==========================================
@@ -835,6 +899,7 @@ module.exports = {
     updateMyAthleteProfile,
     getAllAthletes,
     getMatchingAthletes,
+    getAcademyMatchingAthletes,
     getAthleteById
 };
 

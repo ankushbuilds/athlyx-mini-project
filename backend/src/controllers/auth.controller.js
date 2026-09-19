@@ -21,7 +21,11 @@ async function registerUser(req, res) {
         email = email.trim().toLowerCase();
         role = role || "athlete";
 
-        if (!["athlete", "coach"].includes(role)) {
+        // ==========================================
+        // VALIDATE USER ROLE
+        // ==========================================
+
+        if (!["athlete", "coach", "scout", "academy"].includes(role)) {
             return res.status(400).json({
                 message: "Invalid user role"
             });
