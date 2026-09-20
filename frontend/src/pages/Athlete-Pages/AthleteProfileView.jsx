@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+
 import {
   FiEdit,
   FiUser,
@@ -23,7 +24,6 @@ import {
   PDFDownloadLink,
   PDFViewer
 } from "@react-pdf/renderer";
-
 
 import AthleteSidebar from "../../components/AthleteSidebar";
 import CoachSidebar from "../../components/CoachSidebar";
@@ -59,19 +59,76 @@ const AthleteProfileView = () => {
   const [showcaseError, setShowcaseError] = useState("");
 
   // ==========================================
-  // FETCH PROFILE
+  // GET ATHLETE USER ID
+  // ==========================================
+
+  const getAthleteUserId = (athleteData) => {
+    if (!athleteData) {
+      return null;
+    }
+
+    // Most important:
+    // Athlete profile -> linked User document
+    if (
+      athleteData.user &&
+      typeof athleteData.user === "object" &&
+      athleteData.user._id
+    ) {
+      return athleteData.user._id;
+    }
+
+    // If user is already a string ID
+    if (
+      athleteData.user &&
+      typeof athleteData.user === "string"
+    ) {
+      return athleteData.user;
+    }
+
+    // Fallback if backend sends userId
+    if (athleteData.userId) {
+      return athleteData.userId;
+    }
+
+    // Fallback only if this object itself is a User
+    if (
+      athleteData.role === "athlete" &&
+      athleteData._id
+    ) {
+      return athleteData._id;
+    }
+
+    return null;
+  };
+
+  // ==========================================
+  // GET CURRENT USER
+  // ==========================================
+
+  const getCurrentUser = () => {
+    const storedUser = localStorage.getItem("user");
+
+    if (!storedUser) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(storedUser);
+    } catch (error) {
+      console.error(
+        "Invalid user data in localStorage"
+      );
+
+      return null;
+    }
+  };
+
+  // ==========================================
+  // INITIAL LOAD
   // ==========================================
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-
-    let user = null;
-
-    try {
-      user = storedUser ? JSON.parse(storedUser) : null;
-    } catch (error) {
-      console.error("Invalid user data in localStorage");
-    }
+    const user = getCurrentUser();
 
     if (user?.role) {
       setCurrentUserRole(user.role);
@@ -93,9 +150,16 @@ const AthleteProfileView = () => {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        navigate("/auth", { replace: true });
+        navigate("/auth", {
+          replace: true
+        });
+
         return;
       }
+
+      // ==========================================
+      // PUBLIC ATHLETE PROFILE
+      // ==========================================
 
       if (isPublicProfile) {
         const response = await axios.get(
@@ -107,54 +171,118 @@ const AthleteProfileView = () => {
           }
         );
 
-        const athleteData = response.data?.athlete;
+        const athleteData =
+          response.data?.athlete;
 
         setAthlete(athleteData);
 
         // ==========================================
-        // FETCH SHOWCASE POSTS
+        // SHOWCASE
         // ==========================================
 
-        fetchShowcasePosts(athleteId, token);
+        fetchShowcasePosts(
+          athleteId,
+          token
+        );
 
         // ==========================================
         // CONNECTION STATUS
         // ==========================================
 
-        const storedUser = localStorage.getItem("user");
+        const currentUser = getCurrentUser();
 
-        let user = null;
-
-        try {
-          user = storedUser
-            ? JSON.parse(storedUser)
-            : null;
-        } catch (error) {
-          user = null;
-        }
-
-        if (user?.role === "coach") {
+        if (
+          currentUser?.role === "coach" ||
+          currentUser?.role === "academy"
+        ) {
           try {
-            const statusResponse = await axios.get(
-              `${API}/connections/status/${athleteId}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`
+            // IMPORTANT:
+            // Connection APIs need ATHLETE USER ID,
+            // not Athlete Profile ID.
+            const athleteUserId =
+              getAthleteUserId(athleteData);
+
+            console.log(
+              "ATHLETE PROFILE ID:",
+              athleteData?._id
+            );
+
+            console.log(
+              "ATHLETE USER ID:",
+              athleteUserId
+            );
+
+            if (!athleteUserId) {
+              console.error(
+                "Athlete User ID not found."
+              );
+
+              setConnectionStatus("none");
+              return;
+            }
+
+            // ==========================================
+            // ROLE BASED STATUS ENDPOINT
+            // ==========================================
+
+            let statusEndpoint =
+              `${API}/connections/status/${athleteUserId}`;
+
+            if (
+              currentUser.role === "academy"
+            ) {
+              statusEndpoint =
+                `${API}/connections/status/academy/${athleteUserId}`;
+            }
+
+            console.log(
+              "CONNECTION STATUS ENDPOINT:",
+              statusEndpoint
+            );
+
+            const statusResponse =
+              await axios.get(
+                statusEndpoint,
+                {
+                  headers: {
+                    Authorization: `Bearer ${token}`
+                  }
                 }
-              }
+              );
+
+            console.log(
+              "CONNECTION STATUS RESPONSE:",
+              statusResponse.data
             );
 
             const status =
-              statusResponse.data?.status || "none";
+              statusResponse.data?.status ||
+              "none";
+
+            // ==========================================
+            // SET FRONTEND STATUS
+            // ==========================================
 
             if (status === "accepted") {
-              setConnectionStatus("connected");
-            } else if (status === "pending") {
-              setConnectionStatus("pending");
-            } else if (status === "rejected") {
-              setConnectionStatus("rejected");
+              setConnectionStatus(
+                "connected"
+              );
+            } else if (
+              status === "pending"
+            ) {
+              setConnectionStatus(
+                "pending"
+              );
+            } else if (
+              status === "rejected"
+            ) {
+              setConnectionStatus(
+                "rejected"
+              );
             } else {
-              setConnectionStatus("none");
+              setConnectionStatus(
+                "none"
+              );
             }
           } catch (statusError) {
             console.error(
@@ -167,7 +295,13 @@ const AthleteProfileView = () => {
         } else {
           setConnectionStatus("none");
         }
-      } else {
+      }
+
+      // ==========================================
+      // OWN ATHLETE PROFILE
+      // ==========================================
+
+      else {
         const response = await axios.get(
           `${API}/athletes/get-profile`,
           {
@@ -177,13 +311,17 @@ const AthleteProfileView = () => {
           }
         );
 
-        setAthlete(response.data?.athlete);
+        const athleteData =
+          response.data?.athlete;
+
+        setAthlete(athleteData);
+
         setConnectionStatus("none");
 
         // Own profile posts
-        if (response.data?.athlete?._id) {
+        if (athleteData?._id) {
           fetchShowcasePosts(
-            response.data.athlete._id,
+            athleteData._id,
             token
           );
         }
@@ -208,8 +346,13 @@ const AthleteProfileView = () => {
         return;
       }
 
-      if (error.response?.status === 404) {
-        setError("Athlete profile not found.");
+      if (
+        error.response?.status === 404
+      ) {
+        setError(
+          "Athlete profile not found."
+        );
+
         return;
       }
 
@@ -244,7 +387,9 @@ const AthleteProfileView = () => {
       );
 
       setShowcasePosts(
-        Array.isArray(response.data?.posts)
+        Array.isArray(
+          response.data?.posts
+        )
           ? response.data.posts
           : []
       );
@@ -268,106 +413,173 @@ const AthleteProfileView = () => {
   // ==========================================
   // SEND CONNECTION REQUEST
   // ==========================================
-// ==========================================
-// SEND CONNECTION REQUEST
-// ==========================================
 
-const sendConnectionRequest = async () => {
-  if (
-    sendingRequest ||
-    connectionStatus === "pending" ||
-    connectionStatus === "connected"
-  ) {
-    return;
-  }
+  const sendConnectionRequest =
+    async () => {
+      if (
+        sendingRequest ||
+        connectionStatus === "pending" ||
+        connectionStatus === "connected"
+      ) {
+        return;
+      }
 
-  try {
-    setSendingRequest(true);
-    setRequestError("");
+      try {
+        setSendingRequest(true);
+        setRequestError("");
 
-    const token = localStorage.getItem("token");
+        const token =
+          localStorage.getItem(
+            "token"
+          );
 
-    if (!token) {
-      navigate("/auth", {
-        replace: true
-      });
-      return;
-    }
+        if (!token) {
+          navigate("/auth", {
+            replace: true
+          });
 
-    // ==========================================
-    // ROLE BASED CONNECTION ENDPOINT
-    // ==========================================
-
-    let endpoint = `${API}/connections/send/${athleteId}`;
-
-    if (currentUserRole === "academy") {
-      endpoint = `${API}/connections/send/academy/${athleteId}`;
-    }
-
-    const response = await axios.post(
-      endpoint,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
+          return;
         }
+
+        // ==========================================
+        // GET ATHLETE USER ID
+        // ==========================================
+
+        const athleteUserId =
+          getAthleteUserId(athlete);
+
+        console.log(
+          "ATHLETE PROFILE ID:",
+          athlete?._id
+        );
+
+        console.log(
+          "ATHLETE USER ID FOR REQUEST:",
+          athleteUserId
+        );
+
+        if (!athleteUserId) {
+          setRequestError(
+            "Athlete user information not found."
+          );
+
+          return;
+        }
+
+        // ==========================================
+        // ROLE BASED ENDPOINT
+        // ==========================================
+
+        let endpoint =
+          `${API}/connections/send/${athleteUserId}`;
+
+        if (
+          currentUserRole === "academy"
+        ) {
+          endpoint =
+            `${API}/connections/send/academy/${athleteUserId}`;
+        }
+
+        console.log(
+          "CONNECTION REQUEST ENDPOINT:",
+          endpoint
+        );
+
+        const response =
+          await axios.post(
+            endpoint,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            }
+          );
+
+        console.log(
+          "CONNECTION REQUEST RESPONSE:",
+          response.data
+        );
+
+        if (
+          response.status === 200 ||
+          response.status === 201
+        ) {
+          setConnectionStatus(
+            "pending"
+          );
+
+          setRequestError("");
+        }
+      } catch (error) {
+        console.error(
+          "Send connection request error:",
+          error
+        );
+
+        const responseStatus =
+          error.response?.data?.status;
+
+        if (
+          responseStatus === "pending"
+        ) {
+          setConnectionStatus(
+            "pending"
+          );
+        } else if (
+          responseStatus === "accepted"
+        ) {
+          setConnectionStatus(
+            "connected"
+          );
+        } else {
+          const message =
+            error.response?.data?.message
+              ?.toLowerCase() || "";
+
+          if (
+            message.includes(
+              "pending"
+            ) ||
+            message.includes(
+              "already sent"
+            )
+          ) {
+            setConnectionStatus(
+              "pending"
+            );
+          }
+
+          if (
+            message.includes(
+              "connected"
+            ) ||
+            message.includes(
+              "already connected"
+            )
+          ) {
+            setConnectionStatus(
+              "connected"
+            );
+          }
+        }
+
+        setRequestError(
+          error.response?.data?.message ||
+            "Failed to send connection request."
+        );
+      } finally {
+        setSendingRequest(false);
       }
-    );
-
-    if (
-      response.status === 200 ||
-      response.status === 201
-    ) {
-      setConnectionStatus("pending");
-      setRequestError("");
-    }
-  } catch (error) {
-    console.error(
-      "Send connection request error:",
-      error
-    );
-
-    const status =
-      error.response?.data?.status;
-
-    if (status === "pending") {
-      setConnectionStatus("pending");
-    } else if (status === "accepted") {
-      setConnectionStatus("connected");
-    } else {
-      const message =
-        error.response?.data?.message
-          ?.toLowerCase() || "";
-
-      if (
-        message.includes("pending") ||
-        message.includes("already sent")
-      ) {
-        setConnectionStatus("pending");
-      }
-
-      if (
-        message.includes("connected") ||
-        message.includes("already connected")
-      ) {
-        setConnectionStatus("connected");
-      }
-    }
-
-    setRequestError(
-      error.response?.data?.message ||
-        "Failed to send connection request."
-    );
-  } finally {
-    setSendingRequest(false);
-  }
-};
+    };
 
   // ==========================================
-  // FORMAT HELPERS
+  // FORMAT GENDER
   // ==========================================
 
-  const formatGender = (gender) => {
+  const formatGender = (
+    gender
+  ) => {
     if (!gender) {
       return "Not added";
     }
@@ -378,12 +590,20 @@ const sendConnectionRequest = async () => {
     );
   };
 
-  const formatDate = (date) => {
+  // ==========================================
+  // FORMAT DATE
+  // ==========================================
+
+  const formatDate = (
+    date
+  ) => {
     if (!date) {
       return "Not added";
     }
 
-    return new Date(date).toLocaleDateString(
+    return new Date(
+      date
+    ).toLocaleDateString(
       "en-IN",
       {
         day: "2-digit",
@@ -407,7 +627,8 @@ const sendConnectionRequest = async () => {
           athlete.user?.email || "",
 
         profilePic:
-          athlete.user?.profilePic || "",
+          athlete.user?.profilePic ||
+          "",
 
         dateOfBirth:
           athlete.dateOfBirth || "",
@@ -419,10 +640,12 @@ const sendConnectionRequest = async () => {
           athlete.phone || "",
 
         city:
-          athlete.address?.city || "",
+          athlete.address?.city ||
+          "",
 
         state:
-          athlete.address?.state || "",
+          athlete.address?.state ||
+          "",
 
         country:
           athlete.address?.country ||
@@ -454,16 +677,16 @@ const sendConnectionRequest = async () => {
 
         socialLinks: {
           instagram:
-            athlete.socialLinks?.instagram ||
-            "",
+            athlete.socialLinks
+              ?.instagram || "",
 
           facebook:
-            athlete.socialLinks?.facebook ||
-            "",
+            athlete.socialLinks
+              ?.facebook || "",
 
           youtube:
-            athlete.socialLinks?.youtube ||
-            ""
+            athlete.socialLinks
+              ?.youtube || ""
         }
       }
     : {};
@@ -472,59 +695,71 @@ const sendConnectionRequest = async () => {
   // SIDEBAR
   // ==========================================
 
-const renderSidebar = () => {
-  if (
-    isPublicProfile &&
-    currentUserRole === "coach"
-  ) {
-    return <CoachSidebar />;
-  }
-
-  if (
-    isPublicProfile &&
-    currentUserRole === "academy"
-  ) {
-    return <AcademySidebar />;
-  }
-
-  return <AthleteSidebar />;
-};
-
-const showConnectButton =
-  isPublicProfile &&
-  (currentUserRole === "coach" ||
-    currentUserRole === "academy");
-
-  const getConnectionButtonText = () => {
+  const renderSidebar = () => {
     if (
-      connectionStatus === "connected"
+      isPublicProfile &&
+      currentUserRole === "coach"
     ) {
-      return "Connected";
+      return <CoachSidebar />;
     }
 
     if (
-      connectionStatus === "pending"
+      isPublicProfile &&
+      currentUserRole === "academy"
     ) {
-      return "Request Sent";
+      return <AcademySidebar />;
     }
 
-    if (
-      connectionStatus === "rejected"
-    ) {
-      return "Connect";
-    }
-
-    if (sendingRequest) {
-      return "Sending...";
-    }
-
-    return "Connect";
+    return <AthleteSidebar />;
   };
+
+  // ==========================================
+  // CONNECT BUTTON
+  // ==========================================
+
+  const showConnectButton =
+    isPublicProfile &&
+    (
+      currentUserRole === "coach" ||
+      currentUserRole === "academy"
+    );
+
+  const getConnectionButtonText =
+    () => {
+      if (
+        connectionStatus ===
+        "connected"
+      ) {
+        return "Connected";
+      }
+
+      if (
+        connectionStatus ===
+        "pending"
+      ) {
+        return "Request Sent";
+      }
+
+      if (
+        connectionStatus ===
+        "rejected"
+      ) {
+        return "Connect";
+      }
+
+      if (sendingRequest) {
+        return "Sending...";
+      }
+
+      return "Connect";
+    };
 
   const isConnectionButtonDisabled =
     sendingRequest ||
-    connectionStatus === "pending" ||
-    connectionStatus === "connected";
+    connectionStatus ===
+      "pending" ||
+    connectionStatus ===
+      "connected";
 
   // ==========================================
   // LOADING
@@ -537,18 +772,25 @@ const showConnectButton =
 
         <main className="athlete-profile-view-content">
           <div className="profile-view-container">
+
             <div className="page-heading">
-              <h1>Athlete Profile</h1>
+              <h1>
+                Athlete Profile
+              </h1>
             </div>
 
             <section className="profile-view-section">
-              <h2>Loading Profile</h2>
+              <h2>
+                Loading Profile
+              </h2>
 
               <p className="profile-bio">
-                Please wait while we load the
-                athlete profile.
+                Please wait while we
+                load the athlete
+                profile.
               </p>
             </section>
+
           </div>
         </main>
       </div>
@@ -566,18 +808,26 @@ const showConnectButton =
 
         <main className="athlete-profile-view-content">
           <div className="profile-view-container">
+
             <div className="page-heading">
-              <h1>Athlete Profile</h1>
+              <h1>
+                Athlete Profile
+              </h1>
             </div>
 
             <div className="profile-error">
               {error}
             </div>
+
           </div>
         </main>
       </div>
     );
   }
+
+  // ==========================================
+  // NO ATHLETE
+  // ==========================================
 
   if (!athlete) {
     return (
@@ -586,9 +836,12 @@ const showConnectButton =
 
         <main className="athlete-profile-view-content">
           <div className="profile-view-container">
+
             <div className="profile-error">
-              Athlete profile not found.
+              Athlete profile not
+              found.
             </div>
+
           </div>
         </main>
       </div>
@@ -600,7 +853,8 @@ const showConnectButton =
   // ==========================================
 
   const profilePic =
-    athlete.user?.profilePic || "";
+    athlete.user?.profilePic ||
+    "";
 
   const fullLocation = [
     athlete.address?.city,
@@ -616,9 +870,11 @@ const showConnectButton =
 
   return (
     <div className="athlete-profile-view-page">
+
       {renderSidebar()}
 
       <main className="athlete-profile-view-content">
+
         <div className="profile-view-container">
 
           {/* ======================================
@@ -626,7 +882,9 @@ const showConnectButton =
           ====================================== */}
 
           <div className="page-heading profile-page-heading">
+
             <div>
+
               <span className="page-eyebrow">
                 ATHLETE PROFILE
               </span>
@@ -635,16 +893,20 @@ const showConnectButton =
                 {athlete.user?.name ||
                   "Athlete"}
               </h1>
+
             </div>
 
             <div className="profile-header-actions">
 
+              {/* OWN PROFILE */}
               {!isPublicProfile && (
                 <button
                   type="button"
                   className="generate-resume-btn"
                   onClick={() =>
-                    setShowResumeModal(true)
+                    setShowResumeModal(
+                      true
+                    )
                   }
                 >
                   <FiFileText />
@@ -652,6 +914,7 @@ const showConnectButton =
                 </button>
               )}
 
+              {/* PUBLIC PROFILE */}
               {showConnectButton && (
                 <button
                   type="button"
@@ -663,6 +926,7 @@ const showConnectButton =
                     isConnectionButtonDisabled
                   }
                 >
+
                   {connectionStatus ===
                   "connected" ? (
                     <FiCheckCircle />
@@ -671,13 +935,20 @@ const showConnectButton =
                   )}
 
                   {getConnectionButtonText()}
+
                 </button>
               )}
+
             </div>
           </div>
 
+          {/* ======================================
+              REQUEST ERROR
+          ====================================== */}
+
           {requestError &&
-            connectionStatus === "none" && (
+            connectionStatus ===
+              "none" && (
               <div className="profile-error">
                 {requestError}
               </div>
@@ -688,7 +959,9 @@ const showConnectButton =
           ====================================== */}
 
           <section className="profile-view-header">
+
             <div className="profile-view-photo">
+
               {profilePic ? (
                 <img
                   src={profilePic}
@@ -702,9 +975,11 @@ const showConnectButton =
                   <FiUser />
                 </div>
               )}
+
             </div>
 
             <div className="profile-view-user-info">
+
               <h1>
                 {athlete.user?.name ||
                   "Athlete"}
@@ -722,7 +997,9 @@ const showConnectButton =
                 {fullLocation ||
                   "Location not added"}
               </span>
+
             </div>
+
           </section>
 
           {/* ======================================
@@ -730,13 +1007,18 @@ const showConnectButton =
           ====================================== */}
 
           <section className="profile-view-section">
-            <h2>Personal Information</h2>
+
+            <h2>
+              Personal Information
+            </h2>
 
             <div className="profile-details-grid">
 
               <div className="profile-detail">
+
                 <span>
-                  <FiUser /> Gender
+                  <FiUser />
+                  Gender
                 </span>
 
                 <strong>
@@ -744,11 +1026,14 @@ const showConnectButton =
                     athlete.gender
                   )}
                 </strong>
+
               </div>
 
               <div className="profile-detail">
+
                 <span>
-                  <FiCalendar /> Date of Birth
+                  <FiCalendar />
+                  Date of Birth
                 </span>
 
                 <strong>
@@ -756,51 +1041,67 @@ const showConnectButton =
                     athlete.dateOfBirth
                   )}
                 </strong>
+
               </div>
 
               <div className="profile-detail">
+
                 <span>
-                  <FiPhone /> Phone
+                  <FiPhone />
+                  Phone
                 </span>
 
                 <strong>
                   {athlete.phone ||
                     "Not added"}
                 </strong>
+
               </div>
 
               <div className="profile-detail">
+
                 <span>
-                  <FiMail /> Email
+                  <FiMail />
+                  Email
                 </span>
 
                 <strong>
                   {athlete.user?.email ||
                     "Not available"}
                 </strong>
+
               </div>
 
               <div className="profile-detail">
-                <span>Height</span>
+
+                <span>
+                  Height
+                </span>
 
                 <strong>
                   {athlete.height
                     ? `${athlete.height} cm`
                     : "Not added"}
                 </strong>
+
               </div>
 
               <div className="profile-detail">
-                <span>Weight</span>
+
+                <span>
+                  Weight
+                </span>
 
                 <strong>
                   {athlete.weight
                     ? `${athlete.weight} kg`
                     : "Not added"}
                 </strong>
+
               </div>
 
             </div>
+
           </section>
 
           {/* ======================================
@@ -808,11 +1109,15 @@ const showConnectButton =
           ====================================== */}
 
           <section className="profile-view-section">
-            <h2>Sports Information</h2>
+
+            <h2>
+              Sports Information
+            </h2>
 
             <div className="profile-details-grid">
 
               <div className="profile-detail">
+
                 <span>
                   Primary Sport
                 </span>
@@ -821,38 +1126,52 @@ const showConnectButton =
                   {athlete.sport ||
                     "Not added"}
                 </strong>
+
               </div>
 
               <div className="profile-detail">
-                <span>Position</span>
+
+                <span>
+                  Position
+                </span>
 
                 <strong>
                   {athlete.position ||
                     "Not added"}
                 </strong>
+
               </div>
 
               <div className="profile-detail">
-                <span>Experience</span>
+
+                <span>
+                  Experience
+                </span>
 
                 <strong>
                   {athlete.experience
                     ? `${athlete.experience} Years`
                     : "0 Years"}
                 </strong>
+
               </div>
 
               <div className="profile-detail">
-                <span>Career Status</span>
+
+                <span>
+                  Career Status
+                </span>
 
                 <strong>
                   {athlete.isAvailable
                     ? "Open to Opportunities"
                     : "Currently Unavailable"}
                 </strong>
+
               </div>
 
             </div>
+
           </section>
 
           {/* ======================================
@@ -860,40 +1179,55 @@ const showConnectButton =
           ====================================== */}
 
           <section className="profile-view-section">
-            <h2>Location</h2>
+
+            <h2>
+              Location
+            </h2>
 
             <div className="profile-details-grid">
 
               <div className="profile-detail">
+
                 <span>
-                  <FiMapPin /> City
+                  <FiMapPin />
+                  City
                 </span>
 
                 <strong>
                   {athlete.address?.city ||
                     "Not added"}
                 </strong>
+
               </div>
 
               <div className="profile-detail">
-                <span>State</span>
+
+                <span>
+                  State
+                </span>
 
                 <strong>
                   {athlete.address?.state ||
                     "Not added"}
                 </strong>
+
               </div>
 
               <div className="profile-detail">
-                <span>Country</span>
+
+                <span>
+                  Country
+                </span>
 
                 <strong>
                   {athlete.address?.country ||
                     "India"}
                 </strong>
+
               </div>
 
             </div>
+
           </section>
 
           {/* ======================================
@@ -901,9 +1235,13 @@ const showConnectButton =
           ====================================== */}
 
           <section className="profile-view-section">
-            <h2>Availability</h2>
+
+            <h2>
+              Availability
+            </h2>
 
             <div className="availability-status">
+
               {athlete.isAvailable ? (
                 <>
                   <FiCheckCircle />
@@ -915,7 +1253,9 @@ const showConnectButton =
                   Currently unavailable
                 </>
               )}
+
             </div>
+
           </section>
 
           {/* ======================================
@@ -923,23 +1263,36 @@ const showConnectButton =
           ====================================== */}
 
           <section className="profile-view-section">
-            <h2>Skills</h2>
+
+            <h2>
+              Skills
+            </h2>
 
             <div className="profile-skills">
-              {athlete.skills?.length > 0 ? (
+
+              {athlete.skills?.length >
+              0 ? (
                 athlete.skills.map(
-                  (skill, index) => (
-                    <span key={index}>
+                  (
+                    skill,
+                    index
+                  ) => (
+                    <span
+                      key={index}
+                    >
                       {skill}
                     </span>
                   )
                 )
               ) : (
                 <p>
-                  No skills added yet.
+                  No skills added
+                  yet.
                 </p>
               )}
+
             </div>
+
           </section>
 
           {/* ======================================
@@ -947,11 +1300,15 @@ const showConnectButton =
           ====================================== */}
 
           <section className="profile-view-section">
-            <h2>Achievements</h2>
+
+            <h2>
+              Achievements
+            </h2>
 
             {athlete.achievements?.length >
             0 ? (
               <div className="achievement-list">
+
                 {athlete.achievements.map(
                   (
                     achievement,
@@ -964,6 +1321,7 @@ const showConnectButton =
                         index
                       }
                     >
+
                       <h3>
                         {achievement.title ||
                           "Achievement"}
@@ -976,12 +1334,16 @@ const showConnectButton =
 
                       {achievement.year && (
                         <span>
-                          {achievement.year}
+                          {
+                            achievement.year
+                          }
                         </span>
                       )}
+
                     </div>
                   )
                 )}
+
               </div>
             ) : (
               <p className="profile-bio">
@@ -989,6 +1351,7 @@ const showConnectButton =
                 yet.
               </p>
             )}
+
           </section>
 
           {/* ======================================
@@ -996,12 +1359,16 @@ const showConnectButton =
           ====================================== */}
 
           <section className="profile-view-section">
-            <h2>About</h2>
+
+            <h2>
+              About
+            </h2>
 
             <div className="profile-bio">
               {athlete.bio ||
                 "No bio added yet."}
             </div>
+
           </section>
 
           {/* ======================================
@@ -1009,13 +1376,17 @@ const showConnectButton =
           ====================================== */}
 
           <section className="profile-view-section">
-            <h2>Social Links</h2>
+
+            <h2>
+              Social Links
+            </h2>
 
             <div className="profile-skills">
 
               {athlete.socialLinks
                 ?.instagram && (
                 <span>
+
                   <a
                     href={
                       athlete.socialLinks
@@ -1024,20 +1395,24 @@ const showConnectButton =
                     target="_blank"
                     rel="noreferrer"
                     style={{
-                      color: "inherit",
+                      color:
+                        "inherit",
                       textDecoration:
                         "none"
                     }}
                   >
                     <FiInstagram />
-                    {" "}Instagram
+                    {" "}
+                    Instagram
                   </a>
+
                 </span>
               )}
 
               {athlete.socialLinks
                 ?.facebook && (
                 <span>
+
                   <a
                     href={
                       athlete.socialLinks
@@ -1046,20 +1421,24 @@ const showConnectButton =
                     target="_blank"
                     rel="noreferrer"
                     style={{
-                      color: "inherit",
+                      color:
+                        "inherit",
                       textDecoration:
                         "none"
                     }}
                   >
                     <FiFacebook />
-                    {" "}Facebook
+                    {" "}
+                    Facebook
                   </a>
+
                 </span>
               )}
 
               {athlete.socialLinks
                 ?.youtube && (
                 <span>
+
                   <a
                     href={
                       athlete.socialLinks
@@ -1068,14 +1447,17 @@ const showConnectButton =
                     target="_blank"
                     rel="noreferrer"
                     style={{
-                      color: "inherit",
+                      color:
+                        "inherit",
                       textDecoration:
                         "none"
                     }}
                   >
                     <FiYoutube />
-                    {" "}YouTube
+                    {" "}
+                    YouTube
                   </a>
+
                 </span>
               )}
 
@@ -1091,20 +1473,24 @@ const showConnectButton =
                 )}
 
             </div>
+
           </section>
 
           {/* ======================================
               SHOWCASE
-              IMPORTANT: PUBLIC PROFILE ONLY
           ====================================== */}
 
           {isPublicProfile && (
             <section className="profile-view-section">
-              <h2>Showcase</h2>
+
+              <h2>
+                Showcase
+              </h2>
 
               {showcaseLoading && (
                 <p className="profile-bio">
-                  Loading showcase posts...
+                  Loading showcase
+                  posts...
                 </p>
               )}
 
@@ -1117,28 +1503,33 @@ const showConnectButton =
 
               {!showcaseLoading &&
                 !showcaseError &&
-                showcasePosts.length === 0 && (
+                showcasePosts.length ===
+                  0 && (
                   <p className="profile-bio">
-                    No showcase posts yet.
+                    No showcase posts
+                    yet.
                   </p>
                 )}
 
               {!showcaseLoading &&
-                showcasePosts.length > 0 && (
+                showcasePosts.length >
+                  0 && (
                   <div className="athlete-showcase-grid">
 
                     {showcasePosts.map(
                       (post) => (
                         <div
                           className="athlete-showcase-card"
-                          key={post._id}
+                          key={
+                            post._id
+                          }
                         >
 
-                          {/* ==========================
-                              MEDIA
-                          ========================== */}
+                          {/* MEDIA */}
 
-                          {post.media?.length > 0 && (
+                          {post.media
+                            ?.length >
+                            0 && (
                             <div className="athlete-showcase-media">
 
                               {post.media.map(
@@ -1182,22 +1573,20 @@ const showConnectButton =
                             </div>
                           )}
 
-                          {/* ==========================
-                              CAPTION + DATE
-                          ========================== */}
+                          {/* CAPTION + DATE */}
 
                           {(post.caption ||
                             post.createdAt) && (
                             <div className="athlete-showcase-info">
 
-                              {/* LEFT */}
                               {post.caption && (
                                 <p className="athlete-showcase-caption">
-                                  {post.caption}
+                                  {
+                                    post.caption
+                                  }
                                 </p>
                               )}
 
-                              {/* RIGHT */}
                               {post.createdAt && (
                                 <span className="athlete-showcase-date">
                                   {new Date(
@@ -1206,8 +1595,10 @@ const showConnectButton =
                                     "en-IN",
                                     {
                                       day: "2-digit",
-                                      month: "short",
-                                      year: "numeric"
+                                      month:
+                                        "short",
+                                      year:
+                                        "numeric"
                                     }
                                   )}
                                 </span>
@@ -1222,6 +1613,7 @@ const showConnectButton =
 
                   </div>
                 )}
+
             </section>
           )}
 
@@ -1231,6 +1623,7 @@ const showConnectButton =
 
           {!isPublicProfile && (
             <div className="profile-bottom-actions">
+
               <button
                 className="bottom-edit-profile-btn"
                 onClick={() =>
@@ -1242,6 +1635,7 @@ const showConnectButton =
                 <FiEdit />
                 Edit Athlete Profile
               </button>
+
             </div>
           )}
 
@@ -1257,9 +1651,12 @@ const showConnectButton =
           <div
             className="resume-modal-overlay"
             onClick={() =>
-              setShowResumeModal(false)
+              setShowResumeModal(
+                false
+              )
             }
           >
+
             <div
               className="resume-modal"
               onClick={(event) =>
@@ -1268,7 +1665,9 @@ const showConnectButton =
             >
 
               <div className="resume-modal-header">
+
                 <div>
+
                   <span className="page-eyebrow">
                     ATHLYX
                   </span>
@@ -1282,21 +1681,26 @@ const showConnectButton =
                     resume before
                     downloading it.
                   </p>
+
                 </div>
 
                 <button
                   type="button"
                   className="resume-modal-close"
                   onClick={() =>
-                    setShowResumeModal(false)
+                    setShowResumeModal(
+                      false
+                    )
                   }
                   aria-label="Close resume preview"
                 >
                   <FiX />
                 </button>
+
               </div>
 
               <div className="resume-preview">
+
                 <PDFViewer
                   width="100%"
                   height="100%"
@@ -1306,6 +1710,7 @@ const showConnectButton =
                     data={resumeData}
                   />
                 </PDFViewer>
+
               </div>
 
               <div className="resume-modal-footer">
@@ -1314,7 +1719,9 @@ const showConnectButton =
                   type="button"
                   className="resume-cancel-btn"
                   onClick={() =>
-                    setShowResumeModal(false)
+                    setShowResumeModal(
+                      false
+                    )
                   }
                 >
                   Close
@@ -1323,11 +1730,14 @@ const showConnectButton =
                 <PDFDownloadLink
                   document={
                     <AthleteResume
-                      data={resumeData}
+                      data={
+                        resumeData
+                      }
                     />
                   }
                   fileName={`${(
-                    athlete.user?.name ||
+                    athlete.user
+                      ?.name ||
                     "Athlete"
                   )
                     .replace(
@@ -1337,7 +1747,9 @@ const showConnectButton =
                     .toLowerCase()}-athlyx-resume.pdf`}
                   className="resume-download-btn"
                 >
-                  {({ loading }) =>
+                  {({
+                    loading
+                  }) =>
                     loading ? (
                       "Preparing PDF..."
                     ) : (
@@ -1350,9 +1762,12 @@ const showConnectButton =
                 </PDFDownloadLink>
 
               </div>
+
             </div>
+
           </div>
         )}
+
     </div>
   );
 };

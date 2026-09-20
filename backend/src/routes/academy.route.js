@@ -27,6 +27,11 @@ router.delete(
   authMiddleware,
   academyController.deleteAcademyProfile
 );
+router.get(
+  "/all",
+  authMiddleware,
+  academyController.getAllAcademies
+);
 
 router.get(
   "/:id",

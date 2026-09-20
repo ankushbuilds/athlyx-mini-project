@@ -273,10 +273,40 @@ const deleteAcademyProfile = async (req, res) => {
 };
 
 
+
+
+
+// ======================================================
+// GET ALL ACADEMIES
+// ======================================================
+
+const getAllAcademies = async (req, res) => {
+  try {
+    const academies = await Academy.find()
+      .select(
+        "user academyName profilePic sport specialization establishedYear address city state bio isAvailable"
+      )
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      academies
+    });
+  } catch (error) {
+    console.error("Get all academies error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch academies"
+    });
+  }
+};
+
 module.exports = {
   createAcademyProfile,
   getMyAcademyProfile,
   getAcademyProfileById,
   updateAcademyProfile,
-  deleteAcademyProfile
+  deleteAcademyProfile,
+  getAllAcademies
 };

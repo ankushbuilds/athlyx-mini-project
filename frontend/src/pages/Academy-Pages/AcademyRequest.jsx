@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
 import {
   FiUser,
-  FiUsers,
   FiCheck,
   FiX,
-  FiMapPin,
-  FiAward
+  FiClock
 } from "react-icons/fi";
+
 import AcademySidebar from "../../components/AcademySidebar";
 
 const API = "http://localhost:5000/api";
@@ -17,38 +17,31 @@ const AcademyRequests = () => {
   const navigate = useNavigate();
 
   const [requests, setRequests] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState(null);
 
-  const [processingId, setProcessingId] = useState("");
-
-  // ==========================================
-  // LOAD REQUESTS
-  // ==========================================
+  // ==================================================
+  // FETCH ACADEMY REQUESTS
+  // ==================================================
 
   useEffect(() => {
-    loadRequests();
+    fetchRequests();
   }, []);
 
-  // ==========================================
-  // LOAD ACADEMY REQUESTS
-  // ==========================================
-
-  const loadRequests = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      navigate("/auth", {
-        replace: true
-      });
-
-      return;
-    }
-
+  const fetchRequests = async () => {
     try {
       setLoading(true);
       setError("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/auth", {
+          replace: true
+        });
+        return;
+      }
 
       const response = await axios.get(
         `${API}/connections/academy/requests`,
@@ -57,6 +50,11 @@ const AcademyRequests = () => {
             Authorization: `Bearer ${token}`
           }
         }
+      );
+
+      console.log(
+        "ACADEMY REQUESTS RESPONSE:",
+        response.data
       );
 
       const incomingRequests =
@@ -70,7 +68,7 @@ const AcademyRequests = () => {
 
     } catch (error) {
       console.error(
-        "Failed to load academy requests:",
+        "Failed to fetch academy requests:",
         error
       );
 
@@ -90,7 +88,7 @@ const AcademyRequests = () => {
 
       setError(
         error.response?.data?.message ||
-          "Failed to load requests."
+        "Failed to load connection requests."
       );
 
     } finally {
@@ -98,9 +96,9 @@ const AcademyRequests = () => {
     }
   };
 
-  // ==========================================
+  // ==================================================
   // GET REQUESTING USER
-  // ==========================================
+  // ==================================================
 
   const getRequester = (request) => {
     if (request?.athlete) {
@@ -123,82 +121,31 @@ const AcademyRequests = () => {
     };
   };
 
-  // ==========================================
-  // NAME
-  // ==========================================
-
-  const getName = (user) => {
-    return (
-      user?.name ||
-      "User"
-    );
-  };
-
-  // ==========================================
-  // PROFILE PIC
-  // ==========================================
-
-  const getProfilePic = (user) => {
-    return user?.profilePic || "";
-  };
-
-  // ==========================================
-  // SPORT
-  // ==========================================
-
-  const getSport = (user, type) => {
-    if (type === "Athlete") {
-      return user?.sport || "Athlete";
-    }
-
-    return user?.sport || "Coach";
-  };
-
-  // ==========================================
-  // LOCATION
-  // ==========================================
-
-  const getLocation = (user) => {
-    const city =
-      user?.address?.city ||
-      "";
-
-    const state =
-      user?.address?.state ||
-      "";
-
-    if (city && state) {
-      return `${city}, ${state}`;
-    }
-
-    return (
-      city ||
-      state ||
-      "Location not available"
-    );
-  };
-
-  // ==========================================
+  // ==================================================
   // ACCEPT / REJECT
-  // ==========================================
+  // ==================================================
 
-  const handleResponse = async (
+  const handleRequest = async (
     connectionId,
-    status
+    action
   ) => {
-    const token = localStorage.getItem("token");
-
-    if (!token || !connectionId) {
-      return;
-    }
-
     try {
-      setProcessingId(connectionId);
+      setActionLoading(connectionId);
+      setError("");
 
-      await axios.put(
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/auth", {
+          replace: true
+        });
+        return;
+      }
+
+      const response = await axios.put(
         `${API}/connections/academy/respond/${connectionId}`,
         {
-          status
+          action
         },
         {
           headers: {
@@ -207,6 +154,12 @@ const AcademyRequests = () => {
         }
       );
 
+      console.log(
+        "ACADEMY REQUEST RESPONSE:",
+        response.data
+      );
+
+      // Remove processed request
       setRequests((previousRequests) =>
         previousRequests.filter(
           (request) =>
@@ -216,23 +169,23 @@ const AcademyRequests = () => {
 
     } catch (error) {
       console.error(
-        "Failed to respond to request:",
+        "Failed to respond to academy request:",
         error
       );
 
       setError(
         error.response?.data?.message ||
-          "Failed to update request."
+        "Failed to update connection request."
       );
 
     } finally {
-      setProcessingId("");
+      setActionLoading(null);
     }
   };
 
-  // ==========================================
+  // ==================================================
   // VIEW PROFILE
-  // ==========================================
+  // ==================================================
 
   const handleViewProfile = (
     request,
@@ -252,125 +205,145 @@ const AcademyRequests = () => {
     );
   };
 
-  // ==========================================
-  // RENDER
-  // ==========================================
+  // ==================================================
+  // LOADING
+  // ==================================================
 
-  return (
-    <div className="coach-athletes-page">
+  if (loading) {
+    return (
+      <div className="athlete-profile-view-page">
 
-      <AcademySidebar />
+        <AcademySidebar />
 
-      <main className="coach-athletes-content">
+        <main className="athlete-profile-view-content">
 
-        <div className="coach-athletes-container">
+          <div className="profile-view-container">
 
-          {/* ======================================
-              HEADER
-          ====================================== */}
+            <div className="page-heading">
 
-          <div className="coach-athletes-header">
-
-            <div>
-
-              <span className="coach-athletes-eyebrow">
-                CONNECTION REQUESTS
+              <span className="page-eyebrow">
+                CONNECTIONS
               </span>
 
               <h1>
                 Requests
               </h1>
 
-              <p>
-                Manage connection requests from
-                athletes and coaches.
-              </p>
-
             </div>
 
-            {!loading && !error && (
-              <div className="coach-athletes-count">
-
-                <span>
-                  {requests.length}
-                </span>
-
-                <small>
-                  {requests.length === 1
-                    ? "Request"
-                    : "Requests"}
-                </small>
-
-              </div>
-            )}
-
-          </div>
-
-          {/* ======================================
-              ERROR
-          ====================================== */}
-
-          {error && (
-            <div className="coach-athletes-error">
-              {error}
-            </div>
-          )}
-
-          {/* ======================================
-              LOADING
-          ====================================== */}
-
-          {loading && (
-            <div className="coach-athletes-loading">
-
-              <div className="loading-spinner"></div>
+            <section className="profile-view-section">
 
               <h2>
                 Loading Requests
               </h2>
 
-              <p>
-                Fetching your connection requests.
+              <p className="profile-bio">
+                Please wait while we load
+                your connection requests.
               </p>
 
+            </section>
+
+          </div>
+
+        </main>
+
+      </div>
+    );
+  }
+
+  // ==================================================
+  // PAGE
+  // ==================================================
+
+  return (
+    <div className="athlete-profile-view-page">
+
+      <AcademySidebar />
+
+      <main className="athlete-profile-view-content">
+
+        <div className="profile-view-container">
+
+          {/* =========================================
+              HEADER
+          ========================================= */}
+
+          <div className="page-heading profile-page-heading">
+
+            <div>
+
+              <span className="page-eyebrow">
+                CONNECTIONS
+              </span>
+
+              <h1>
+                Requests
+              </h1>
+
+            </div>
+
+            <div>
+
+              <span className="page-eyebrow">
+                {requests.length} Pending
+              </span>
+
+            </div>
+
+          </div>
+
+          {/* =========================================
+              ERROR
+          ========================================= */}
+
+          {error && (
+            <div className="profile-error">
+              {error}
             </div>
           )}
 
-          {/* ======================================
-              EMPTY
-          ====================================== */}
+          {/* =========================================
+              NO REQUESTS
+          ========================================= */}
 
-          {!loading &&
-            !error &&
-            requests.length === 0 && (
-              <div className="coach-athletes-empty">
+          {requests.length === 0 && !error && (
+            <section className="profile-view-section">
 
-                <div className="empty-icon">
-                  <FiUsers size={30} />
-                </div>
+              <div className="academy-requests-empty">
+
+                <FiClock
+                  size={42}
+                  className="academy-requests-empty-icon"
+                />
 
                 <h2>
                   No Pending Requests
                 </h2>
 
-                <p>
-                  New connection requests from
-                  athletes or coaches will appear
-                  here.
+                <p className="profile-bio">
+                  You don't have any connection
+                  requests right now.
                 </p>
 
               </div>
-            )}
 
-          {/* ======================================
-              REQUEST GRID
-          ====================================== */}
+            </section>
+          )}
 
-          {!loading &&
-            !error &&
-            requests.length > 0 && (
+          {/* =========================================
+              REQUEST LIST
+          ========================================= */}
 
-              <div className="coach-athletes-grid">
+          {requests.length > 0 && (
+
+            <section className="profile-view-section">
+
+              <h2>
+                Pending Requests
+              </h2>
+
+              <div className="academy-request-list">
 
                 {requests.map((request) => {
 
@@ -379,139 +352,111 @@ const AcademyRequests = () => {
                     type
                   } = getRequester(request);
 
-                  const profilePic =
-                    getProfilePic(user);
-
-                  const isProcessing =
-                    processingId === request._id;
+                  const isLoading =
+                    actionLoading ===
+                    request?._id;
 
                   return (
                     <div
-                      key={request._id}
-                      className="coach-athlete-card"
+                      key={request?._id}
+                      className="academy-request-card"
                     >
 
-                      {/* ==================================
-                          CARD TOP
-                      ================================== */}
+                      {/* =================================
+                          USER INFO
+                      ================================= */}
 
-                      <div className="athlete-card-top">
+                      <div className="academy-request-user">
 
-                        <div className="athlete-avatar">
+                        <div className="profile-view-photo academy-request-photo">
 
-                          {profilePic ? (
+                          {user?.profilePic ? (
+
                             <img
-                              src={profilePic}
-                              alt={getName(user)}
+                              src={user.profilePic}
+                              alt={
+                                user.name ||
+                                type
+                              }
                             />
+
                           ) : (
-                            <FiUser size={25} />
+
+                            <div className="profile-view-placeholder">
+                              <FiUser />
+                            </div>
+
                           )}
 
                         </div>
 
-                        <div className="athlete-card-status pending">
+                        <div className="academy-request-user-info">
 
-                          <span></span>
+                          <h3>
+                            {user?.name ||
+                              type}
+                          </h3>
 
-                          Pending
-
-                        </div>
-
-                      </div>
-
-                      {/* ==================================
-                          USER INFO
-                      ================================== */}
-
-                      <div className="athlete-card-info">
-
-                        <h3>
-                          {getName(user)}
-                        </h3>
-
-                        <p className="athlete-position">
-                          {type}
-                        </p>
-
-                      </div>
-
-                      {/* ==================================
-                          DETAILS
-                      ================================== */}
-
-                      <div className="athlete-card-details">
-
-                        <div className="athlete-detail">
-
-                          <FiAward size={16} />
+                          <p>
+                            {user?.email ||
+                              "No email available"}
+                          </p>
 
                           <span>
-                            {getSport(
-                              user,
-                              type
-                            )}
-                          </span>
-
-                        </div>
-
-                        <div className="athlete-detail">
-
-                          <FiMapPin size={16} />
-
-                          <span>
-                            {getLocation(user)}
+                            {type} wants to connect
+                            with you
                           </span>
 
                         </div>
 
                       </div>
 
-                      {/* ==================================
-                          REQUEST ACTIONS
-                      ================================== */}
+                      {/* =================================
+                          ACTIONS
+                      ================================= */}
 
-                      <div className="athlete-card-footer">
+                      <div className="academy-request-actions">
 
-                        <button
-                          type="button"
-                          disabled={isProcessing}
-                          onClick={() =>
-                            handleViewProfile(
-                              request,
-                              type
-                            )
-                          }
-                        >
-                          View Profile
-                        </button>
+                       
+
+                        {/* ACCEPT */}
 
                         <button
                           type="button"
-                          disabled={isProcessing}
+                          className="connection-accept-btn"
                           onClick={() =>
-                            handleResponse(
-                              request._id,
-                              "rejected"
-                            )
-                          }
-                          title="Reject request"
-                        >
-                          <FiX size={17} />
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={isProcessing}
-                          onClick={() =>
-                            handleResponse(
+                            handleRequest(
                               request._id,
                               "accepted"
                             )
                           }
-                          title="Accept request"
+                          disabled={isLoading}
                         >
-                          <FiCheck size={17} />
+                          <FiCheck />
+
+                          {isLoading
+                            ? "..."
+                            : "Accept"}
+                        </button>
+
+                        {/* REJECT */}
+
+                        <button
+                          type="button"
+                          className="connection-reject-btn"
+                          onClick={() =>
+                            handleRequest(
+                              request._id,
+                              "rejected"
+                            )
+                          }
+                          disabled={isLoading}
+                        >
+                          <FiX />
+
+                          {isLoading
+                            ? "..."
+                            : "Reject"}
                         </button>
 
                       </div>
@@ -521,7 +466,9 @@ const AcademyRequests = () => {
                 })}
 
               </div>
-            )}
+
+            </section>
+          )}
 
         </div>
 

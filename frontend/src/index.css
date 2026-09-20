@@ -6735,17 +6735,22 @@ body {
 }
 
 .coach-athletes-content {
-  width: calc(100% - 92px);
+  flex: 1;
+  width: calc(100% - 70px);
   min-width: 0;
-  margin-left: 92px;
-  padding: 32px 36px 40px;
+  margin-left: 70px;
+  padding: 32px 36px 50px;
+  background: #111111;
+  color: #f2f2f2;
+  overflow-y: auto;
   box-sizing: border-box;
 }
 
 .coach-athletes-container {
-  width: 100%;
-  max-width: 1500px;
-  margin: 0 auto;
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+    box-sizing: border-box;
 }
 
 .coach-athletes-header {
@@ -7160,9 +7165,9 @@ body {
 }
 
 @media (max-width: 800px) {
-  .coach-athletes-content {
-    width: calc(100% - 88px);
-    margin-left: 88px;
+   .coach-athletes-content {
+    width: calc(100% - 70px);
+    margin-left: 70px;
     padding: 26px 22px 35px;
   }
 
@@ -7181,9 +7186,9 @@ body {
 }
 
 @media (max-width: 600px) {
-  .coach-athletes-content {
-    width: calc(100% - 82px);
-    margin-left: 82px;
+    .coach-athletes-content {
+    width: calc(100% - 70px);
+    margin-left: 70px;
     padding: 22px 16px 30px;
   }
 
@@ -9552,11 +9557,7 @@ body {
     overflow-y: auto;
 }
 
-.coach-athletes-container {
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto;
-}
+
 
 
 /* =========================================================
@@ -10520,4 +10521,12 @@ body {
     .save-profile-btn {
         width: 100%;
     }
+}
+
+
+.academy-request-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;        /* Accept aur Reject ke beech */
+    margin-top: 12px; /* user info se neeche */
 }

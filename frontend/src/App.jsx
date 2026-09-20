@@ -53,6 +53,7 @@ import AcademyRequest from "./pages/Academy-Pages/AcademyRequest";
 import AcademySettings from "./pages/Academy-Pages/AcademySettings";
 
 
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -274,6 +275,10 @@ const App = () => {
         <Route
           path="/academy/settings"
           element={<AcademySettings />}
+        />
+        <Route
+          path="/profile/academy/:academyId"
+          element={<AcademyProfile />}
         />
 
       </Routes>

@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import {
     FiUser,
@@ -14,29 +13,288 @@ import {
     FiGlobe,
     FiInstagram,
     FiFacebook,
-    FiCheckCircle
+    FiCheckCircle,
+    FiUserPlus,
+    FiClock,
+    FiCheck
 } from "react-icons/fi";
 
 import AcademySidebar from "../../components/AcademySidebar";
+import AthleteSidebar from "../../components/AthleteSidebar";
 
 const API = "http://localhost:5000/api";
 
 const AcademyProfile = () => {
     const navigate = useNavigate();
+    const { academyId } = useParams();
 
     const [academy, setAcademy] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [connectionStatus, setConnectionStatus] = useState("none");
+    const [connectionLoading, setConnectionLoading] = useState(false);
+
+    // ==========================================
+    // DETERMINE PROFILE TYPE
+    // ==========================================
+
+    const isPublicProfile = Boolean(academyId);
+
+    // ==========================================
+    // LOAD CURRENT USER
+    // ==========================================
+
+    useEffect(() => {
+        try {
+            const storedUser = localStorage.getItem("user");
+
+            if (storedUser) {
+                setCurrentUser(JSON.parse(storedUser));
+            }
+        } catch (error) {
+            console.error("Failed to load current user:", error);
+        }
+    }, []);
+
+    // ==========================================
+    // GET ACADEMY USER ID
+    // ==========================================
+   
+
+    const getAcademyUserId = () => {
+        if (!academy) {
+            return null;
+        }
+
+        // academy.user is populated object
+        if (
+            academy.user &&
+            typeof academy.user === "object" &&
+            academy.user._id
+        ) {
+            return academy.user._id;
+        }
+
+        // academy.user is directly an ObjectId string
+        if (academy.user) {
+            return academy.user;
+        }
+
+        // In case backend returns userId separately
+        if (academy.userId) {
+            return academy.userId;
+        }
+
+        return null;
+    };
 
     // ==========================================
     // LOAD PROFILE
     // ==========================================
 
     useEffect(() => {
-        loadProfile();
-    }, []);
+        const loadProfile = async () => {
+            const token = localStorage.getItem("token");
 
-    const loadProfile = async () => {
+            if (!token) {
+                navigate("/auth", {
+                    replace: true
+                });
+
+                return;
+            }
+
+            try {
+                setLoading(true);
+                setError("");
+
+                let response;
+
+                // ======================================
+                // PUBLIC ACADEMY PROFILE
+                // ======================================
+
+                if (isPublicProfile) {
+                    response = await axios.get(
+                        `${API}/academies/${academyId}`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`
+                            }
+                        }
+                    );
+                }
+
+                // ======================================
+                // OWN ACADEMY PROFILE
+                // ======================================
+
+                else {
+                    response = await axios.get(
+                        `${API}/academies/profile`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`
+                            }
+                        }
+                    );
+                }
+
+                const profile =
+                    response.data?.academy ||
+                    response.data ||
+                    null;
+
+                if (!profile) {
+                    setError("Academy profile not found.");
+                    return;
+                }
+
+                console.log("ACADEMY PROFILE:", profile);
+                console.log(
+                    "ACADEMY PROFILE ID:",
+                    profile._id
+                );
+                console.log(
+                    "ACADEMY USER:",
+                    profile.user
+                );
+                console.log(
+                    "ACADEMY USER ID:",
+                    profile.user?._id || profile.user
+                );
+
+                setAcademy(profile);
+
+            } catch (error) {
+                console.error(
+                    "Failed to load academy profile:",
+                    error
+                );
+
+                if (
+                    error.response?.status === 401 ||
+                    error.response?.status === 403
+                ) {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+
+                    navigate("/auth", {
+                        replace: true
+                    });
+
+                    return;
+                }
+
+                setError(
+                    error.response?.data?.message ||
+                    "Failed to load academy profile."
+                );
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadProfile();
+    }, [academyId, isPublicProfile, navigate]);
+
+    // ==========================================
+    // CHECK CONNECTION STATUS
+    // ==========================================
+
+    useEffect(() => {
+        const checkConnection = async () => {
+            if (
+                !isPublicProfile ||
+                !academy ||
+                !currentUser ||
+                currentUser.role !== "athlete"
+            ) {
+                return;
+            }
+
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                return;
+            }
+
+            // IMPORTANT:
+            // Connection API needs Academy USER ID,
+            // NOT Academy profile ID.
+
+            const academyUserId = getAcademyUserId();
+
+            if (!academyUserId) {
+                console.error(
+                    "Academy User ID not found.",
+                    academy
+                );
+
+                setConnectionStatus("none");
+                return;
+            }
+
+            try {
+                console.log(
+                    "Checking academy connection using User ID:",
+                    academyUserId
+                );
+
+                const response = await axios.get(
+                    `${API}/connections/status/athlete/academy/${academyUserId}`,
+                    {
+                        headers: {
+                            Authorization:
+                                `Bearer ${token}`
+                        }
+                    }
+                );
+
+                console.log(
+                    "Academy connection status:",
+                    response.data
+                );
+
+                setConnectionStatus(
+                    response.data?.status ||
+                    "none"
+                );
+
+            } catch (error) {
+                console.error(
+                    "Failed to check academy connection:",
+                    error
+                );
+
+                setConnectionStatus("none");
+            }
+        };
+
+        checkConnection();
+
+    }, [
+        academy,
+        currentUser,
+        isPublicProfile
+    ]);
+
+    // ==========================================
+    // SEND CONNECTION REQUEST
+    // ==========================================
+
+    const handleConnect = async () => {
+        if (
+            !academy ||
+            !currentUser ||
+            currentUser.role !== "athlete"
+        ) {
+            return;
+        }
+
         const token = localStorage.getItem("token");
 
         if (!token) {
@@ -47,57 +305,79 @@ const AcademyProfile = () => {
             return;
         }
 
-        try {
-            setLoading(true);
-            setError("");
+        // IMPORTANT:
+        // Use Academy USER ID here.
+        // Do NOT use academy._id.
 
-            const response = await axios.get(
-                `${API}/academies/profile`,
+        const academyUserId = getAcademyUserId();
+
+        if (!academyUserId) {
+            console.error(
+                "Academy User ID is missing:",
+                academy
+            );
+
+            alert(
+                "Academy account information is missing. Please try again."
+            );
+
+            return;
+        }
+
+        try {
+            setConnectionLoading(true);
+
+            console.log(
+                "Sending academy connection request to User ID:",
+                academyUserId
+            );
+
+            const response = await axios.post(
+                `${API}/connections/send/athlete/academy/${academyUserId}`,
+                {},
                 {
                     headers: {
-                        Authorization: `Bearer ${token}`
+                        Authorization:
+                            `Bearer ${token}`
                     }
                 }
             );
 
-            setAcademy(
-                response.data?.academy ||
-                response.data ||
-                null
-            );
-
-        } catch (error) {
-            console.error(
-                "Failed to load academy profile:",
-                error
+            console.log(
+                "Academy connection response:",
+                response.data
             );
 
             if (
-                error.response?.status === 401 ||
-                error.response?.status === 403
+                response.data?.success ||
+                response.data?.status === "pending"
             ) {
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
-
-                navigate("/auth", {
-                    replace: true
-                });
-
-                return;
+                setConnectionStatus("pending");
+            } else {
+                setConnectionStatus(
+                    response.data?.status ||
+                    "pending"
+                );
             }
 
-            setError(
+        } catch (error) {
+            console.error(
+                "Failed to send academy connection request:",
+                error
+            );
+
+            alert(
                 error.response?.data?.message ||
-                "Failed to load academy profile."
+                "Failed to send connection request."
             );
 
         } finally {
-            setLoading(false);
+            setConnectionLoading(false);
         }
     };
 
     // ==========================================
-    // HELPERS
+    // LOCATION
     // ==========================================
 
     const getLocation = () => {
@@ -117,6 +397,10 @@ const AcademyProfile = () => {
         );
     };
 
+    // ==========================================
+    // PROFILE PICTURE
+    // ==========================================
+
     const getProfilePic = () => {
         return (
             academy?.profilePic ||
@@ -125,11 +409,108 @@ const AcademyProfile = () => {
         );
     };
 
+    // ==========================================
+    // ACADEMY NAME
+    // ==========================================
+
     const getAcademyName = () => {
         return (
             academy?.academyName ||
             academy?.user?.name ||
             "Academy"
+        );
+    };
+
+    // ==========================================
+    // ACADEMY USER ID
+    // ==========================================
+
+    const academyUserId = getAcademyUserId();
+
+    // ==========================================
+    // SHOULD SHOW CONNECT BUTTON?
+    // ==========================================
+
+    const shouldShowConnect =
+        isPublicProfile &&
+        currentUser?.role === "athlete" &&
+        academy &&
+        academyUserId &&
+        String(currentUser._id) !==
+            String(academyUserId);
+
+    // ==========================================
+    // SIDEBAR
+    // ==========================================
+
+    const renderSidebar = () => {
+        if (isPublicProfile) {
+            return <AthleteSidebar />;
+        }
+
+        return <AcademySidebar />;
+    };
+
+    // ==========================================
+    // CONNECTION BUTTON
+    // ==========================================
+
+    const renderConnectionButton = () => {
+        if (!shouldShowConnect) {
+            return null;
+        }
+
+        // ======================================
+        // CONNECTED
+        // ======================================
+
+        if (connectionStatus === "accepted") {
+            return (
+                <button
+                    type="button"
+                    className="bottom-edit-profile-btn"
+                    disabled
+                >
+                    <FiCheck size={16} />
+                    Connected
+                </button>
+            );
+        }
+
+        // ======================================
+        // REQUEST SENT
+        // ======================================
+
+        if (connectionStatus === "pending") {
+            return (
+                <button
+                    type="button"
+                    className="bottom-edit-profile-btn"
+                    disabled
+                >
+                    <FiClock size={16} />
+                    Request Sent
+                </button>
+            );
+        }
+
+        // ======================================
+        // REJECTED / NONE
+        // ======================================
+
+        return (
+            <button
+                type="button"
+                className="bottom-edit-profile-btn"
+                onClick={handleConnect}
+                disabled={connectionLoading}
+            >
+                <FiUserPlus size={16} />
+
+                {connectionLoading
+                    ? "Sending..."
+                    : "Connect"}
+            </button>
         );
     };
 
@@ -141,7 +522,7 @@ const AcademyProfile = () => {
         return (
             <div className="dashboard-layout">
 
-                <AcademySidebar />
+                {renderSidebar()}
 
                 <main className="coach-athletes-content">
 
@@ -154,7 +535,7 @@ const AcademyProfile = () => {
                         </h2>
 
                         <p>
-                            Please wait while we load your
+                            Please wait while we load the
                             academy profile.
                         </p>
 
@@ -174,7 +555,7 @@ const AcademyProfile = () => {
         return (
             <div className="dashboard-layout">
 
-                <AcademySidebar />
+                {renderSidebar()}
 
                 <main className="coach-athletes-content">
 
@@ -194,7 +575,9 @@ const AcademyProfile = () => {
 
                         <button
                             type="button"
-                            onClick={loadProfile}
+                            onClick={() =>
+                                window.location.reload()
+                            }
                         >
                             Try Again
                         </button>
@@ -214,7 +597,7 @@ const AcademyProfile = () => {
     return (
         <div className="dashboard-layout">
 
-            <AcademySidebar />
+            {renderSidebar()}
 
             <main className="coach-athletes-content">
 
@@ -233,12 +616,15 @@ const AcademyProfile = () => {
                             </span>
 
                             <h1>
-                                My Profile
+                                {isPublicProfile
+                                    ? getAcademyName()
+                                    : "My Profile"}
                             </h1>
 
                             <p>
-                                Manage your academy information
-                                and public profile.
+                                {isPublicProfile
+                                    ? "View academy information, training programs and opportunities."
+                                    : "Manage your academy information and public profile."}
                             </p>
 
                         </div>
@@ -251,12 +637,10 @@ const AcademyProfile = () => {
 
                     <div className="coach-athlete-card">
 
-                        {/* PROFILE TOP */}
-
                         <div className="athlete-card-top">
 
                             <div className="athlete-avatar">
-                       
+
                                 {getProfilePic() ? (
                                     <img
                                         src={getProfilePic()}
@@ -280,8 +664,6 @@ const AcademyProfile = () => {
 
                         </div>
 
-                        {/* BASIC INFO */}
-
                         <div className="athlete-card-info">
 
                             <h3>
@@ -295,8 +677,6 @@ const AcademyProfile = () => {
                             </p>
 
                         </div>
-
-                        {/* DETAILS */}
 
                         <div className="athlete-card-details">
 
@@ -365,8 +745,6 @@ const AcademyProfile = () => {
                                         ABOUT
                                     </span>
 
-                                   
-
                                 </div>
 
                             </div>
@@ -396,8 +774,6 @@ const AcademyProfile = () => {
                                         <span className="coach-athletes-eyebrow">
                                             TRAINING PROGRAMS
                                         </span>
-
-                                      
 
                                     </div>
 
@@ -438,8 +814,6 @@ const AcademyProfile = () => {
                                             FACILITIES
                                         </span>
 
-                                       
-
                                     </div>
 
                                 </div>
@@ -478,8 +852,6 @@ const AcademyProfile = () => {
                                         <span className="coach-athletes-eyebrow">
                                             ACHIEVEMENTS
                                         </span>
-
-                                       
 
                                     </div>
 
@@ -521,8 +893,6 @@ const AcademyProfile = () => {
                                         <span className="coach-athletes-eyebrow">
                                             ONLINE PRESENCE
                                         </span>
-
-                                      
 
                                     </div>
 
@@ -575,20 +945,32 @@ const AcademyProfile = () => {
                         )}
 
                     {/* ======================================
-                        EDIT PROFILE BUTTON
+                        ACTION BUTTONS
                     ====================================== */}
 
                     <div className="profile-action-bottom">
 
-                        <button className="bottom-edit-profile-btn"
-                            type="button"
-                            onClick={() =>
-                                navigate("/academy/edit-profile")
-                            }
-                        >
-                            <FiEdit2 size={16} />
-                            Edit Profile
-                        </button>
+                        {/* OWN ACADEMY PROFILE */}
+
+                        {!isPublicProfile && (
+                            <button
+                                className="bottom-edit-profile-btn"
+                                type="button"
+                                onClick={() =>
+                                    navigate(
+                                        "/academy/edit-profile"
+                                    )
+                                }
+                            >
+                                <FiEdit2 size={16} />
+                                Edit Profile
+                            </button>
+                        )}
+
+                        {/* ATHLETE VIEWING ACADEMY */}
+
+                        {isPublicProfile &&
+                            renderConnectionButton()}
 
                     </div>
 
