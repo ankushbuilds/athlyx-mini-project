@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -10,7 +9,8 @@ import {
   FiCompass,
   FiUserPlus,
   FiMessageCircle,
-  FiSettings
+  FiSettings,
+  FiCalendar
 } from "react-icons/fi";
 
 const API = "http://localhost:5000/api";
@@ -167,6 +167,7 @@ const AcademySidebar = () => {
         <FiGrid size={22} />
       </div>
 
+
       {/* ==================================================
           MY PROFILE
       ================================================== */}
@@ -184,6 +185,7 @@ const AcademySidebar = () => {
       >
         <FiUser size={22} />
       </div>
+
 
       {/* ==================================================
           MY ATHLETES
@@ -203,6 +205,7 @@ const AcademySidebar = () => {
         <FiUsers size={22} />
       </div>
 
+
       {/* ==================================================
           DISCOVER
       ================================================== */}
@@ -220,6 +223,26 @@ const AcademySidebar = () => {
       >
         <FiCompass size={22} />
       </div>
+
+
+      {/* ==================================================
+          EVENTS
+      ================================================== */}
+
+      <div
+        className={`sidebar-item ${
+          isActive("/academy/events")
+            ? "active"
+            : ""
+        }`}
+        data-tooltip="Events"
+        onClick={() =>
+          navigate("/academy/events")
+        }
+      >
+        <FiCalendar size={22} />
+      </div>
+
 
       {/* ==================================================
           REQUESTS
@@ -255,6 +278,7 @@ const AcademySidebar = () => {
         </div>
       </div>
 
+
       {/* ==================================================
           MESSAGES
       ================================================== */}
@@ -288,6 +312,7 @@ const AcademySidebar = () => {
 
         </div>
       </div>
+
 
       {/* ==================================================
           SETTINGS

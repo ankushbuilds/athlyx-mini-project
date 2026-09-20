@@ -1,6 +1,12 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
+import {
+    FiCamera,
+    FiHome
+} from "react-icons/fi";
+
 import AcademySidebar from "../../components/AcademySidebar";
 
 const API = "http://localhost:5000/api";
@@ -9,14 +15,30 @@ const AcademyProfileEdit = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // ==========================================
-    // CREATE / EDIT MODE
-    // ==========================================
-
     const isCreateMode =
         location.pathname === "/academy/create-profile";
 
-    const isEditMode = !isCreateMode;
+    const [loadingProfile, setLoadingProfile] =
+        useState(true);
+
+    const [loading, setLoading] =
+        useState(false);
+
+    const [uploadingPhoto, setUploadingPhoto] =
+        useState(false);
+
+    const [error, setError] =
+        useState("");
+
+    const [successMessage, setSuccessMessage] =
+        useState("");
+
+    // ==========================================
+    // PROFILE PICTURE
+    // ==========================================
+
+    const [profilePic, setProfilePic] =
+        useState("");
 
     // ==========================================
     // FORM DATA
@@ -41,21 +63,338 @@ const AcademyProfileEdit = () => {
         facebook: ""
     });
 
-    const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
-
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
-
     // ==========================================
-    // FETCH PROFILE
+    // LOAD PROFILE
     // ==========================================
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            const token = localStorage.getItem("token");
+        loadProfile();
+    }, [isCreateMode]);
 
-            if (!token) {
+    const loadProfile = async () => {
+        const token =
+            localStorage.getItem("token");
+
+        if (!token) {
+            navigate("/auth", {
+                replace: true
+            });
+
+            return;
+        }
+
+        try {
+            setLoadingProfile(true);
+            setError("");
+
+            // ======================================
+            // CREATE MODE
+            // ======================================
+
+            if (isCreateMode) {
+                /*
+                 * Create profile page intentionally
+                 * starts with empty form.
+                 *
+                 * User profile picture is still loaded
+                 * so an already uploaded photo can be
+                 * displayed here as well.
+                 */
+
+                try {
+                    const userResponse =
+                        await axios.get(
+                            `${API}/auth/me`,
+                            {
+                                headers: {
+                                    Authorization:
+                                        `Bearer ${token}`
+                                }
+                            }
+                        );
+
+                    const user =
+                        userResponse.data?.user ||
+                        userResponse.data;
+
+                    if (user) {
+                        setProfilePic(
+                            user.profilePic ||
+                            ""
+                        );
+
+                        // Keep localStorage updated
+                        localStorage.setItem(
+                            "user",
+                            JSON.stringify({
+                                ...user,
+                                profilePic:
+                                    user.profilePic ||
+                                    ""
+                            })
+                        );
+                    }
+
+                } catch (userError) {
+                    console.error(
+                        "Failed to load current user:",
+                        userError
+                    );
+                }
+
+                setLoadingProfile(false);
+                return;
+            }
+
+            // ======================================
+            // EDIT MODE
+            // ======================================
+
+            /*
+             * IMPORTANT:
+             * Load User separately because profilePic
+             * belongs to User model.
+             */
+
+            const [userResponse, academyResponse] =
+                await Promise.all([
+                    axios.get(
+                        `${API}/auth/me`,
+                        {
+                            headers: {
+                                Authorization:
+                                    `Bearer ${token}`
+                            }
+                        }
+                    ),
+
+                    axios.get(
+                        `${API}/academies/profile`,
+                        {
+                            headers: {
+                                Authorization:
+                                    `Bearer ${token}`
+                            }
+                        }
+                    )
+                ]);
+
+            // ======================================
+            // CURRENT USER
+            // ======================================
+
+            const user =
+                userResponse.data?.user ||
+                userResponse.data ||
+                null;
+
+            if (user) {
+                console.log(
+                    "CURRENT ACADEMY USER:",
+                    user
+                );
+
+                console.log(
+                    "CURRENT ACADEMY PROFILE PIC:",
+                    user.profilePic
+                );
+
+                setProfilePic(
+                    user.profilePic ||
+                    ""
+                );
+
+                // Update localStorage
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                        ...user,
+                        profilePic:
+                            user.profilePic ||
+                            ""
+                    })
+                );
+            }
+
+            // ======================================
+            // ACADEMY PROFILE
+            // ======================================
+
+            const profile =
+                academyResponse.data?.academy ||
+                academyResponse.data ||
+                null;
+
+            if (!profile) {
+                setError(
+                    "Academy profile not found."
+                );
+
+                return;
+            }
+
+            console.log(
+                "ACADEMY EDIT PROFILE:",
+                profile
+            );
+
+            // ======================================
+            // PROFILE PICTURE FALLBACK
+            // ======================================
+
+            /*
+             * Priority:
+             *
+             * 1. User from /auth/me
+             * 2. academy.profilePic
+             * 3. academy.user.profilePic
+             */
+
+            if (user?.profilePic) {
+                setProfilePic(
+                    user.profilePic
+                );
+            } else {
+                setProfilePic(
+                    profile.profilePic ||
+                    profile.user?.profilePic ||
+                    ""
+                );
+            }
+
+            // ======================================
+            // SOCIAL LINKS
+            // ======================================
+
+            const socialLinks =
+                profile.socialLinks || {};
+
+            // ======================================
+            // FORM DATA
+            // ======================================
+
+            setFormData({
+                academyName:
+                    profile.academyName ||
+                    "",
+
+                sport:
+                    profile.sport ||
+                    "",
+
+                specialization:
+                    profile.specialization ||
+                    "",
+
+                establishedYear:
+                    profile.establishedYear ||
+                    "",
+
+                phone:
+                    profile.phone ||
+                    "",
+
+                address:
+                    profile.address ||
+                    "",
+
+                city:
+                    profile.city ||
+                    "",
+
+                state:
+                    profile.state ||
+                    "",
+
+                // ==================================
+                // ARRAY → STRING
+                // ==================================
+
+                trainingPrograms:
+                    Array.isArray(
+                        profile.trainingPrograms
+                    )
+                        ? profile.trainingPrograms.join(
+                            ", "
+                        )
+                        : profile.trainingPrograms ||
+                          "",
+
+                facilities:
+                    Array.isArray(
+                        profile.facilities
+                    )
+                        ? profile.facilities.join(
+                            ", "
+                        )
+                        : profile.facilities ||
+                          "",
+
+                achievements:
+                    Array.isArray(
+                        profile.achievements
+                    )
+                        ? profile.achievements
+                            .map((item) => {
+                                if (
+                                    typeof item ===
+                                    "string"
+                                ) {
+                                    return item;
+                                }
+
+                                return (
+                                    item?.title ||
+                                    item?.name ||
+                                    ""
+                                );
+                            })
+                            .filter(Boolean)
+                            .join(", ")
+                        : profile.achievements ||
+                          "",
+
+                bio:
+                    profile.bio ||
+                    "",
+
+                isAvailable:
+                    profile.isAvailable !==
+                    undefined
+                        ? profile.isAvailable
+                        : true,
+
+                website:
+                    socialLinks.website ||
+                    "",
+
+                instagram:
+                    socialLinks.instagram ||
+                    "",
+
+                facebook:
+                    socialLinks.facebook ||
+                    ""
+            });
+
+        } catch (error) {
+            console.error(
+                "Failed to load academy profile:",
+                error
+            );
+
+            if (
+                error.response?.status === 401 ||
+                error.response?.status === 403
+            ) {
+                localStorage.removeItem(
+                    "token"
+                );
+
+                localStorage.removeItem(
+                    "user"
+                );
+
                 navigate("/auth", {
                     replace: true
                 });
@@ -63,155 +402,15 @@ const AcademyProfileEdit = () => {
                 return;
             }
 
-            if (isCreateMode) {
-                setLoading(false);
-                return;
-            }
+            setError(
+                error.response?.data?.message ||
+                "Failed to load academy profile."
+            );
 
-            try {
-                setLoading(true);
-                setError("");
-
-                const response = await axios.get(
-                    `${API}/academies/profile`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    }
-                );
-
-                const academy =
-                    response.data?.academy ||
-                    response.data?.profile ||
-                    response.data;
-
-                if (!academy) {
-                    setError(
-                        "Academy profile not found. Please create your profile first."
-                    );
-
-                    setTimeout(() => {
-                        navigate(
-                            "/academy/create-profile",
-                            {
-                                replace: true
-                            }
-                        );
-                    }, 1000);
-
-                    return;
-                }
-
-                setFormData({
-                    academyName:
-                        academy.academyName || "",
-
-                    sport:
-                        academy.sport || "",
-
-                    specialization:
-                        academy.specialization || "",
-
-                    establishedYear:
-                        academy.establishedYear || "",
-
-                    phone:
-                        academy.phone || "",
-
-                    address:
-                        academy.address || "",
-
-                    city:
-                        academy.city || "",
-
-                    state:
-                        academy.state || "",
-
-                    trainingPrograms:
-                        Array.isArray(
-                            academy.trainingPrograms
-                        )
-                            ? academy.trainingPrograms.join(", ")
-                            : academy.trainingPrograms || "",
-
-                    facilities:
-                        Array.isArray(
-                            academy.facilities
-                        )
-                            ? academy.facilities.join(", ")
-                            : academy.facilities || "",
-
-                    achievements:
-                        Array.isArray(
-                            academy.achievements
-                        )
-                            ? academy.achievements.join(", ")
-                            : academy.achievements || "",
-
-                    bio:
-                        academy.bio || "",
-
-                    isAvailable:
-                        academy.isAvailable ?? true,
-
-                    website:
-                        academy.socialLinks?.website || "",
-
-                    instagram:
-                        academy.socialLinks?.instagram || "",
-
-                    facebook:
-                        academy.socialLinks?.facebook || ""
-                });
-            } catch (err) {
-                console.error(
-                    "Failed to fetch academy profile:",
-                    err
-                );
-
-                if (
-                    err.response?.status === 401 ||
-                    err.response?.status === 403
-                ) {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
-
-                    navigate("/auth", {
-                        replace: true
-                    });
-
-                    return;
-                }
-
-                if (err.response?.status === 404) {
-                    setError(
-                        "Academy profile does not exist. Please create it first."
-                    );
-
-                    setTimeout(() => {
-                        navigate(
-                            "/academy/create-profile",
-                            {
-                                replace: true
-                            }
-                        );
-                    }, 1000);
-
-                    return;
-                }
-
-                setError(
-                    err.response?.data?.message ||
-                    "Failed to load academy profile."
-                );
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProfile();
-    }, [navigate, isCreateMode]);
+        } finally {
+            setLoadingProfile(false);
+        }
+    };
 
     // ==========================================
     // HANDLE INPUT
@@ -227,6 +426,7 @@ const AcademyProfileEdit = () => {
 
         setFormData((prev) => ({
             ...prev,
+
             [name]:
                 type === "checkbox"
                     ? checked
@@ -235,219 +435,181 @@ const AcademyProfileEdit = () => {
     };
 
     // ==========================================
-    // STRING -> ARRAY
+    // PROFILE PHOTO CLICK
     // ==========================================
 
-    const convertToArray = (value) => {
-        return value
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean);
+    const handlePhotoClick = () => {
+        document
+            .getElementById(
+                "academy-profile-photo-input"
+            )
+            ?.click();
     };
 
     // ==========================================
-    // CREATE / UPDATE
+    // PROFILE PHOTO UPLOAD
+    // SAME AS COACH PROFILE
     // ==========================================
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handlePhotoChange = async (e) => {
+        const file =
+            e.target.files?.[0];
 
-        setError("");
-        setSuccess("");
-
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            navigate("/auth", {
-                replace: true
-            });
-
+        if (!file) {
             return;
         }
 
-        // ==========================================
-        // VALIDATION
-        // ==========================================
+        // ======================================
+        // IMAGE VALIDATION
+        // ======================================
 
-        if (!formData.academyName.trim()) {
+        if (!file.type.startsWith("image/")) {
             setError(
-                "Academy name is required."
+                "Please select a valid image."
             );
 
+            e.target.value = "";
+
             return;
         }
 
-        if (!formData.sport.trim()) {
+        if (
+            file.size >
+            5 * 1024 * 1024
+        ) {
             setError(
-                "Sport is required."
+                "Image size must be less than 5MB."
             );
 
+            e.target.value = "";
+
             return;
         }
 
-        // ==========================================
-        // ESTABLISHED YEAR VALIDATION
-        // ==========================================
+        const imageData =
+            new FormData();
 
-        if (formData.establishedYear) {
-            const year =
-                Number(formData.establishedYear);
+        imageData.append(
+            "profilePic",
+            file
+        );
 
-            const currentYear =
-                new Date().getFullYear();
+        try {
+            setUploadingPhoto(true);
+            setError("");
+            setSuccessMessage("");
 
-            if (
-                !Number.isInteger(year) ||
-                year < 1800 ||
-                year > currentYear
-            ) {
-                setError(
-                    `Established year must be between 1800 and ${currentYear}.`
-                );
+            const token =
+                localStorage.getItem("token");
+
+            if (!token) {
+                navigate("/auth", {
+                    replace: true
+                });
 
                 return;
             }
-        }
 
-        // ==========================================
-        // PAYLOAD
-        // ==========================================
+            // ======================================
+            // UPLOAD TO SAME USER ENDPOINT
+            // ======================================
 
-        const payload = {
-            academyName:
-                formData.academyName.trim(),
-
-            sport:
-                formData.sport.trim(),
-
-            specialization:
-                formData.specialization.trim(),
-
-            establishedYear:
-                formData.establishedYear
-                    ? Number(
-                        formData.establishedYear
-                    )
-                    : undefined,
-
-            phone:
-                formData.phone.trim(),
-
-            address:
-                formData.address.trim(),
-
-            city:
-                formData.city.trim(),
-
-            state:
-                formData.state.trim(),
-
-            trainingPrograms:
-                convertToArray(
-                    formData.trainingPrograms
-                ),
-
-            facilities:
-                convertToArray(
-                    formData.facilities
-                ),
-
-            achievements:
-                convertToArray(
-                    formData.achievements
-                ),
-
-            bio:
-                formData.bio.trim(),
-
-            isAvailable:
-                formData.isAvailable,
-
-            socialLinks: {
-                website:
-                    formData.website.trim(),
-
-                instagram:
-                    formData.instagram.trim(),
-
-                facebook:
-                    formData.facebook.trim()
-            }
-        };
-
-        try {
-            setSaving(true);
-
-            // ==========================================
-            // CREATE
-            // ==========================================
-
-            if (isCreateMode) {
-                const response =
-                    await axios.post(
-                        `${API}/academies/profile`,
-                        payload,
-                        {
-                            headers: {
-                                Authorization:
-                                    `Bearer ${token}`
-                            }
-                        }
-                    );
-
-                setSuccess(
-                    response.data?.message ||
-                    "Academy profile created successfully."
-                );
-            }
-
-            // ==========================================
-            // UPDATE
-            // ==========================================
-
-            else {
-                const response =
-                    await axios.put(
-                        `${API}/academies/profile`,
-                        payload,
-                        {
-                            headers: {
-                                Authorization:
-                                    `Bearer ${token}`
-                            }
-                        }
-                    );
-
-                setSuccess(
-                    response.data?.message ||
-                    "Academy profile updated successfully."
-                );
-            }
-
-            // ==========================================
-            // REDIRECT
-            // ==========================================
-
-            setTimeout(() => {
-                navigate(
-                    "/academy/my-profile",
+            const response =
+                await axios.post(
+                    `${API}/users/profile-pic`,
+                    imageData,
                     {
-                        replace: true
+                        headers: {
+                            Authorization:
+                                `Bearer ${token}`
+                        }
                     }
                 );
-            }, 800);
-        } catch (err) {
+
+            console.log(
+                "PROFILE PHOTO RESPONSE:",
+                response.data
+            );
+
+            const newProfilePic =
+                response.data?.profilePic;
+
+            if (!newProfilePic) {
+                throw new Error(
+                    "Profile picture URL was not returned."
+                );
+            }
+
+            // ======================================
+            // UPDATE UI IMMEDIATELY
+            // ======================================
+
+            setProfilePic(
+                newProfilePic
+            );
+
+            // ======================================
+            // UPDATE LOCAL STORAGE
+            // ======================================
+
+            const storedUser =
+                localStorage.getItem(
+                    "user"
+                );
+
+            if (storedUser) {
+                try {
+                    const user =
+                        JSON.parse(
+                            storedUser
+                        );
+
+                    localStorage.setItem(
+                        "user",
+                        JSON.stringify({
+                            ...user,
+                            profilePic:
+                                newProfilePic
+                        })
+                    );
+
+                } catch (storageError) {
+                    console.error(
+                        "Failed to update local user:",
+                        storageError
+                    );
+                }
+            }
+
+            // ======================================
+            // SUCCESS
+            // ======================================
+
+            setSuccessMessage(
+                "Profile photo uploaded successfully."
+            );
+
+            setTimeout(() => {
+                setSuccessMessage("");
+            }, 3000);
+
+        } catch (error) {
             console.error(
-                "Academy profile save error:",
-                err
+                "Academy profile picture upload error:",
+                error
             );
 
             if (
-                err.response?.status === 401 ||
-                err.response?.status === 403
+                error.response?.status ===
+                401
             ) {
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
+                localStorage.removeItem(
+                    "token"
+                );
+
+                localStorage.removeItem(
+                    "user"
+                );
 
                 navigate("/auth", {
                     replace: true
@@ -457,25 +619,256 @@ const AcademyProfileEdit = () => {
             }
 
             setError(
-                err.response?.data?.message ||
+                error.response?.data?.message ||
+                "Failed to upload profile picture."
+            );
+
+        } finally {
+            setUploadingPhoto(false);
+
+            e.target.value = "";
+        }
+    };
+
+    // ==========================================
+    // SUBMIT PROFILE
+    // ==========================================
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        setError("");
+        setSuccessMessage("");
+        setLoading(true);
+
+        try {
+            const token =
+                localStorage.getItem("token");
+
+            if (!token) {
+                navigate("/auth", {
+                    replace: true
+                });
+
+                return;
+            }
+
+            // ======================================
+            // PREPARE DATA
+            // ======================================
+
+            const data = {
+                academyName:
+                    formData.academyName.trim(),
+
+                sport:
+                    formData.sport.trim(),
+
+                specialization:
+                    formData.specialization.trim(),
+
+                establishedYear:
+                    formData.establishedYear !== ""
+                        ? Number(
+                            formData.establishedYear
+                        )
+                        : undefined,
+
+                phone:
+                    formData.phone.trim(),
+
+                address:
+                    formData.address.trim(),
+
+                city:
+                    formData.city.trim(),
+
+                state:
+                    formData.state.trim(),
+
+                trainingPrograms:
+                    formData.trainingPrograms
+                        .split(",")
+                        .map(
+                            (item) =>
+                                item.trim()
+                        )
+                        .filter(Boolean),
+
+                facilities:
+                    formData.facilities
+                        .split(",")
+                        .map(
+                            (item) =>
+                                item.trim()
+                        )
+                        .filter(Boolean),
+
+                achievements:
+                    formData.achievements
+                        .split(",")
+                        .map(
+                            (item) =>
+                                item.trim()
+                        )
+                        .filter(Boolean),
+
+                bio:
+                    formData.bio.trim(),
+
+                isAvailable:
+                    formData.isAvailable,
+
+                socialLinks: {
+                    website:
+                        formData.website.trim(),
+
+                    instagram:
+                        formData.instagram.trim(),
+
+                    facebook:
+                        formData.facebook.trim()
+                }
+            };
+
+            // ======================================
+            // VALIDATION
+            // ======================================
+
+            if (!data.academyName) {
+                setError(
+                    "Academy name is required."
+                );
+
+                setLoading(false);
+
+                return;
+            }
+
+            if (!data.sport) {
+                setError(
+                    "Sport is required."
+                );
+
+                setLoading(false);
+
+                return;
+            }
+
+            let response;
+
+            // ======================================
+            // CREATE
+            // ======================================
+
+            if (isCreateMode) {
+                response =
+                    await axios.post(
+                        `${API}/academies/profile`,
+                        data,
+                        {
+                            headers: {
+                                Authorization:
+                                    `Bearer ${token}`,
+                                "Content-Type":
+                                    "application/json"
+                            }
+                        }
+                    );
+
+                setSuccessMessage(
+                    "Academy profile created successfully!"
+                );
+            }
+
+            // ======================================
+            // UPDATE
+            // ======================================
+
+            else {
+                response =
+                    await axios.put(
+                        `${API}/academies/profile`,
+                        data,
+                        {
+                            headers: {
+                                Authorization:
+                                    `Bearer ${token}`,
+                                "Content-Type":
+                                    "application/json"
+                            }
+                        }
+                    );
+
+                setSuccessMessage(
+                    "Academy profile updated successfully!"
+                );
+            }
+
+            console.log(
+                "Academy profile response:",
+                response.data
+            );
+
+            // ======================================
+            // REDIRECT
+            // ======================================
+
+            setTimeout(() => {
+                navigate(
+                    "/academy/my-profile",
+                    {
+                        replace: true
+                    }
+                );
+            }, 1200);
+
+        } catch (error) {
+            console.error(
+                "Academy profile save error:",
+                error
+            );
+
+            if (
+                error.response?.status ===
+                401
+            ) {
+                localStorage.removeItem(
+                    "token"
+                );
+
+                localStorage.removeItem(
+                    "user"
+                );
+
+                navigate("/auth", {
+                    replace: true
+                });
+
+                return;
+            }
+
+            setError(
+                error.response?.data?.message ||
                 (
                     isCreateMode
                         ? "Failed to create academy profile."
                         : "Failed to update academy profile."
                 )
             );
+
         } finally {
-            setSaving(false);
+            setLoading(false);
         }
     };
 
     // ==========================================
-    // LOADING
+    // LOADING SCREEN
     // ==========================================
 
-    if (loading) {
+    if (loadingProfile) {
         return (
-            <div className="dashboard-layout">
+            <div className="athlete-layout">
 
                 <AcademySidebar />
 
@@ -483,8 +876,17 @@ const AcademyProfileEdit = () => {
 
                     <div className="profile-form-container">
 
-                        <div className="coach-athletes-loading">
-                            Loading profile...
+                        <div className="profile-form-header">
+
+                            <h1>
+                                Loading Profile...
+                            </h1>
+
+                            <p>
+                                Please wait while we load
+                                your academy profile details.
+                            </p>
+
                         </div>
 
                     </div>
@@ -496,11 +898,11 @@ const AcademyProfileEdit = () => {
     }
 
     // ==========================================
-    // PAGE
+    // MAIN
     // ==========================================
 
     return (
-        <div className="dashboard-layout">
+        <div className="athlete-layout">
 
             <AcademySidebar />
 
@@ -508,37 +910,39 @@ const AcademyProfileEdit = () => {
 
                 <div className="profile-form-container">
 
-                    {/* ======================================
+                    {/* ==================================
                         HEADER
-                    ====================================== */}
+                    ================================== */}
 
                     <div className="profile-form-header">
 
-                        <div>
+                        <h1>
+                            {isCreateMode
+                                ? "Create Academy Profile"
+                                : "Edit Academy Profile"}
+                        </h1>
 
-                            <span className="page-eyebrow">
-                                ACADEMY PROFILE
-                            </span>
-
-                            <h1>
-                                {isCreateMode
-                                    ? "Create Academy Profile"
-                                    : "Edit Academy Profile"}
-                            </h1>
-
-                            <p>
-                                {isCreateMode
-                                    ? "Create your academy profile so athletes and coaches can discover your academy."
-                                    : "Keep your academy information updated for athletes and coaches."}
-                            </p>
-
-                        </div>
+                        <p>
+                            {isCreateMode
+                                ? "Create your academy profile and showcase your opportunities on Athlyx."
+                                : "Update your academy details and keep your Athlyx profile up to date."}
+                        </p>
 
                     </div>
 
-                    {/* ======================================
+                    {/* ==================================
+                        SUCCESS
+                    ================================== */}
+
+                    {successMessage && (
+                        <div className="profile-success">
+                            {successMessage}
+                        </div>
+                    )}
+
+                    {/* ==================================
                         ERROR
-                    ====================================== */}
+                    ================================== */}
 
                     {error && (
                         <div className="profile-error">
@@ -546,71 +950,128 @@ const AcademyProfileEdit = () => {
                         </div>
                     )}
 
-                    {/* ======================================
-                        SUCCESS
-                    ====================================== */}
+                    {/* ==================================
+                        PROFILE PHOTO
+                    ================================== */}
 
-                    {success && (
-                        <div className="profile-success">
-                            {success}
+                    <div className="profile-photo-section">
+
+                        <div className="profile-photo-wrapper">
+
+                            {profilePic ? (
+                                <img
+                                    src={profilePic}
+                                    alt="Academy Profile"
+                                    className="profile-photo"
+                                />
+                            ) : (
+                                <div className="profile-photo-placeholder">
+                                    <FiHome />
+                                </div>
+                            )}
+
+                            <button
+                                type="button"
+                                className="profile-photo-button"
+                                onClick={
+                                    handlePhotoClick
+                                }
+                                disabled={
+                                    uploadingPhoto
+                                }
+                            >
+                                <FiCamera />
+                            </button>
+
                         </div>
-                    )}
 
-                    {/* ======================================
+                        <div className="profile-photo-info">
+
+                            <h2>
+                                Profile Photo
+                            </h2>
+
+                            <p>
+                                {uploadingPhoto
+                                    ? "Uploading photo..."
+                                    : "Add a professional photo for your academy profile."}
+                            </p>
+
+                            <button
+                                type="button"
+                                className="change-photo-btn"
+                                onClick={
+                                    handlePhotoClick
+                                }
+                                disabled={
+                                    uploadingPhoto
+                                }
+                            >
+                                {uploadingPhoto
+                                    ? "Uploading..."
+                                    : profilePic
+                                    ? "Change Photo"
+                                    : "Upload Photo"}
+                            </button>
+
+                            <input
+                                id="academy-profile-photo-input"
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                onChange={
+                                    handlePhotoChange
+                                }
+                                style={{
+                                    display: "none"
+                                }}
+                            />
+
+                        </div>
+
+                    </div>
+
+                    {/* ==================================
                         FORM
-                    ====================================== */}
+                    ================================== */}
 
                     <form
-                        onSubmit={handleSubmit}
-                        className="profile-form"
+                        onSubmit={
+                            handleSubmit
+                        }
                     >
 
-                        {/* ======================================
-                            BASIC INFORMATION
-                        ====================================== */}
+                        {/* ==================================
+                            ACADEMY INFORMATION
+                        ================================== */}
 
-                        <section className="form-section">
+                        <div className="form-section">
 
-                            <div className="form-section-header">
+                            <h2>
+                                Academy Information
+                            </h2>
 
-                                <div>
-                                    <span className="page-eyebrow">
-                                        BASIC INFORMATION
-                                    </span>
+                            <div className="form-group">
 
-                                    <h2>
-                                        Academy Details
-                                    </h2>
+                                <label>
+                                    Academy Name
+                                </label>
 
-
-                                </div>
+                                <input
+                                    type="text"
+                                    name="academyName"
+                                    value={
+                                        formData.academyName
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="Enter academy name"
+                                    required
+                                />
 
                             </div>
 
                             <div className="form-row">
-
-                                {/* ACADEMY NAME */}
-
-                                <div className="form-group">
-
-                                    <label>
-                                        Academy Name
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="academyName"
-                                        value={
-                                            formData.academyName
-                                        }
-                                        onChange={handleChange}
-                                        placeholder="Enter academy name"
-                                        required
-                                    />
-
-                                </div>
-
-                                {/* SPORT */}
 
                                 <div className="form-group">
 
@@ -618,24 +1079,43 @@ const AcademyProfileEdit = () => {
                                         Sport
                                     </label>
 
-                                    <input
-                                        type="text"
+                                    <select
                                         name="sport"
                                         value={
                                             formData.sport
                                         }
-                                        onChange={handleChange}
-                                        placeholder="e.g. Cricket, Football"
+                                        onChange={
+                                            handleChange
+                                        }
                                         required
-                                    />
+                                    >
+                                        <option value="">
+                                            Select Sport
+                                        </option>
+
+                                        <option value="cricket">
+                                            Cricket
+                                        </option>
+
+                                        <option value="football">
+                                            Football
+                                        </option>
+
+                                        <option value="hockey">
+                                            Hockey
+                                        </option>
+
+                                        <option value="basketball">
+                                            Basketball
+                                        </option>
+
+                                        <option value="athletics">
+                                            Athletics
+                                        </option>
+
+                                    </select>
 
                                 </div>
-
-                            </div>
-
-                            <div className="form-row">
-
-                                {/* SPECIALIZATION */}
 
                                 <div className="form-group">
 
@@ -649,85 +1129,91 @@ const AcademyProfileEdit = () => {
                                         value={
                                             formData.specialization
                                         }
-                                        onChange={handleChange}
-                                        placeholder="Enter specialization"
-                                    />
-
-                                </div>
-
-                                {/* ESTABLISHED YEAR */}
-
-                                <div className="form-group">
-
-                                    <label>
-                                        Established Year
-                                    </label>
-
-                                    <input
-                                        type="number"
-                                        name="establishedYear"
-                                        value={
-                                            formData.establishedYear
+                                        onChange={
+                                            handleChange
                                         }
-                                        onChange={handleChange}
-                                        placeholder="e.g. 2015"
-                                        min="1800"
-                                        max={
-                                            new Date().getFullYear()
-                                        }
+                                        placeholder="e.g. Cricket Training Academy"
                                     />
 
                                 </div>
 
                             </div>
 
-                        </section>
+                            <div className="form-group">
 
-                        {/* ======================================
-                            CONTACT & LOCATION
-                        ====================================== */}
+                                <label>
+                                    Established Year
+                                </label>
 
-                        <section className="form-section">
+                                <input
+                                    type="number"
+                                    name="establishedYear"
+                                    min="1800"
+                                    max="2100"
+                                    value={
+                                        formData.establishedYear
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="e.g. 2015"
+                                />
 
-                            <div className="form-section-header">
+                            </div>
 
-                                <div>
-                                    <span className="page-eyebrow">
-                                        CONTACT & LOCATION
-                                    </span>
+                        </div>
 
-                                    <h2>
-                                        Contact Details
-                                    </h2>
+                        {/* ==================================
+                            CONTACT
+                        ================================== */}
 
+                        <div className="form-section">
 
-                                </div>
+                            <h2>
+                                Contact Information
+                            </h2>
+
+                            <div className="form-group">
+
+                                <label>
+                                    Phone
+                                </label>
+
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={
+                                        formData.phone
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="Enter phone number"
+                                />
+
+                            </div>
+
+                            <div className="form-group">
+
+                                <label>
+                                    Address
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="address"
+                                    value={
+                                        formData.address
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="Enter academy address"
+                                />
 
                             </div>
 
                             <div className="form-row">
-
-                                {/* PHONE */}
-
-                                <div className="form-group">
-
-                                    <label>
-                                        Phone
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="phone"
-                                        value={
-                                            formData.phone
-                                        }
-                                        onChange={handleChange}
-                                        placeholder="Enter phone number"
-                                    />
-
-                                </div>
-
-                                {/* CITY */}
 
                                 <div className="form-group">
 
@@ -741,17 +1227,13 @@ const AcademyProfileEdit = () => {
                                         value={
                                             formData.city
                                         }
-                                        onChange={handleChange}
+                                        onChange={
+                                            handleChange
+                                        }
                                         placeholder="Enter city"
                                     />
 
                                 </div>
-
-                            </div>
-
-                            <div className="form-row">
-
-                                {/* STATE */}
 
                                 <div className="form-group">
 
@@ -765,59 +1247,27 @@ const AcademyProfileEdit = () => {
                                         value={
                                             formData.state
                                         }
-                                        onChange={handleChange}
+                                        onChange={
+                                            handleChange
+                                        }
                                         placeholder="Enter state"
                                     />
 
                                 </div>
 
-                                {/* ADDRESS */}
-
-                                <div className="form-group">
-
-                                    <label>
-                                        Address
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="address"
-                                        value={
-                                            formData.address
-                                        }
-                                        onChange={handleChange}
-                                        placeholder="Enter academy address"
-                                    />
-
-                                </div>
-
                             </div>
 
-                        </section>
+                        </div>
 
-                        {/* ======================================
-                            ACADEMY INFORMATION
-                        ====================================== */}
+                        {/* ==================================
+                            TRAINING PROGRAMS
+                        ================================== */}
 
-                        <section className="form-section">
+                        <div className="form-section">
 
-                            <div className="form-section-header">
-
-                                <div>
-                                    <span className="page-eyebrow">
-                                        ACADEMY INFORMATION
-                                    </span>
-
-                                    <h2>
-                                        Training & Facilities
-                                    </h2>
-
-
-                                </div>
-
-                            </div>
-
-                            {/* TRAINING PROGRAMS */}
+                            <h2>
+                                Training Programs
+                            </h2>
 
                             <div className="form-group">
 
@@ -831,8 +1281,10 @@ const AcademyProfileEdit = () => {
                                     value={
                                         formData.trainingPrograms
                                     }
-                                    onChange={handleChange}
-                                    placeholder="e.g. Batting, Bowling, Fitness"
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="Beginner Training, Advanced Training, Fitness"
                                 />
 
                                 <small>
@@ -842,7 +1294,17 @@ const AcademyProfileEdit = () => {
 
                             </div>
 
-                            {/* FACILITIES */}
+                        </div>
+
+                        {/* ==================================
+                            FACILITIES
+                        ================================== */}
+
+                        <div className="form-section">
+
+                            <h2>
+                                Facilities
+                            </h2>
 
                             <div className="form-group">
 
@@ -856,8 +1318,10 @@ const AcademyProfileEdit = () => {
                                     value={
                                         formData.facilities
                                     }
-                                    onChange={handleChange}
-                                    placeholder="e.g. Gym, Nets, Ground"
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="Ground, Gym, Indoor Practice Area"
                                 />
 
                                 <small>
@@ -867,7 +1331,17 @@ const AcademyProfileEdit = () => {
 
                             </div>
 
-                            {/* ACHIEVEMENTS */}
+                        </div>
+
+                        {/* ==================================
+                            ACHIEVEMENTS
+                        ================================== */}
+
+                        <div className="form-section">
+
+                            <h2>
+                                Achievements
+                            </h2>
 
                             <div className="form-group">
 
@@ -881,8 +1355,10 @@ const AcademyProfileEdit = () => {
                                     value={
                                         formData.achievements
                                     }
-                                    onChange={handleChange}
-                                    placeholder="Enter achievements"
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="State Champions, National Players"
                                 />
 
                                 <small>
@@ -892,155 +1368,157 @@ const AcademyProfileEdit = () => {
 
                             </div>
 
-                            {/* BIO */}
+                        </div>
+
+                        {/* ==================================
+                            ABOUT
+                        ================================== */}
+
+                        <div className="form-section">
+
+                            <h2>
+                                About Academy
+                            </h2>
 
                             <div className="form-group">
 
                                 <label>
-                                    About Academy
+                                    Bio
                                 </label>
 
                                 <textarea
                                     name="bio"
+                                    maxLength="1000"
                                     value={
                                         formData.bio
                                     }
-                                    onChange={handleChange}
-                                    placeholder="Tell athletes and coaches about your academy"
-                                    rows="5"
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="Tell athletes about your academy..."
                                 />
 
                             </div>
 
-                        </section>
+                        </div>
 
-                        {/* ======================================
+                        {/* ==================================
                             ONLINE PRESENCE
-                        ====================================== */}
+                        ================================== */}
 
-                        <section className="form-section">
+                        <div className="form-section">
 
-                            <div className="form-section-header">
+                            <h2>
+                                Online Presence
+                            </h2>
 
-                                <div>
-                                    <span className="page-eyebrow">
-                                        ONLINE PRESENCE
-                                    </span>
+                            <div className="form-group">
 
-                                    <h2>
-                                        Social Links
-                                    </h2>
+                                <label>
+                                    Website
+                                </label>
 
-                                </div>
-
-                            </div>
-
-                            <div className="form-row">
-
-                                {/* WEBSITE */}
-
-                                <div className="form-group">
-
-                                    <label>
-                                        Website
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="website"
-                                        value={
-                                            formData.website
-                                        }
-                                        onChange={handleChange}
-                                        placeholder="https://example.com"
-                                    />
-
-                                </div>
-
-                                {/* INSTAGRAM */}
-
-                                <div className="form-group">
-
-                                    <label>
-                                        Instagram
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="instagram"
-                                        value={
-                                            formData.instagram
-                                        }
-                                        onChange={handleChange}
-                                        placeholder="Instagram profile URL"
-                                    />
-
-                                </div>
+                                <input
+                                    type="url"
+                                    name="website"
+                                    value={
+                                        formData.website
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="https://example.com"
+                                />
 
                             </div>
 
-                            <div className="form-row">
+                            <div className="form-group">
 
-                                {/* FACEBOOK */}
+                                <label>
+                                    Instagram
+                                </label>
 
-                                <div className="form-group">
-
-                                    <label>
-                                        Facebook
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="facebook"
-                                        value={
-                                            formData.facebook
-                                        }
-                                        onChange={handleChange}
-                                        placeholder="Facebook profile URL"
-                                    />
-
-                                </div>
-
-                               
-                                        
-                              
+                                <input
+                                    type="url"
+                                    name="instagram"
+                                    value={
+                                        formData.instagram
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="https://instagram.com/academy"
+                                />
 
                             </div>
 
-                        </section>
+                            <div className="form-group">
 
-                        {/* ======================================
-                            BUTTONS
-                        ====================================== */}
+                                <label>
+                                    Facebook
+                                </label>
 
-                        <div className="profile-form-actions">
+                                <input
+                                    type="url"
+                                    name="facebook"
+                                    value={
+                                        formData.facebook
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="https://facebook.com/academy"
+                                />
 
-                            <button
-                                type="button"
-                                className="cancel-profile-btn"
-                                onClick={() =>
-                                    navigate(
-                                        "/academy/my-profile"
-                                    )
-                                }
-                                disabled={saving}
-                            >
-                                Cancel
-                            </button>
-
-                            <button
-                                type="submit"
-                                className="save-profile-btn"
-                                disabled={saving}
-                            >
-                                {saving
-                                    ? "Saving..."
-                                    : isCreateMode
-                                        ? "Create Profile"
-                                        : "Update Profile"}
-                            </button>
+                            </div>
 
                         </div>
+
+                        {/* ==================================
+                            AVAILABILITY
+                        ================================== */}
+
+                        <div className="availability">
+
+                            <label>
+
+                                <input
+                                    type="checkbox"
+                                    name="isAvailable"
+                                    checked={
+                                        formData.isAvailable
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
+                                />
+
+                                Available for opportunities
+
+                            </label>
+
+                        </div>
+
+                        {/* ==================================
+                            SAVE
+                        ================================== */}
+
+                        <button
+                            type="submit"
+                            className="save-profile-btn"
+                            disabled={
+                                loading ||
+                                uploadingPhoto
+                            }
+                        >
+                            {loading
+                                ? isCreateMode
+                                    ? "Creating..."
+                                    : "Updating..."
+                                : isCreateMode
+                                ? "Create Academy Profile"
+                                : "Update Academy Profile"}
+                        </button>
 
                     </form>
 

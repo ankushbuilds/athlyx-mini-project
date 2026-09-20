@@ -10530,3 +10530,1654 @@ body {
     gap: 10px;        /* Accept aur Reject ke beech */
     margin-top: 12px; /* user info se neeche */
 }
+
+/* =========================================================
+   CREATE EVENT HEADER
+   ========================================================= */
+
+.event-header-left {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+
+/* =========================================================
+   BACK TO EVENTS
+   ========================================================= */
+
+.event-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  width: auto;
+  height: 32px;
+
+  margin: 0 0 14px;
+  padding: 0;
+
+  background: transparent;
+  border: none;
+  outline: none;
+
+  color: #858585;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.event-back-btn svg {
+  width: 16px;
+  height: 16px;
+
+  flex-shrink: 0;
+
+  stroke-width: 2;
+}
+
+.event-back-btn:hover {
+  color: #c49a6c;
+  transform: translateX(-2px);
+}
+
+.event-back-btn:focus {
+  outline: none;
+}
+
+
+/* =========================================================
+   CREATE EVENT HEADER TEXT
+   ========================================================= */
+
+.event-header-left .page-eyebrow {
+  display: block;
+  margin-bottom: 7px;
+}
+
+.event-header-left h1 {
+  margin: 0;
+
+  color: #eeeeee;
+
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.event-header-left > p {
+  max-width: 680px;
+
+  margin: 8px 0 0;
+
+  color: #858585;
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   FORM CARD
+   ========================================================= */
+
+.event-form-card {
+  width: 100%;
+  max-width: 100%;
+
+  margin: 0;
+
+  padding: 0;
+
+  background: #181818;
+
+  border: 1px solid #292929;
+  border-radius: 14px;
+
+  overflow: hidden;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   FORM SECTION
+   ========================================================= */
+
+.event-form-section {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 30px 32px;
+
+  border-bottom: 1px solid #292929;
+}
+
+.event-form-section:last-of-type {
+  border-bottom: none;
+}
+
+
+/* =========================================================
+   SECTION HEADER
+   ========================================================= */
+
+.event-form-section-header {
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  margin-bottom: 26px;
+}
+
+.event-form-section-icon {
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(196, 154, 108, 0.08);
+
+  border: 1px solid rgba(196, 154, 108, 0.2);
+
+  border-radius: 10px;
+
+  color: #c49a6c;
+}
+
+.event-form-section-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.event-form-section-header h2 {
+  margin: 0 0 4px;
+
+  color: #eeeeee;
+
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.event-form-section-header p {
+  margin: 0;
+
+  color: #858585;
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   FORM GRID
+   ========================================================= */
+
+.event-form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 22px;
+
+  width: 100%;
+}
+
+
+/* =========================================================
+   FORM GROUP
+   ========================================================= */
+
+.event-form-group {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  min-width: 0;
+}
+
+.event-form-grid .event-form-group + .event-form-group {
+  margin-top: 0;
+}
+
+.event-form-section
+  > .event-form-group
+  + .event-form-group {
+  margin-top: 22px;
+}
+
+.event-form-group label {
+  margin: 0;
+
+  color: #d4d4d4;
+
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.event-form-group label span {
+  color: #c49a6c;
+}
+
+
+/* =========================================================
+   INPUT / SELECT / TEXTAREA
+   ========================================================= */
+
+.event-form-group input,
+.event-form-group select,
+.event-form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
+
+  background: #121212;
+
+  border: 1px solid #303030;
+  border-radius: 9px;
+
+  color: #eeeeee;
+
+  font-family: inherit;
+  font-size: 14px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.event-form-group input,
+.event-form-group select {
+  height: 46px;
+
+  padding: 0 14px;
+}
+
+.event-form-group textarea {
+  min-height: 120px;
+
+  padding: 13px 14px;
+
+  resize: vertical;
+
+  line-height: 1.6;
+}
+
+.event-form-group input::placeholder,
+.event-form-group textarea::placeholder {
+  color: #626262;
+}
+
+.event-form-group input:focus,
+.event-form-group select:focus,
+.event-form-group textarea:focus {
+  background: #151515;
+
+  border-color: #c49a6c;
+}
+
+
+/* =========================================================
+   INPUT WITH ICON
+   ========================================================= */
+
+.event-input-with-icon {
+  position: relative;
+
+  width: 100%;
+}
+
+.event-input-with-icon > svg {
+  position: absolute;
+
+  top: 50%;
+  left: 14px;
+
+  width: 17px;
+  height: 17px;
+
+  transform: translateY(-50%);
+
+  color: #777777;
+
+  pointer-events: none;
+}
+
+.event-input-with-icon input,
+.event-input-with-icon select {
+  padding-left: 42px;
+}
+
+
+/* =========================================================
+   SELECT
+   ========================================================= */
+
+.event-form-group select {
+  appearance: none;
+
+  cursor: pointer;
+}
+
+.event-form-group select option {
+  background: #181818;
+  color: #eeeeee;
+}
+
+
+/* =========================================================
+   HELP TEXT
+   ========================================================= */
+
+.event-form-group small {
+  margin: -2px 0 0;
+
+  color: #777777;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.event-form-error {
+  margin: 22px 32px 0;
+  padding: 12px 14px;
+
+  background: rgba(180, 70, 70, 0.08);
+
+  border: 1px solid rgba(180, 70, 70, 0.25);
+
+  border-radius: 8px;
+
+  color: #d98b8b;
+
+  font-size: 13px;
+  line-height: 1.5;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   SUCCESS
+   ========================================================= */
+
+.event-form-success {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin: 22px 32px 0;
+  padding: 12px 14px;
+
+  background: rgba(196, 154, 108, 0.08);
+
+  border: 1px solid rgba(196, 154, 108, 0.2);
+
+  border-radius: 8px;
+
+  color: #c49a6c;
+
+  font-size: 13px;
+  line-height: 1.5;
+
+  box-sizing: border-box;
+}
+
+.event-form-success svg {
+  width: 16px;
+  height: 16px;
+
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   ACTION BAR
+   ========================================================= */
+
+.event-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 12px;
+
+  padding: 24px 32px;
+
+  background: #151515;
+
+  border-top: 1px solid #292929;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   CANCEL BUTTON
+   ========================================================= */
+
+.event-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 90px;
+  height: 42px;
+
+  padding: 0 20px;
+
+  background: transparent;
+
+  border: 1px solid #353535;
+  border-radius: 8px;
+
+  color: #a0a0a0;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.event-cancel-btn:hover {
+  background: #1c1c1c;
+
+  border-color: #4a4a4a;
+
+  color: #eeeeee;
+}
+
+
+/* =========================================================
+   CREATE EVENT BUTTON
+   ========================================================= */
+
+.event-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  min-width: 130px;
+  height: 42px;
+
+  padding: 0 22px;
+
+  background: #c49a6c;
+
+  border: 1px solid #c49a6c;
+  border-radius: 8px;
+
+  color: #141414;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.event-submit-btn:hover {
+  background: #d1aa80;
+  border-color: #d1aa80;
+
+  transform: translateY(-1px);
+}
+
+.event-submit-btn svg {
+  width: 16px;
+  height: 16px;
+
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   RESPONSIVE — TABLET
+   ========================================================= */
+
+@media (max-width: 800px) {
+
+  .event-header-left h1 {
+    font-size: 28px;
+  }
+
+  .event-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-form-section {
+    padding: 26px 22px;
+  }
+
+  .event-form-actions {
+    padding: 20px 22px;
+  }
+
+  .event-form-error,
+  .event-form-success {
+    margin-left: 22px;
+    margin-right: 22px;
+  }
+}
+
+
+/* =========================================================
+   RESPONSIVE — MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .event-back-btn {
+    margin-bottom: 12px;
+  }
+
+  .event-header-left h1 {
+    font-size: 25px;
+  }
+
+  .event-header-left > p {
+    font-size: 13px;
+  }
+
+  .event-form-card {
+    border-radius: 10px;
+  }
+
+  .event-form-section {
+    padding: 22px 16px;
+  }
+
+  .event-form-section-header {
+    align-items: flex-start;
+  }
+
+  .event-form-section-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .event-form-section-header h2 {
+    font-size: 16px;
+  }
+
+  .event-form-section-header p {
+    font-size: 12px;
+  }
+
+  .event-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+
+    padding: 18px 16px;
+  }
+
+  .event-cancel-btn,
+  .event-submit-btn {
+    width: 100%;
+  }
+
+  .event-form-error,
+  .event-form-success {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+}
+
+/* ======================================================
+   EVENT CARD ACTIONS
+====================================================== */
+
+.opportunity-event-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+
+  flex-shrink: 0;
+  margin-left: 20px;
+}
+
+
+/* ======================================================
+   VIEW BUTTON
+====================================================== */
+
+.opportunity-event-actions .opportunity-card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  min-width: 82px;
+  height: 38px;
+
+  padding: 0 14px;
+
+  background: transparent;
+
+  border: 1px solid #c49a6c;
+  border-radius: 7px;
+
+  color: #c49a6c;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+
+  box-sizing: border-box;
+}
+
+.opportunity-event-actions
+  .opportunity-card-btn
+  svg {
+  width: 15px;
+  height: 15px;
+
+  flex-shrink: 0;
+}
+
+.opportunity-event-actions
+  .opportunity-card-btn:hover {
+  background: #c49a6c;
+
+  border-color: #c49a6c;
+
+  color: #141414;
+
+  transform: translateY(-1px);
+}
+
+
+/* ======================================================
+   EDIT / DELETE ICON BUTTON
+====================================================== */
+
+.opportunity-event-actions .opportunity-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 38px;
+  height: 38px;
+
+  padding: 0;
+
+  background: #151515;
+
+  border: 1px solid #303030;
+  border-radius: 7px;
+
+  color: #8f8f8f;
+
+  cursor: pointer;
+
+  box-sizing: border-box;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.opportunity-event-actions
+  .opportunity-icon-btn
+  svg {
+  width: 16px;
+  height: 16px;
+
+  flex-shrink: 0;
+
+  stroke-width: 2;
+}
+
+
+/* ======================================================
+   EDIT HOVER
+====================================================== */
+
+.opportunity-event-actions
+  .opportunity-icon-btn[title="Edit Event"]:hover {
+  background: rgba(196, 154, 108, 0.08);
+
+  border-color: rgba(196, 154, 108, 0.45);
+
+  color: #c49a6c;
+
+  transform: translateY(-1px);
+}
+
+
+/* ======================================================
+   DELETE HOVER
+====================================================== */
+
+.opportunity-event-actions
+  .opportunity-icon-btn[title="Delete Event"]:hover {
+  background: rgba(190, 75, 75, 0.08);
+
+  border-color: rgba(190, 75, 75, 0.4);
+
+  color: #d68181;
+
+  transform: translateY(-1px);
+}
+
+
+/* ======================================================
+   FOCUS
+====================================================== */
+
+.opportunity-event-actions
+  .opportunity-card-btn:focus,
+.opportunity-event-actions
+  .opportunity-icon-btn:focus {
+  outline: none;
+}
+
+
+/* ======================================================
+   CARD ACTION ALIGNMENT
+====================================================== */
+
+.opportunity-card {
+  display: flex;
+  align-items: center;
+}
+
+.opportunity-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+
+/* ======================================================
+   RESPONSIVE
+====================================================== */
+
+@media (max-width: 900px) {
+  .opportunity-event-actions {
+    margin-left: 14px;
+  }
+
+  .opportunity-event-actions
+    .opportunity-card-btn {
+    min-width: 76px;
+    padding: 0 12px;
+  }
+
+  .opportunity-event-actions
+    .opportunity-icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+
+@media (max-width: 700px) {
+  .opportunity-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .opportunity-event-actions {
+    width: 100%;
+
+    margin: 18px 0 0;
+
+    padding-top: 16px;
+
+    border-top: 1px solid #292929;
+
+    justify-content: flex-end;
+  }
+}
+
+
+@media (max-width: 480px) {
+  .opportunity-event-actions {
+    justify-content: stretch;
+  }
+
+  .opportunity-event-actions
+    .opportunity-card-btn {
+    flex: 1;
+  }
+
+  .opportunity-event-actions
+    .opportunity-icon-btn {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* ======================================================
+   ACADEMY EVENT ACTIONS
+   ====================================================== */
+
+.event-view-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.event-view-back {
+  margin-top: 20px;
+}
+
+/* ======================================================
+   EVENT DELETE BUTTON
+   ====================================================== */
+
+.event-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+
+  padding: 0;
+  margin: 0;
+
+  background: transparent;
+  border: 1px solid #303030;
+  border-radius: 8px;
+
+  color: #858585;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.event-delete-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+
+.event-delete-btn:hover {
+  background: rgba(180, 70, 70, 0.08);
+  border-color: rgba(180, 70, 70, 0.35);
+  color: #d98b8b;
+  transform: translateY(-1px);
+}
+
+.event-delete-btn:focus {
+  outline: none;
+}
+
+.event-delete-btn:active {
+  transform: translateY(0);
+}
+
+.event-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+/* =========================================================
+   ATHLYX OPPORTUNITIES
+   GRAPHITE + COPPER
+   ISOLATED PAGE CLASSES
+   ========================================================= */
+
+.athlyx-op-page {
+  min-height: 100vh;
+  display: flex;
+  background: #111111;
+  color: #f1eee9;
+}
+
+.athlyx-op-main {
+  flex: 1;
+  min-width: 0;
+  margin-left: 76px;
+  padding: 32px;
+}
+
+.athlyx-op-content {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.athlyx-op-header {
+  margin-bottom: 28px;
+}
+
+.athlyx-op-eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #c49a6c;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.athlyx-op-header h1 {
+  margin: 0;
+  color: #f2eee9;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.athlyx-op-header p {
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: #96918b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+
+/* =========================================================
+   FILTERS
+   ========================================================= */
+
+.athlyx-op-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.athlyx-op-search {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 0 14px;
+
+  border: 1px solid #35322f;
+  border-radius: 7px;
+
+  background: #181817;
+  color: #77736e;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.athlyx-op-search:focus-within {
+  border-color: #c49a6c;
+  background: #1a1917;
+}
+
+.athlyx-op-search svg {
+  flex-shrink: 0;
+}
+
+.athlyx-op-search input {
+  width: 100%;
+  height: 100%;
+
+  padding: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+  color: #eeeae5;
+
+  font-size: 14px;
+}
+
+.athlyx-op-search input::placeholder {
+  color: #77736e;
+}
+
+.athlyx-op-type-filter {
+  width: 190px;
+  height: 46px;
+
+  padding: 0 13px;
+
+  border: 1px solid #35322f;
+  border-radius: 7px;
+
+  outline: none;
+
+  background: #181817;
+  color: #d7d2cc;
+
+  font-size: 14px;
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.athlyx-op-type-filter:hover {
+  border-color: #514638;
+}
+
+.athlyx-op-type-filter:focus {
+  border-color: #c49a6c;
+}
+
+
+/* =========================================================
+   GRID
+   ========================================================= */
+
+.athlyx-op-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
+.athlyx-op-card {
+  min-width: 0;
+  min-height: 420px;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 22px;
+
+  border: 1px solid #34312e;
+  border-radius: 9px;
+
+  background: #171716;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.athlyx-op-card:hover {
+  border-color: #5b4937;
+  background: #191817;
+  transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   CARD TOP
+   ========================================================= */
+
+.athlyx-op-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.athlyx-op-type,
+.athlyx-op-sport {
+  display: inline-flex;
+  align-items: center;
+
+  max-width: 48%;
+  min-width: 0;
+
+  padding: 5px 9px;
+
+  border-radius: 5px;
+
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.athlyx-op-type {
+  border: 1px solid #594a3c;
+  background: rgba(196, 154, 108, 0.06);
+  color: #c49a6c;
+}
+
+.athlyx-op-sport {
+  border: 1px solid #393633;
+  background: transparent;
+  color: #aaa59e;
+}
+
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.athlyx-op-title {
+  margin: 0 0 15px;
+
+  color: #f1eee9;
+
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.35;
+
+  letter-spacing: -0.015em;
+}
+
+
+/* =========================================================
+   ORGANIZATION
+   ========================================================= */
+
+.athlyx-op-organization {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  min-width: 0;
+
+  margin-bottom: 17px;
+
+  color: #aaa59e;
+  font-size: 13px;
+}
+
+.athlyx-op-organization svg {
+  flex-shrink: 0;
+  color: #c49a6c;
+}
+
+.athlyx-op-organization span {
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   META
+   ========================================================= */
+
+.athlyx-op-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+
+  padding: 14px 0;
+
+  border-top: 1px solid #292725;
+  border-bottom: 1px solid #292725;
+}
+
+.athlyx-op-meta > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  min-width: 0;
+
+  color: #a8a39c;
+
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.athlyx-op-meta svg {
+  flex-shrink: 0;
+  color: #927452;
+}
+
+.athlyx-op-meta span {
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   DEADLINE
+   ========================================================= */
+
+.athlyx-op-deadline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-top: 14px;
+
+  color: #8f8a84;
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.athlyx-op-deadline svg {
+  flex-shrink: 0;
+  color: #c49a6c;
+}
+
+.athlyx-op-deadline strong {
+  color: #c4beb7;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   DESCRIPTION
+   ========================================================= */
+
+.athlyx-op-description {
+  display: -webkit-box;
+
+  margin: 15px 0 0;
+
+  color: #99948e;
+
+  font-size: 13px;
+  line-height: 1.65;
+
+  overflow: hidden;
+
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+
+/* =========================================================
+   ELIGIBILITY
+   ========================================================= */
+
+.athlyx-op-eligibility {
+  display: flex;
+  gap: 6px;
+
+  margin-top: 13px;
+
+  color: #99948e;
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.athlyx-op-eligibility strong {
+  flex-shrink: 0;
+
+  color: #c0bab3;
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   ACTION
+   ========================================================= */
+
+.athlyx-op-action {
+  margin-top: auto;
+  padding-top: 20px;
+}
+
+
+/* =========================================================
+   OUTLINE BUTTON
+   ========================================================= */
+
+.athlyx-op-btn {
+  width: 100%;
+  min-height: 42px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 9px 15px;
+
+  border: 1px solid #c49a6c;
+  border-radius: 6px;
+
+  outline: none;
+
+  background: transparent;
+  color: #c49a6c;
+
+  font-size: 13px;
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.athlyx-op-btn:hover:not(:disabled) {
+  background: #c49a6c;
+  color: #151413;
+}
+
+.athlyx-op-btn:focus-visible {
+  box-shadow:
+    0 0 0 2px #171716,
+    0 0 0 3px #c49a6c;
+}
+
+.athlyx-op-btn:disabled {
+  cursor: default;
+}
+
+
+/* =========================================================
+   APPLIED / ACCEPTED
+   ========================================================= */
+
+.athlyx-op-btn-applied {
+  border-color: #596f5a;
+  background: rgba(89, 111, 90, 0.06);
+  color: #8fa891;
+}
+
+.athlyx-op-btn-applied:hover {
+  border-color: #596f5a;
+  background: rgba(89, 111, 90, 0.06);
+  color: #8fa891;
+}
+
+
+/* =========================================================
+   REJECTED
+   ========================================================= */
+
+.athlyx-op-btn-rejected {
+  border-color: #654747;
+  background: rgba(101, 71, 71, 0.05);
+  color: #b88989;
+}
+
+.athlyx-op-btn-rejected:hover {
+  border-color: #654747;
+  background: rgba(101, 71, 71, 0.05);
+  color: #b88989;
+}
+
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.athlyx-op-loading {
+  min-height: 300px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px 20px;
+
+  border: 1px solid #302e2b;
+  border-radius: 9px;
+
+  background: #171716;
+
+  color: #c49a6c;
+  text-align: center;
+}
+
+.athlyx-op-loading p {
+  margin: 12px 0 0;
+
+  color: #8e8983;
+
+  font-size: 13px;
+}
+
+.athlyx-op-loading-icon {
+  animation: athlyx-op-spin 1s linear infinite;
+}
+
+@keyframes athlyx-op-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   EMPTY
+   ========================================================= */
+
+.athlyx-op-empty {
+  min-height: 300px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px 20px;
+
+  border: 1px solid #302e2b;
+  border-radius: 9px;
+
+  background: #171716;
+
+  color: #c49a6c;
+
+  text-align: center;
+}
+
+.athlyx-op-empty h3 {
+  margin: 15px 0 0;
+
+  color: #e7e2dc;
+
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.athlyx-op-empty p {
+  max-width: 450px;
+
+  margin: 10px 0 0;
+
+  color: #8e8983;
+
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.athlyx-op-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 20px;
+  padding: 13px 15px;
+
+  border: 1px solid #604444;
+  border-radius: 7px;
+
+  background: #1a1616;
+
+  color: #bd9999;
+
+  font-size: 13px;
+}
+
+.athlyx-op-error button {
+  flex-shrink: 0;
+
+  padding: 7px 12px;
+
+  border: 1px solid #8b6b58;
+  border-radius: 5px;
+
+  background: transparent;
+  color: #c49a6c;
+
+  font-size: 12px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.athlyx-op-error button:hover {
+  background: #c49a6c;
+  color: #151413;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1150px) {
+  .athlyx-op-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .athlyx-op-main {
+    padding: 24px 18px;
+  }
+
+  .athlyx-op-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .athlyx-op-search {
+    width: 100%;
+  }
+
+  .athlyx-op-type-filter {
+    width: 100%;
+  }
+
+  .athlyx-op-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .athlyx-op-main {
+    padding: 20px 14px;
+  }
+
+  .athlyx-op-card {
+    padding: 18px;
+  }
+
+  .athlyx-op-header h1 {
+    font-size: 27px;
+  }
+
+  .athlyx-op-card-top {
+    align-items: flex-start;
+  }
+
+  .athlyx-op-error {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .athlyx-op-error button {
+    width: 100%;
+  }
+}
+

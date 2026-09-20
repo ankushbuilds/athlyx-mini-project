@@ -1,178 +1,663 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+
 import {
   FiSearch,
   FiMapPin,
   FiCalendar,
   FiBriefcase,
-  FiArrowRight
+  FiArrowRight,
+  FiClock,
+  FiCheck,
+  FiLoader
 } from "react-icons/fi";
+
 import AthleteSidebar from "../../components/AthleteSidebar";
 
+const API = "http://localhost:5000/api";
+
 const Opportunities = () => {
+  // ======================================================
+  // STATES
+  // ======================================================
+
   const [search, setSearch] = useState("");
   const [type, setType] = useState("All");
 
-  const opportunities = [
-    {
-      id: 1,
-      title: "Football Trial Camp",
-      organization: "Delhi Sports Academy",
-      location: "Delhi, India",
-      type: "Trials",
-      date: "15 Sep 2026",
-      sport: "Football",
-      description:
-        "Open trials for talented football players looking to join a competitive academy."
-    },
-    {
-      id: 2,
-      title: "Cricket Talent Hunt",
-      organization: "National Cricket Academy",
-      location: "Noida, India",
-      type: "Trials",
-      date: "22 Sep 2026",
-      sport: "Cricket",
-      description:
-        "Talent identification program for emerging cricket players."
-    },
-    {
-      id: 3,
-      title: "Athletics Development Program",
-      organization: "Elite Athletics Club",
-      location: "Lucknow, India",
-      type: "Program",
-      date: "01 Oct 2026",
-      sport: "Athletics",
-      description:
-        "Development opportunity for athletes looking to improve performance."
+  const [opportunities, setOpportunities] = useState([]);
+  const [applicationStatus, setApplicationStatus] = useState({});
+
+  const [loading, setLoading] = useState(true);
+  const [applyingId, setApplyingId] = useState(null);
+
+  const [error, setError] = useState("");
+
+  // ======================================================
+  // GET TOKEN
+  // ======================================================
+
+  const getToken = () => {
+    return localStorage.getItem("token");
+  };
+
+  // ======================================================
+  // FETCH OPPORTUNITIES
+  // ======================================================
+
+  const fetchOpportunities = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const token = getToken();
+
+      if (!token) {
+        setError("Please login to view opportunities.");
+        return;
+      }
+
+      const response = await axios.get(`${API}/opportunities`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const events = response.data?.opportunities || [];
+
+      setOpportunities(events);
+    } catch (err) {
+      console.error("Fetch Opportunities Error:", err);
+
+      setError(
+        err.response?.data?.message ||
+          "Failed to load opportunities."
+      );
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const filteredOpportunities = opportunities.filter((item) => {
-    const matchesSearch =
-      item.title.toLowerCase().includes(search.toLowerCase()) ||
-      item.organization.toLowerCase().includes(search.toLowerCase()) ||
-      item.sport.toLowerCase().includes(search.toLowerCase());
+  // ======================================================
+  // FETCH MY APPLICATIONS
+  // ======================================================
 
-    const matchesType =
-      type === "All" || item.type === type;
+  const fetchMyApplications = async () => {
+    try {
+      const token = getToken();
 
-    return matchesSearch && matchesType;
-  });
+      if (!token) {
+        return;
+      }
+
+      const response = await axios.get(
+        `${API}/opportunities/applications/mine`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const applications =
+        response.data?.applications || [];
+
+      const statusMap = {};
+
+      applications.forEach((application) => {
+        const opportunityId =
+          application.opportunity?._id ||
+          application.opportunity;
+
+        if (opportunityId) {
+          statusMap[opportunityId] =
+            application.status;
+        }
+      });
+
+      setApplicationStatus(statusMap);
+    } catch (err) {
+      console.error(
+        "Fetch My Applications Error:",
+        err
+      );
+    }
+  };
+
+  // ======================================================
+  // INITIAL LOAD
+  // ======================================================
+
+  useEffect(() => {
+    fetchOpportunities();
+    fetchMyApplications();
+  }, []);
+
+  // ======================================================
+  // APPLY TO OPPORTUNITY
+  // ======================================================
+
+  const handleApply = async (eventId) => {
+    try {
+      const token = getToken();
+
+      if (!token) {
+        alert("Please login first.");
+        return;
+      }
+
+      setApplyingId(eventId);
+
+      const response = await axios.post(
+        `${API}/opportunities/${eventId}/apply`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const application =
+        response.data?.application;
+
+      setApplicationStatus((prev) => ({
+        ...prev,
+        [eventId]:
+          application?.status || "pending"
+      }));
+
+      alert(
+        response.data?.message ||
+          "Application submitted successfully."
+      );
+    } catch (err) {
+      console.error("Apply Error:", err);
+
+      // Backend says already applied
+      if (err.response?.status === 409) {
+        setApplicationStatus((prev) => ({
+          ...prev,
+          [eventId]: "pending"
+        }));
+      }
+
+      alert(
+        err.response?.data?.message ||
+          "Failed to submit application."
+      );
+    } finally {
+      setApplyingId(null);
+    }
+  };
+
+  // ======================================================
+  // FILTER OPPORTUNITIES
+  // ======================================================
+
+  const filteredOpportunities =
+    opportunities.filter((item) => {
+      const searchText =
+        search.trim().toLowerCase();
+
+      const matchesSearch =
+        !searchText ||
+        item.title
+          ?.toLowerCase()
+          .includes(searchText) ||
+        item.sport
+          ?.toLowerCase()
+          .includes(searchText) ||
+        item.location
+          ?.toLowerCase()
+          .includes(searchText) ||
+        item.academy?.name
+          ?.toLowerCase()
+          .includes(searchText);
+
+      const matchesType =
+        type === "All" ||
+        item.type === type;
+
+      return (
+        matchesSearch &&
+        matchesType
+      );
+    });
+
+  // ======================================================
+  // FORMAT DATE
+  // ======================================================
+
+  const formatDate = (date) => {
+    if (!date) {
+      return "Date not available";
+    }
+
+    return new Date(date).toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      }
+    );
+  };
+
+  // ======================================================
+  // APPLICATION BUTTON
+  // ======================================================
+
+  const renderApplicationButton = (event) => {
+    const status =
+      applicationStatus[event._id];
+
+    const isApplying =
+      applyingId === event._id;
+
+    // --------------------------------------------------
+    // ACCEPTED
+    // --------------------------------------------------
+
+    if (status === "accepted") {
+      return (
+        <button
+          className="athlyx-op-btn athlyx-op-btn-applied"
+          disabled
+        >
+          <FiCheck size={16} />
+          Accepted
+        </button>
+      );
+    }
+
+    // --------------------------------------------------
+    // REJECTED
+    // --------------------------------------------------
+
+    if (status === "rejected") {
+      return (
+        <button
+          className="athlyx-op-btn athlyx-op-btn-rejected"
+          disabled
+        >
+          Application Rejected
+        </button>
+      );
+    }
+
+    // --------------------------------------------------
+    // PENDING
+    // --------------------------------------------------
+
+    if (status === "pending") {
+      return (
+        <button
+          className="athlyx-op-btn athlyx-op-btn-applied"
+          disabled
+        >
+          <FiCheck size={16} />
+          Applied
+        </button>
+      );
+    }
+
+    // --------------------------------------------------
+    // APPLY
+    // --------------------------------------------------
+
+    return (
+      <button
+        className="athlyx-op-btn"
+        onClick={() =>
+          handleApply(event._id)
+        }
+        disabled={isApplying}
+      >
+        {isApplying ? (
+          <>
+            <FiLoader
+              size={16}
+              className="athlyx-op-loading-icon"
+            />
+            Applying...
+          </>
+        ) : (
+          <>
+            Apply
+            <FiArrowRight size={16} />
+          </>
+        )}
+      </button>
+    );
+  };
+
+  // ======================================================
+  // RENDER
+  // ======================================================
 
   return (
-    <div className="dashboard-layout">
+    <div className="athlyx-op-page">
+
+      {/* EXISTING SIDEBAR - NOT MODIFIED */}
       <AthleteSidebar />
 
-      <main className="opportunities-page">
-        <div className="opportunities-content">
-          <div className="opportunities-header">
-            <div>
-              <span className="page-eyebrow">
-                FIND • APPLY • ADVANCE
-              </span>
-              <h1>Opportunities</h1>
-              <p>
-                Discover trials, programs and opportunities built for athletes.
-              </p>
-            </div>
-          </div>
+      <main className="athlyx-op-main">
 
-          <div className="opportunities-toolbar">
-            <div className="opportunities-search">
-              <FiSearch />
+        <div className="athlyx-op-content">
+
+          {/* ==================================================
+              HEADER
+          ================================================== */}
+
+          <header className="athlyx-op-header">
+
+            <div>
+
+              <span className="athlyx-op-eyebrow">
+                ATHLETE OPPORTUNITIES
+              </span>
+
+              <h1>
+                Find Your Next Opportunity
+              </h1>
+
+              <p>
+                Discover tournaments, trials,
+                camps and programs created by
+                academies.
+              </p>
+
+            </div>
+
+          </header>
+
+          {/* ==================================================
+              FILTERS
+          ================================================== */}
+
+          <section className="athlyx-op-filters">
+
+            {/* SEARCH */}
+
+            <div className="athlyx-op-search">
+
+              <FiSearch size={18} />
+
               <input
                 type="text"
                 placeholder="Search opportunities..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
               />
+
             </div>
+
+            {/* TYPE FILTER */}
 
             <select
               value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="opportunities-filter"
+              onChange={(e) =>
+                setType(e.target.value)
+              }
+              className="athlyx-op-type-filter"
             >
-              <option value="All">All Types</option>
-              <option value="Trials">Trials</option>
-              <option value="Program">Programs</option>
+              <option value="All">
+                All Types
+              </option>
+
+              <option value="Tournament">
+                Tournament
+              </option>
+
+              <option value="Trials">
+                Trials
+              </option>
+
+              <option value="Competition">
+                Competition
+              </option>
+
+              <option value="Camp">
+                Camp
+              </option>
+
+              <option value="Program">
+                Program
+              </option>
+
+              <option value="Talent Hunt">
+                Talent Hunt
+              </option>
+
+              <option value="Other">
+                Other
+              </option>
             </select>
-          </div>
 
-          <div className="opportunities-section-heading">
-            <div>
-              <h2>Latest opportunities</h2>
-              <p>Explore opportunities relevant to your sporting journey.</p>
-            </div>
+          </section>
 
-            <span className="opportunities-result-count">
-              {filteredOpportunities.length} available
-            </span>
-          </div>
+          {/* ==================================================
+              ERROR
+          ================================================== */}
 
-          <div className="opportunities-list">
-            {filteredOpportunities.map((item) => (
-              <article
-                className="opportunity-card"
-                key={item.id}
+          {error && (
+            <div className="athlyx-op-error">
+
+              <span>
+                {error}
+              </span>
+
+              <button
+                onClick={() => {
+                  fetchOpportunities();
+                  fetchMyApplications();
+                }}
               >
-                <div className="opportunity-card-main">
-                  <div className="opportunity-icon">
-                    <FiBriefcase />
-                  </div>
+                Try Again
+              </button>
 
-                  <div className="opportunity-info">
-                    <div className="opportunity-title-row">
-                      <h3>{item.title}</h3>
-                      <span className="opportunity-type">
-                        {item.type}
-                      </span>
-                    </div>
-
-                    <p className="opportunity-organization">
-                      {item.organization}
-                    </p>
-
-                    <p className="opportunity-description">
-                      {item.description}
-                    </p>
-
-                    <div className="opportunity-meta">
-                      <span>
-                        <FiMapPin />
-                        {item.location}
-                      </span>
-
-                      <span>
-                        <FiCalendar />
-                        {item.date}
-                      </span>
-
-                      <span>
-                        {item.sport}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <button className="opportunity-card-btn">
-                  View Opportunity
-                  <FiArrowRight />
-                </button>
-              </article>
-            ))}
-          </div>
-
-          {filteredOpportunities.length === 0 && (
-            <div className="opportunities-empty">
-              <FiBriefcase />
-              <h3>No opportunities found</h3>
-              <p>Try changing your search or filter.</p>
             </div>
           )}
+
+          {/* ==================================================
+              LOADING
+          ================================================== */}
+
+          {loading ? (
+
+            <div className="athlyx-op-loading">
+
+              <FiLoader
+                size={24}
+                className="athlyx-op-loading-icon"
+              />
+
+              <p>
+                Loading opportunities...
+              </p>
+
+            </div>
+
+          ) : filteredOpportunities.length === 0 ? (
+
+            /* ==================================================
+               EMPTY
+            ================================================== */
+
+            <div className="athlyx-op-empty">
+
+              <FiBriefcase size={32} />
+
+              <h3>
+                No opportunities found
+              </h3>
+
+              <p>
+                {search || type !== "All"
+                  ? "Try changing your search or filters."
+                  : "There are no active opportunities available right now."}
+              </p>
+
+            </div>
+
+          ) : (
+
+            /* ==================================================
+               OPPORTUNITY GRID
+            ================================================== */
+
+            <section className="athlyx-op-grid">
+
+              {filteredOpportunities.map(
+                (event) => (
+
+                  <article
+                    className="athlyx-op-card"
+                    key={event._id}
+                  >
+
+                    {/* ------------------------------------------
+                        CARD TOP
+                    ------------------------------------------ */}
+
+                    <div className="athlyx-op-card-top">
+
+                      <span className="athlyx-op-type">
+                        {event.type}
+                      </span>
+
+                      <span className="athlyx-op-sport">
+                        {event.sport}
+                      </span>
+
+                    </div>
+
+                    {/* ------------------------------------------
+                        TITLE
+                    ------------------------------------------ */}
+
+                    <h2 className="athlyx-op-title">
+                      {event.title}
+                    </h2>
+
+                    {/* ------------------------------------------
+                        ACADEMY
+                    ------------------------------------------ */}
+
+                    <div className="athlyx-op-organization">
+
+                      <FiBriefcase size={16} />
+
+                      <span>
+                        {event.academy?.name ||
+                          "Academy"}
+                      </span>
+
+                    </div>
+
+                    {/* ------------------------------------------
+                        LOCATION + DATE
+                    ------------------------------------------ */}
+
+                    <div className="athlyx-op-meta">
+
+                      <div>
+
+                        <FiMapPin size={16} />
+
+                        <span>
+                          {event.location ||
+                            "Location not available"}
+                        </span>
+
+                      </div>
+
+                      <div>
+
+                        <FiCalendar size={16} />
+
+                        <span>
+                          {formatDate(event.date)}
+                        </span>
+
+                      </div>
+
+                    </div>
+
+                    {/* ------------------------------------------
+                        REGISTRATION DEADLINE
+                    ------------------------------------------ */}
+
+                    <div className="athlyx-op-deadline">
+
+                      <FiClock size={15} />
+
+                      <span>
+                        Registration closes{" "}
+
+                        <strong>
+                          {formatDate(
+                            event.registrationDeadline
+                          )}
+                        </strong>
+                      </span>
+
+                    </div>
+
+                    {/* ------------------------------------------
+                        DESCRIPTION
+                    ------------------------------------------ */}
+
+                    <p className="athlyx-op-description">
+                      {event.description ||
+                        "No description available."}
+                    </p>
+
+                    {/* ------------------------------------------
+                        ELIGIBILITY
+                    ------------------------------------------ */}
+
+                    {event.eligibility && (
+                      <div className="athlyx-op-eligibility">
+
+                        <strong>
+                          Eligibility:
+                        </strong>
+
+                        <span>
+                          {event.eligibility}
+                        </span>
+
+                      </div>
+                    )}
+
+                    {/* ------------------------------------------
+                        ACTION
+                    ------------------------------------------ */}
+
+                    <div className="athlyx-op-action">
+
+                      {renderApplicationButton(
+                        event
+                      )}
+
+                    </div>
+
+                  </article>
+
+                )
+              )}
+
+            </section>
+
+          )}
+
         </div>
+
       </main>
+
     </div>
   );
 };

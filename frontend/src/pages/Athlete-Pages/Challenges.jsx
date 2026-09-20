@@ -9,6 +9,7 @@ const Challenges = () => {
     const [challenges, setChallenges] = useState([]);
     const [stats, setStats] = useState(null);
 
+    // Stores TODAY'S progress input, not total progress
     const [progressValues, setProgressValues] = useState({});
 
     const [loading, setLoading] = useState(true);
@@ -59,14 +60,7 @@ const Challenges = () => {
             const weeklyChallenges =
                 challengeResponse.data?.challenges || [];
 
-            /*
-             * Remove broken assignments whose challenge
-             * was deleted from the Challenge collection.
-             *
-             * This prevents:
-             * Cannot read properties of null
-             */
-
+            // Remove broken assignments
             const validChallenges =
                 weeklyChallenges.filter(
                     (item) => item?.challenge
@@ -79,14 +73,20 @@ const Challenges = () => {
             );
 
             // ==================================================
-            // SYNC INPUT VALUES
+            // RESET TODAY'S INPUT VALUES
             // ==================================================
+            //
+            // IMPORTANT:
+            // We do NOT put item.progress here.
+            //
+            // item.progress = TOTAL progress
+            // progressValues = TODAY'S progress
+            //
 
             const initialProgress = {};
 
             validChallenges.forEach((item) => {
-                initialProgress[item._id] =
-                    item.progress ?? 0;
+                initialProgress[item._id] = "";
             });
 
             setProgressValues(initialProgress);
@@ -144,7 +144,7 @@ const Challenges = () => {
     };
 
     // ======================================================
-    // HANDLE INPUT CHANGE
+    // HANDLE TODAY'S INPUT CHANGE
     // ======================================================
 
     const handleProgressChange = (
@@ -177,6 +177,7 @@ const Challenges = () => {
 
             const config = getAuthConfig();
 
+            // Today's entered progress
             const rawValue =
                 progressValues[item._id];
 
@@ -190,13 +191,15 @@ const Challenges = () => {
                 rawValue === null
             ) {
                 setError(
-                    "Please enter your progress."
+                    "Please enter today's progress."
                 );
                 return;
             }
 
-            const value = Number(rawValue);
+            const todayProgress =
+                Number(rawValue);
 
+            // Current TOTAL progress
             const currentProgress =
                 Number(item.progress || 0);
 
@@ -208,8 +211,8 @@ const Challenges = () => {
             // ==================================================
 
             if (
-                Number.isNaN(value) ||
-                !Number.isFinite(value)
+                Number.isNaN(todayProgress) ||
+                !Number.isFinite(todayProgress)
             ) {
                 setError(
                     "Please enter a valid progress value."
@@ -221,31 +224,27 @@ const Challenges = () => {
             // NEGATIVE VALUE
             // ==================================================
 
-            if (value < 0) {
+            if (todayProgress < 0) {
                 setError(
-                    "Progress cannot be negative."
+                    "Today's progress cannot be negative."
                 );
                 return;
             }
 
             // ==================================================
-            // PREVENT DECREASING PROGRESS
+            // CALCULATE NEW TOTAL
             // ==================================================
 
-            if (value < currentProgress) {
-                setError(
-                    `Progress cannot be less than your current progress (${currentProgress}).`
-                );
-                return;
-            }
+            const newTotal =
+                currentProgress + todayProgress;
 
             // ==================================================
             // PREVENT EXCEEDING TARGET
             // ==================================================
 
-            if (value > target) {
+            if (newTotal > target) {
                 setError(
-                    `Progress cannot exceed the target of ${target}.`
+                    `Your total progress cannot exceed the target of ${target}.`
                 );
                 return;
             }
@@ -274,13 +273,18 @@ const Challenges = () => {
             );
 
             console.log(
-                "Current progress:",
+                "Previous total:",
                 currentProgress
             );
 
             console.log(
-                "New progress:",
-                value
+                "Today's progress:",
+                todayProgress
+            );
+
+            console.log(
+                "New total:",
+                newTotal
             );
 
             console.log(
@@ -291,7 +295,7 @@ const Challenges = () => {
             console.log(
                 "Request body:",
                 {
-                    progress: value
+                    progress: newTotal
                 }
             );
 
@@ -300,13 +304,13 @@ const Challenges = () => {
             );
 
             // ==================================================
-            // SEND UPDATE REQUEST
+            // SEND NEW TOTAL TO BACKEND
             // ==================================================
 
             const response = await axios.put(
                 `${API}/challenges/${item.challenge._id}/progress`,
                 {
-                    progress: value
+                    progress: newTotal
                 },
                 config
             );
@@ -329,23 +333,20 @@ const Challenges = () => {
                 );
             }
 
-            /*
-             * The backend should return the populated
-             * challenge object.
-             *
-             * If it does not, keep the old challenge
-             * object so the UI doesn't crash.
-             */
+            // ==================================================
+            // NORMALIZE RESPONSE
+            // ==================================================
 
             const normalizedChallenge = {
                 ...updatedChallenge,
+
                 challenge:
                     updatedChallenge.challenge ||
                     item.challenge
             };
 
             // ==================================================
-            // UPDATE CHALLENGE IN STATE
+            // UPDATE CHALLENGE STATE
             // ==================================================
 
             setChallenges((previous) =>
@@ -357,13 +358,12 @@ const Challenges = () => {
             );
 
             // ==================================================
-            // UPDATE INPUT
+            // CLEAR TODAY'S INPUT
             // ==================================================
 
             setProgressValues((previous) => ({
                 ...previous,
-                [item._id]:
-                    normalizedChallenge.progress ?? value
+                [item._id]: ""
             }));
 
             // ==================================================
@@ -392,7 +392,9 @@ const Challenges = () => {
                     "Challenge completed successfully! 🎉"
                 );
             } else {
-                setError("");
+                setError(
+                    `Today's ${todayProgress} ${normalizedChallenge.challenge.unit || "units"} added successfully. Total progress: ${normalizedChallenge.progress}.`
+                );
             }
 
         } catch (error) {
@@ -581,12 +583,6 @@ const Challenges = () => {
 
                                 {challenges.map((item) => {
 
-                                    /*
-                                     * Extra safety:
-                                     * If somehow challenge becomes
-                                     * null, don't render that card.
-                                     */
-
                                     if (!item?.challenge) {
                                         return null;
                                     }
@@ -603,12 +599,11 @@ const Challenges = () => {
                                         item.status ===
                                         "completed";
 
-                                    const currentValue =
+                                    // TODAY'S INPUT
+                                    const todayValue =
                                         progressValues[
                                             item._id
-                                        ] ??
-                                        item.progress ??
-                                        0;
+                                        ] ?? "";
 
                                     return (
 
@@ -629,7 +624,9 @@ const Challenges = () => {
 
                                                 <span className="challenge-category">
 
-                                                    {challenge.category}
+                                                    {
+                                                        challenge.category
+                                                    }
 
                                                 </span>
 
@@ -674,7 +671,7 @@ const Challenges = () => {
 
 
                                             {/* =================================
-                                                TARGET
+                                                TOTAL TARGET
                                             ================================= */}
 
                                             <div className="challenge-target">
@@ -731,7 +728,7 @@ const Challenges = () => {
 
 
                                             {/* =================================
-                                                UPDATE PROGRESS
+                                                TODAY'S PROGRESS
                                             ================================= */}
 
                                             {!completed && (
@@ -741,11 +738,8 @@ const Challenges = () => {
                                                     <input
                                                         type="number"
                                                         min="0"
-                                                        max={
-                                                            challenge.target
-                                                        }
                                                         value={
-                                                            currentValue
+                                                            todayValue
                                                         }
                                                         onChange={(event) =>
                                                             handleProgressChange(
@@ -753,7 +747,7 @@ const Challenges = () => {
                                                                 event.target.value
                                                             )
                                                         }
-                                                        placeholder="Enter progress"
+                                                        placeholder={`Today's ${challenge.unit || "progress"}`}
                                                     />
 
 
@@ -776,7 +770,7 @@ const Challenges = () => {
                                                                 item._id
                                                             ]
                                                                 ? "Updating..."
-                                                                : "Update Progress"
+                                                                : "Add Today's Progress"
                                                         }
 
                                                     </button>
@@ -836,4 +830,3 @@ const Challenges = () => {
 };
 
 export default Challenges;
-

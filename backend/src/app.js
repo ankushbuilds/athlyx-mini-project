@@ -13,6 +13,8 @@ const connectionRoutes = require("./routes/connection.route");
 const chatRoutes = require("./routes/chat.route");
 const challengeRoutes = require("./routes/challenge.route");
 const academyRoutes = require("./routes/academy.route");
+
+const opportunityRoutes = require("./routes/opportunity.route");
 const app = express();
 
 app.use(cors());
@@ -49,5 +51,9 @@ app.use(
 app.use("/api/chat", chatRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/academies", academyRoutes);
+app.use(
+  "/api/opportunities",
+  opportunityRoutes
+);
 
 module.exports = app;

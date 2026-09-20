@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // ==========================================
@@ -52,7 +53,16 @@ import AcademyDiscover from "./pages/Academy-Pages/AcademyDiscover";
 import AcademyRequest from "./pages/Academy-Pages/AcademyRequest";
 import AcademySettings from "./pages/Academy-Pages/AcademySettings";
 
+// ==========================================
+// ACADEMY EVENT PAGES
+// ==========================================
 
+import CreateEvent from "./pages/Academy-Pages/CreateEvent";
+import AcademyEvents from "./pages/Academy-Pages/AcademyEvents";
+
+// ==========================================
+// APP
+// ==========================================
 
 const App = () => {
   return (
@@ -97,7 +107,6 @@ const App = () => {
           path="/discover"
           element={<Discover />}
         />
-
 
         {/* ==========================================
             ATHLETE ROUTES
@@ -163,7 +172,6 @@ const App = () => {
           element={<Challenges />}
         />
 
-
         {/* ==========================================
             COACH ROUTES
         ========================================== */}
@@ -218,67 +226,86 @@ const App = () => {
           element={<Messages />}
         />
 
-
         {/* ==========================================
             ACADEMY ROUTES
         ========================================== */}
 
-        {/* Academy Dashboard */}
         <Route
           path="/academy/dashboard"
           element={<AcademyDashboard />}
         />
 
-        {/* Academy Create Profile */}
         <Route
           path="/academy/create-profile"
           element={<AcademyProfileEdit />}
         />
 
-        {/* Academy Own Profile */}
         <Route
           path="/academy/my-profile"
           element={<AcademyProfile />}
         />
 
-        {/* Academy Edit Profile */}
         <Route
           path="/academy/edit-profile"
           element={<AcademyProfileEdit />}
         />
 
-        {/* Academy Connected Athletes */}
         <Route
           path="/academy/athletes"
           element={<AcademyAthletes />}
         />
 
-        {/* Academy Discover */}
         <Route
           path="/academy/discover"
           element={<AcademyDiscover />}
         />
 
-        {/* Academy Connection Requests */}
         <Route
           path="/academy/requests"
           element={<AcademyRequest />}
         />
 
-        {/* Academy Messages */}
         <Route
           path="/academy/messages"
           element={<Messages />}
         />
 
-        {/* Academy Settings */}
         <Route
           path="/academy/settings"
           element={<AcademySettings />}
         />
+
         <Route
           path="/profile/academy/:academyId"
           element={<AcademyProfile />}
+        />
+
+        {/* ==========================================
+            ACADEMY EVENTS
+        ========================================== */}
+
+        {/* Event List */}
+        <Route
+          path="/academy/events"
+          element={<AcademyEvents />}
+        />
+
+        {/* Create Event */}
+        <Route
+          path="/academy/events/create"
+          element={<CreateEvent />}
+        />
+
+        {/* Edit Event */}
+        <Route
+          path="/academy/events/:id/edit"
+          element={<AcademyEvents />}
+        />
+
+        {/* View Single Event */}
+        <Route
+          path="/academy/events/:id"
+          element={<AcademyEvents />}
         />
 
       </Routes>

@@ -1,6 +1,8 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+
 import {
     FiUser,
     FiEdit2,
@@ -34,8 +36,11 @@ const AcademyProfile = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const [connectionStatus, setConnectionStatus] = useState("none");
-    const [connectionLoading, setConnectionLoading] = useState(false);
+    const [connectionStatus, setConnectionStatus] =
+        useState("none");
+
+    const [connectionLoading, setConnectionLoading] =
+        useState(false);
 
     // ==========================================
     // DETERMINE PROFILE TYPE
@@ -49,20 +54,26 @@ const AcademyProfile = () => {
 
     useEffect(() => {
         try {
-            const storedUser = localStorage.getItem("user");
+            const storedUser =
+                localStorage.getItem("user");
 
             if (storedUser) {
-                setCurrentUser(JSON.parse(storedUser));
+                const user =
+                    JSON.parse(storedUser);
+
+                setCurrentUser(user);
             }
         } catch (error) {
-            console.error("Failed to load current user:", error);
+            console.error(
+                "Failed to load current user:",
+                error
+            );
         }
     }, []);
 
     // ==========================================
     // GET ACADEMY USER ID
     // ==========================================
-   
 
     const getAcademyUserId = () => {
         if (!academy) {
@@ -78,12 +89,12 @@ const AcademyProfile = () => {
             return academy.user._id;
         }
 
-        // academy.user is directly an ObjectId string
+        // academy.user is directly an ObjectId
         if (academy.user) {
             return academy.user;
         }
 
-        // In case backend returns userId separately
+        // backend may return userId separately
         if (academy.userId) {
             return academy.userId;
         }
@@ -92,12 +103,13 @@ const AcademyProfile = () => {
     };
 
     // ==========================================
-    // LOAD PROFILE
+    // LOAD ACADEMY PROFILE
     // ==========================================
 
     useEffect(() => {
         const loadProfile = async () => {
-            const token = localStorage.getItem("token");
+            const token =
+                localStorage.getItem("token");
 
             if (!token) {
                 navigate("/auth", {
@@ -114,7 +126,7 @@ const AcademyProfile = () => {
                 let response;
 
                 // ======================================
-                // PUBLIC ACADEMY PROFILE
+                // PUBLIC PROFILE
                 // ======================================
 
                 if (isPublicProfile) {
@@ -122,14 +134,15 @@ const AcademyProfile = () => {
                         `${API}/academies/${academyId}`,
                         {
                             headers: {
-                                Authorization: `Bearer ${token}`
+                                Authorization:
+                                    `Bearer ${token}`
                             }
                         }
                     );
                 }
 
                 // ======================================
-                // OWN ACADEMY PROFILE
+                // OWN PROFILE
                 // ======================================
 
                 else {
@@ -137,7 +150,8 @@ const AcademyProfile = () => {
                         `${API}/academies/profile`,
                         {
                             headers: {
-                                Authorization: `Bearer ${token}`
+                                Authorization:
+                                    `Bearer ${token}`
                             }
                         }
                     );
@@ -149,22 +163,40 @@ const AcademyProfile = () => {
                     null;
 
                 if (!profile) {
-                    setError("Academy profile not found.");
+                    setError(
+                        "Academy profile not found."
+                    );
+
                     return;
                 }
 
-                console.log("ACADEMY PROFILE:", profile);
+                console.log(
+                    "ACADEMY PROFILE:",
+                    profile
+                );
+
                 console.log(
                     "ACADEMY PROFILE ID:",
                     profile._id
                 );
+
                 console.log(
                     "ACADEMY USER:",
                     profile.user
                 );
+
                 console.log(
                     "ACADEMY USER ID:",
-                    profile.user?._id || profile.user
+                    profile.user?._id ||
+                    profile.user ||
+                    profile.userId
+                );
+
+                console.log(
+                    "ACADEMY PROFILE PIC:",
+                    profile.profilePic ||
+                    profile.user?.profilePic ||
+                    "No profile picture"
                 );
 
                 setAcademy(profile);
@@ -179,8 +211,13 @@ const AcademyProfile = () => {
                     error.response?.status === 401 ||
                     error.response?.status === 403
                 ) {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
+                    localStorage.removeItem(
+                        "token"
+                    );
+
+                    localStorage.removeItem(
+                        "user"
+                    );
 
                     navigate("/auth", {
                         replace: true
@@ -193,13 +230,19 @@ const AcademyProfile = () => {
                     error.response?.data?.message ||
                     "Failed to load academy profile."
                 );
+
             } finally {
                 setLoading(false);
             }
         };
 
         loadProfile();
-    }, [academyId, isPublicProfile, navigate]);
+
+    }, [
+        academyId,
+        isPublicProfile,
+        navigate
+    ]);
 
     // ==========================================
     // CHECK CONNECTION STATUS
@@ -216,25 +259,28 @@ const AcademyProfile = () => {
                 return;
             }
 
-            const token = localStorage.getItem("token");
+            const token =
+                localStorage.getItem("token");
 
             if (!token) {
                 return;
             }
 
             // IMPORTANT:
-            // Connection API needs Academy USER ID,
-            // NOT Academy profile ID.
+            // Connection API requires Academy USER ID
+            // and NOT Academy profile ID.
 
-            const academyUserId = getAcademyUserId();
+            const academyUserId =
+                getAcademyUserId();
 
             if (!academyUserId) {
                 console.error(
-                    "Academy User ID not found.",
+                    "Academy User ID not found:",
                     academy
                 );
 
                 setConnectionStatus("none");
+
                 return;
             }
 
@@ -244,15 +290,16 @@ const AcademyProfile = () => {
                     academyUserId
                 );
 
-                const response = await axios.get(
-                    `${API}/connections/status/athlete/academy/${academyUserId}`,
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${token}`
+                const response =
+                    await axios.get(
+                        `${API}/connections/status/athlete/academy/${academyUserId}`,
+                        {
+                            headers: {
+                                Authorization:
+                                    `Bearer ${token}`
+                            }
                         }
-                    }
-                );
+                    );
 
                 console.log(
                     "Academy connection status:",
@@ -295,7 +342,8 @@ const AcademyProfile = () => {
             return;
         }
 
-        const token = localStorage.getItem("token");
+        const token =
+            localStorage.getItem("token");
 
         if (!token) {
             navigate("/auth", {
@@ -306,10 +354,11 @@ const AcademyProfile = () => {
         }
 
         // IMPORTANT:
-        // Use Academy USER ID here.
-        // Do NOT use academy._id.
+        // Send Academy USER ID.
+        // Do NOT send academy._id.
 
-        const academyUserId = getAcademyUserId();
+        const academyUserId =
+            getAcademyUserId();
 
         if (!academyUserId) {
             console.error(
@@ -332,33 +381,31 @@ const AcademyProfile = () => {
                 academyUserId
             );
 
-            const response = await axios.post(
-                `${API}/connections/send/athlete/academy/${academyUserId}`,
-                {},
-                {
-                    headers: {
-                        Authorization:
-                            `Bearer ${token}`
+            const response =
+                await axios.post(
+                    `${API}/connections/send/athlete/academy/${academyUserId}`,
+                    {},
+                    {
+                        headers: {
+                            Authorization:
+                                `Bearer ${token}`
+                        }
                     }
-                }
-            );
+                );
 
             console.log(
                 "Academy connection response:",
                 response.data
             );
 
-            if (
-                response.data?.success ||
-                response.data?.status === "pending"
-            ) {
-                setConnectionStatus("pending");
-            } else {
-                setConnectionStatus(
-                    response.data?.status ||
-                    "pending"
-                );
-            }
+            setConnectionStatus(
+                response.data?.status ||
+                (
+                    response.data?.success
+                        ? "pending"
+                        : "pending"
+                )
+            );
 
         } catch (error) {
             console.error(
@@ -402,6 +449,19 @@ const AcademyProfile = () => {
     // ==========================================
 
     const getProfilePic = () => {
+
+        // MY PROFILE
+        // Profile picture is stored in User model.
+        if (!isPublicProfile) {
+            return (
+                currentUser?.profilePic ||
+                academy?.profilePic ||
+                academy?.user?.profilePic ||
+                ""
+            );
+        }
+
+        // PUBLIC ACADEMY PROFILE
         return (
             academy?.profilePic ||
             academy?.user?.profilePic ||
@@ -425,10 +485,11 @@ const AcademyProfile = () => {
     // ACADEMY USER ID
     // ==========================================
 
-    const academyUserId = getAcademyUserId();
+    const academyUserId =
+        getAcademyUserId();
 
     // ==========================================
-    // SHOULD SHOW CONNECT BUTTON?
+    // SHOULD SHOW CONNECT BUTTON
     // ==========================================
 
     const shouldShowConnect =
@@ -464,7 +525,9 @@ const AcademyProfile = () => {
         // CONNECTED
         // ======================================
 
-        if (connectionStatus === "accepted") {
+        if (
+            connectionStatus === "accepted"
+        ) {
             return (
                 <button
                     type="button"
@@ -481,7 +544,9 @@ const AcademyProfile = () => {
         // REQUEST SENT
         // ======================================
 
-        if (connectionStatus === "pending") {
+        if (
+            connectionStatus === "pending"
+        ) {
             return (
                 <button
                     type="button"
@@ -495,7 +560,7 @@ const AcademyProfile = () => {
         }
 
         // ======================================
-        // REJECTED / NONE
+        // NONE / REJECTED
         // ======================================
 
         return (
@@ -535,8 +600,8 @@ const AcademyProfile = () => {
                         </h2>
 
                         <p>
-                            Please wait while we load the
-                            academy profile.
+                            Please wait while we load
+                            the academy profile.
                         </p>
 
                     </div>
@@ -639,15 +704,25 @@ const AcademyProfile = () => {
 
                         <div className="athlete-card-top">
 
+                            {/* ==================================
+                                ACADEMY PROFILE PHOTO
+                            ================================== */}
+
                             <div className="athlete-avatar">
 
                                 {getProfilePic() ? (
                                     <img
                                         src={getProfilePic()}
                                         alt={getAcademyName()}
+                                        onError={(event) => {
+                                            event.currentTarget.style.display =
+                                                "none";
+                                        }}
                                     />
                                 ) : (
-                                    <FiHome size={28} />
+                                    <FiHome
+                                        size={28}
+                                    />
                                 )}
 
                             </div>
@@ -680,9 +755,13 @@ const AcademyProfile = () => {
 
                         <div className="athlete-card-details">
 
+                            {/* SPORT */}
+
                             <div className="athlete-detail">
 
-                                <FiAward size={16} />
+                                <FiAward
+                                    size={16}
+                                />
 
                                 <span>
                                     {academy?.sport ||
@@ -691,9 +770,13 @@ const AcademyProfile = () => {
 
                             </div>
 
+                            {/* LOCATION */}
+
                             <div className="athlete-detail">
 
-                                <FiMapPin size={16} />
+                                <FiMapPin
+                                    size={16}
+                                />
 
                                 <span>
                                     {getLocation()}
@@ -701,23 +784,33 @@ const AcademyProfile = () => {
 
                             </div>
 
+                            {/* ESTABLISHED */}
+
                             {academy?.establishedYear && (
                                 <div className="athlete-detail">
 
-                                    <FiCalendar size={16} />
+                                    <FiCalendar
+                                        size={16}
+                                    />
 
                                     <span>
                                         Established{" "}
-                                        {academy.establishedYear}
+                                        {
+                                            academy.establishedYear
+                                        }
                                     </span>
 
                                 </div>
                             )}
 
+                            {/* PHONE */}
+
                             {academy?.phone && (
                                 <div className="athlete-detail">
 
-                                    <FiPhone size={16} />
+                                    <FiPhone
+                                        size={16}
+                                    />
 
                                     <span>
                                         {academy.phone}
@@ -763,7 +856,8 @@ const AcademyProfile = () => {
                     {Array.isArray(
                         academy?.trainingPrograms
                     ) &&
-                        academy.trainingPrograms.length > 0 && (
+                        academy.trainingPrograms.length >
+                            0 && (
 
                             <section className="coach-athletes-section">
 
@@ -782,9 +876,17 @@ const AcademyProfile = () => {
                                 <div className="athlete-skills">
 
                                     {academy.trainingPrograms.map(
-                                        (program, index) => (
-                                            <span key={index}>
-                                                <FiBookOpen size={13} />
+                                        (
+                                            program,
+                                            index
+                                        ) => (
+                                            <span
+                                                key={index}
+                                            >
+                                                <FiBookOpen
+                                                    size={13}
+                                                />
+
                                                 {program}
                                             </span>
                                         )
@@ -802,7 +904,8 @@ const AcademyProfile = () => {
                     {Array.isArray(
                         academy?.facilities
                     ) &&
-                        academy.facilities.length > 0 && (
+                        academy.facilities.length >
+                            0 && (
 
                             <section className="coach-athletes-section">
 
@@ -821,9 +924,17 @@ const AcademyProfile = () => {
                                 <div className="athlete-skills">
 
                                     {academy.facilities.map(
-                                        (facility, index) => (
-                                            <span key={index}>
-                                                <FiCheckCircle size={13} />
+                                        (
+                                            facility,
+                                            index
+                                        ) => (
+                                            <span
+                                                key={index}
+                                            >
+                                                <FiCheckCircle
+                                                    size={13}
+                                                />
+
                                                 {facility}
                                             </span>
                                         )
@@ -841,7 +952,8 @@ const AcademyProfile = () => {
                     {Array.isArray(
                         academy?.achievements
                     ) &&
-                        academy.achievements.length > 0 && (
+                        academy.achievements.length >
+                            0 && (
 
                             <section className="coach-athletes-section">
 
@@ -860,9 +972,17 @@ const AcademyProfile = () => {
                                 <div className="athlete-skills">
 
                                     {academy.achievements.map(
-                                        (achievement, index) => (
-                                            <span key={index}>
-                                                <FiAward size={13} />
+                                        (
+                                            achievement,
+                                            index
+                                        ) => (
+                                            <span
+                                                key={index}
+                                            >
+                                                <FiAward
+                                                    size={13}
+                                                />
+
                                                 {achievement}
                                             </span>
                                         )
@@ -900,6 +1020,8 @@ const AcademyProfile = () => {
 
                                 <div className="athlete-skills">
 
+                                    {/* WEBSITE */}
+
                                     {academy.socialLinks.website && (
                                         <a
                                             href={
@@ -908,10 +1030,15 @@ const AcademyProfile = () => {
                                             target="_blank"
                                             rel="noreferrer"
                                         >
-                                            <FiGlobe size={14} />
+                                            <FiGlobe
+                                                size={14}
+                                            />
+
                                             Website
                                         </a>
                                     )}
+
+                                    {/* INSTAGRAM */}
 
                                     {academy.socialLinks.instagram && (
                                         <a
@@ -921,10 +1048,15 @@ const AcademyProfile = () => {
                                             target="_blank"
                                             rel="noreferrer"
                                         >
-                                            <FiInstagram size={14} />
+                                            <FiInstagram
+                                                size={14}
+                                            />
+
                                             Instagram
                                         </a>
                                     )}
+
+                                    {/* FACEBOOK */}
 
                                     {academy.socialLinks.facebook && (
                                         <a
@@ -934,7 +1066,10 @@ const AcademyProfile = () => {
                                             target="_blank"
                                             rel="noreferrer"
                                         >
-                                            <FiFacebook size={14} />
+                                            <FiFacebook
+                                                size={14}
+                                            />
+
                                             Facebook
                                         </a>
                                     )}
@@ -950,7 +1085,9 @@ const AcademyProfile = () => {
 
                     <div className="profile-action-bottom">
 
-                        {/* OWN ACADEMY PROFILE */}
+                        {/* ==================================
+                            OWN ACADEMY
+                        ================================== */}
 
                         {!isPublicProfile && (
                             <button
@@ -962,12 +1099,18 @@ const AcademyProfile = () => {
                                     )
                                 }
                             >
-                                <FiEdit2 size={16} />
+                                <FiEdit2
+                                    size={16}
+                                />
+
                                 Edit Profile
+
                             </button>
                         )}
 
-                        {/* ATHLETE VIEWING ACADEMY */}
+                        {/* ==================================
+                            ATHLETE VIEWING ACADEMY
+                        ================================== */}
 
                         {isPublicProfile &&
                             renderConnectionButton()}
