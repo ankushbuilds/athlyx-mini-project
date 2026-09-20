@@ -462,7 +462,7 @@ const getSettings = async (req, res) => {
 
         if (
             user.role !== "athlete" &&
-            user.role !== "coach"
+            user.role !== "coach" && user.role !== "academy"
         ) {
             return res.status(400).json({
                 message: "Invalid user role"

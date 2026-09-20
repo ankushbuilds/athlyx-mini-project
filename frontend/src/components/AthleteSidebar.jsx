@@ -45,6 +45,13 @@ const AthleteSidebar = () => {
   const [requestCount, setRequestCount] = useState(0);
 
   // ======================================================
+  // ACADEMY REQUEST COUNT
+  // ======================================================
+
+  const [academyRequestCount, setAcademyRequestCount] =
+    useState(0);
+
+  // ======================================================
   // ACTIVE SIDEBAR ITEM
   // ======================================================
 
@@ -52,7 +59,7 @@ const AthleteSidebar = () => {
     location.pathname === path;
 
   // ======================================================
-  // FETCH UNREAD MESSAGES + COACH REQUESTS
+  // FETCH UNREAD MESSAGES + REQUEST COUNTS
   // ======================================================
 
   useEffect(() => {
@@ -161,7 +168,9 @@ const AthleteSidebar = () => {
           const coachRequestCount =
             Number(
               requestResponse.data?.count
-            ) || 0;
+            ) ||
+            requestResponse.data?.requests?.length ||
+            0;
 
           if (isMounted) {
             setRequestCount(
@@ -169,11 +178,6 @@ const AthleteSidebar = () => {
             );
           }
         } catch (requestError) {
-          // ================================================
-          // If somehow a non-athlete token reaches here,
-          // don't break the complete sidebar.
-          // ================================================
-
           if (
             requestError.response?.status === 401
           ) {
@@ -194,6 +198,57 @@ const AthleteSidebar = () => {
             console.error(
               "Failed to fetch coach request count:",
               requestError
+            );
+          }
+        }
+
+        // ==================================================
+        // FETCH ACADEMY REQUEST COUNT
+        // ==================================================
+
+        try {
+          const academyRequestResponse =
+            await axios.get(
+              `${API}/connections/athlete/academy-requests`,
+              {
+                headers,
+                timeout: 10000
+              }
+            );
+
+          const academyCount =
+            Number(
+              academyRequestResponse.data?.count
+            ) ||
+            academyRequestResponse.data?.requests?.length ||
+            0;
+
+          if (isMounted) {
+            setAcademyRequestCount(
+              academyCount
+            );
+          }
+        } catch (academyRequestError) {
+          if (
+            academyRequestError.response?.status === 401
+          ) {
+            console.warn(
+              "AthleteSidebar authentication expired while fetching academy requests."
+            );
+          } else if (
+            academyRequestError.response?.status === 403
+          ) {
+            console.warn(
+              "AthleteSidebar: current account is not allowed to access academy requests."
+            );
+
+            if (isMounted) {
+              setAcademyRequestCount(0);
+            }
+          } else {
+            console.error(
+              "Failed to fetch academy request count:",
+              academyRequestError
             );
           }
         }
@@ -226,6 +281,13 @@ const AthleteSidebar = () => {
       clearInterval(interval);
     };
   }, []);
+
+  // ======================================================
+  // TOTAL CONNECTION REQUEST COUNT
+  // ======================================================
+
+  const totalRequestCount =
+    requestCount + academyRequestCount;
 
   // ======================================================
   // SIDEBAR
@@ -362,14 +424,14 @@ const AthleteSidebar = () => {
           <FiUsers size={22} />
 
           {/* ==============================================
-              COACH REQUEST BADGE
+              COACH + ACADEMY REQUEST BADGE
           ============================================== */}
 
-          {requestCount > 0 && (
+          {totalRequestCount > 0 && (
             <span className="sidebar-message-badge">
-              {requestCount > 99
+              {totalRequestCount > 99
                 ? "99+"
-                : requestCount}
+                : totalRequestCount}
             </span>
           )}
 

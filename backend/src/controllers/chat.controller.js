@@ -4,61 +4,138 @@ const Connection = require("../models/connection.model");
 const User = require("../models/user.model");
 
 // ======================================================
-// HELPER: CHECK ATHLETE ↔ COACH ACCEPTED CONNECTION
+// HELPER: CHECK ACCEPTED CONNECTION
+// ======================================================
+//
+// Allowed:
+//
+// 1. Athlete ↔ Coach
+// 2. Athlete ↔ Academy
+//
+// Only accepted connections can chat.
 // ======================================================
 
 async function checkAcceptedConnection(userId, otherUserId) {
-    const user = await User.findById(userId);
-    const otherUser = await User.findById(otherUserId);
+    try {
+        const user = await User.findById(userId);
+        const otherUser = await User.findById(otherUserId);
 
-    if (!user || !otherUser) {
+        if (!user || !otherUser) {
+            return {
+                allowed: false,
+                message: "User not found"
+            };
+        }
+
+        // ==================================================
+        // ATHLETE ↔ COACH
+        // ==================================================
+
+        const athleteCoachPair =
+            (user.role === "athlete" &&
+                otherUser.role === "coach") ||
+            (user.role === "coach" &&
+                otherUser.role === "athlete");
+
+        if (athleteCoachPair) {
+            const coachId =
+                user.role === "coach"
+                    ? user._id
+                    : otherUser._id;
+
+            const athleteId =
+                user.role === "athlete"
+                    ? user._id
+                    : otherUser._id;
+
+            const connection =
+                await Connection.findOne({
+                    coach: coachId,
+                    athlete: athleteId,
+                    status: "accepted"
+                });
+
+            if (!connection) {
+                return {
+                    allowed: false,
+                    message:
+                        "You can only chat with an accepted connection"
+                };
+            }
+
+            return {
+                allowed: true,
+                user,
+                otherUser,
+                connection
+            };
+        }
+
+        // ==================================================
+        // ATHLETE ↔ ACADEMY
+        // ==================================================
+
+        const athleteAcademyPair =
+            (user.role === "athlete" &&
+                otherUser.role === "academy") ||
+            (user.role === "academy" &&
+                otherUser.role === "athlete");
+
+        if (athleteAcademyPair) {
+            const academyId =
+                user.role === "academy"
+                    ? user._id
+                    : otherUser._id;
+
+            const athleteId =
+                user.role === "athlete"
+                    ? user._id
+                    : otherUser._id;
+
+            const connection =
+                await Connection.findOne({
+                    academy: academyId,
+                    athlete: athleteId,
+                    status: "accepted"
+                });
+
+            if (!connection) {
+                return {
+                    allowed: false,
+                    message:
+                        "You can only chat with an accepted connection"
+                };
+            }
+
+            return {
+                allowed: true,
+                user,
+                otherUser,
+                connection
+            };
+        }
+
+        // ==================================================
+        // INVALID CHAT PAIR
+        // ==================================================
+
         return {
             allowed: false,
-            message: "User not found"
+            message:
+                "Chat is only available between connected athletes, coaches and academies"
         };
-    }
 
-    // Only athlete ↔ coach chat is allowed
-    const validPair =
-        (user.role === "athlete" && otherUser.role === "coach") ||
-        (user.role === "coach" && otherUser.role === "athlete");
+    } catch (error) {
+        console.error(
+            "Check accepted connection error:",
+            error
+        );
 
-    if (!validPair) {
         return {
             allowed: false,
-            message: "Chat is only available between athletes and coaches"
+            message: "Failed to check connection"
         };
     }
-
-    const coachId =
-        user.role === "coach"
-            ? user._id
-            : otherUser._id;
-
-    const athleteId =
-        user.role === "athlete"
-            ? user._id
-            : otherUser._id;
-
-    const connection = await Connection.findOne({
-        coach: coachId,
-        athlete: athleteId,
-        status: "accepted"
-    });
-
-    if (!connection) {
-        return {
-            allowed: false,
-            message: "You can only chat with an accepted connection"
-        };
-    }
-
-    return {
-        allowed: true,
-        user,
-        otherUser,
-        connection
-    };
 }
 
 
@@ -88,13 +165,24 @@ async function getOrCreateConversation(req, res) {
         const userId = req.user.id;
         const otherUserId = req.params.userId;
 
-        if (userId === otherUserId) {
+        // ==================================================
+        // SELF CHAT CHECK
+        // ==================================================
+
+        if (
+            userId.toString() ===
+            otherUserId.toString()
+        ) {
             return res.status(400).json({
-                message: "You cannot start a conversation with yourself"
+                message:
+                    "You cannot start a conversation with yourself"
             });
         }
 
-        // Check accepted athlete ↔ coach connection
+        // ==================================================
+        // CHECK ACCEPTED CONNECTION
+        // ==================================================
+
         const connectionCheck =
             await checkAcceptedConnection(
                 userId,
@@ -103,9 +191,14 @@ async function getOrCreateConversation(req, res) {
 
         if (!connectionCheck.allowed) {
             return res.status(403).json({
-                message: connectionCheck.message
+                message:
+                    connectionCheck.message
             });
         }
+
+        // ==================================================
+        // CREATE PARTICIPANT KEY
+        // ==================================================
 
         const {
             participantIds,
@@ -115,31 +208,14 @@ async function getOrCreateConversation(req, res) {
             otherUserId
         );
 
+        // ==================================================
+        // FIND EXISTING CONVERSATION
+        // ==================================================
+
         let conversation =
             await Conversation.findOne({
                 participantKey
             })
-            .populate(
-                "participants",
-                "name email role profilePic"
-            )
-            .populate(
-                "lastMessage",
-                "sender receiver text read createdAt"
-            );
-
-        // Create conversation if it doesn't exist
-        if (!conversation) {
-            conversation =
-                await Conversation.create({
-                    participants: participantIds,
-                    participantKey
-                });
-
-            conversation =
-                await Conversation.findById(
-                    conversation._id
-                )
                 .populate(
                     "participants",
                     "name email role profilePic"
@@ -148,6 +224,47 @@ async function getOrCreateConversation(req, res) {
                     "lastMessage",
                     "sender receiver text read createdAt"
                 );
+
+        // ==================================================
+        // CREATE IF NOT EXISTS
+        // ==================================================
+
+        if (!conversation) {
+            try {
+                conversation =
+                    await Conversation.create({
+                        participants:
+                            participantIds,
+                        participantKey
+                    });
+            } catch (createError) {
+
+                // Another request may have created the
+                // same conversation at the same time.
+
+                if (createError.code !== 11000) {
+                    throw createError;
+                }
+
+                conversation =
+                    await Conversation.findOne({
+                        participantKey
+                    });
+            }
+
+            // Populate newly created conversation
+            conversation =
+                await Conversation.findById(
+                    conversation._id
+                )
+                    .populate(
+                        "participants",
+                        "name email role profilePic"
+                    )
+                    .populate(
+                        "lastMessage",
+                        "sender receiver text read createdAt"
+                    );
         }
 
         return res.status(200).json({
@@ -161,8 +278,10 @@ async function getOrCreateConversation(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to get conversation",
-            error: error.message
+            message:
+                "Failed to get conversation",
+            error:
+                error.message
         });
     }
 }
@@ -172,17 +291,18 @@ async function getOrCreateConversation(req, res) {
 // GET MY CONVERSATIONS
 // ======================================================
 //
-// IMPORTANT:
-//
-// This now shows ALL accepted connections,
-// even if they have never sent a message.
+// Athlete:
+//     Connected Coaches
+//     +
+//     Connected Academies
 //
 // Coach:
-//     connected athletes → Messages
+//     Connected Athletes
 //
-// Athlete:
-//     connected coaches → Messages
+// Academy:
+//     Connected Athletes
 //
+// Only ACCEPTED connections are shown.
 // ======================================================
 
 async function getMyConversations(req, res) {
@@ -190,7 +310,7 @@ async function getMyConversations(req, res) {
         const userId = req.user.id;
 
         // ==================================================
-        // GET LOGGED-IN USER
+        // GET CURRENT USER
         // ==================================================
 
         const currentUser =
@@ -208,25 +328,98 @@ async function getMyConversations(req, res) {
 
         let connections = [];
 
-        if (currentUser.role === "coach") {
+        // ==================================================
+        // COACH
+        // ==================================================
 
-            // Coach → get connected athletes
+        if (currentUser.role === "coach") {
             connections =
                 await Connection.find({
                     coach: userId,
-                    status: "accepted"
-                }).select("athlete");
+                    status: "accepted",
+                    athlete: {
+                        $ne: null
+                    }
+                }).select(
+                    "athlete"
+                );
+        }
 
-        } else if (currentUser.role === "athlete") {
+        // ==================================================
+        // ATHLETE
+        // ==================================================
+        //
+        // Athlete can have:
+        //
+        // coach connections
+        // academy connections
+        //
+        // So we use TWO queries.
+        // ==================================================
 
-            // Athlete → get connected coaches
-            connections =
+        else if (currentUser.role === "athlete") {
+
+            const coachConnections =
                 await Connection.find({
                     athlete: userId,
+                    coach: {
+                        $ne: null
+                    },
                     status: "accepted"
-                }).select("coach");
+                }).select(
+                    "coach"
+                );
 
-        } else {
+            const academyConnections =
+                await Connection.find({
+                    athlete: userId,
+                    academy: {
+                        $ne: null
+                    },
+                    status: "accepted"
+                }).select(
+                    "academy"
+                );
+
+            connections = [
+                ...coachConnections.map(
+                    connection => ({
+                        connectedUser:
+                            connection.coach
+                    })
+                ),
+
+                ...academyConnections.map(
+                    connection => ({
+                        connectedUser:
+                            connection.academy
+                    })
+                )
+            ];
+        }
+
+        // ==================================================
+        // ACADEMY
+        // ==================================================
+
+        else if (currentUser.role === "academy") {
+            connections =
+                await Connection.find({
+                    academy: userId,
+                    status: "accepted",
+                    athlete: {
+                        $ne: null
+                    }
+                }).select(
+                    "athlete"
+                );
+        }
+
+        // ==================================================
+        // OTHER ROLES
+        // ==================================================
+
+        else {
             return res.status(200).json({
                 count: 0,
                 conversations: []
@@ -237,71 +430,174 @@ async function getMyConversations(req, res) {
         // GET CONNECTED USER IDS
         // ==================================================
 
-        const connectedUserIds =
-            connections.map(connection => {
+        let connectedUserIds = [];
 
-                if (currentUser.role === "coach") {
-                    return connection.athlete;
-                }
+        if (currentUser.role === "athlete") {
 
-                return connection.coach;
-            });
+            connectedUserIds =
+                connections
+                    .map(
+                        connection =>
+                            connection.connectedUser
+                    )
+                    .filter(Boolean);
+        }
 
+        else if (currentUser.role === "coach") {
+
+            connectedUserIds =
+                connections
+                    .map(
+                        connection =>
+                            connection.athlete
+                    )
+                    .filter(Boolean);
+        }
+
+        else if (currentUser.role === "academy") {
+
+            connectedUserIds =
+                connections
+                    .map(
+                        connection =>
+                            connection.athlete
+                    )
+                    .filter(Boolean);
+        }
+
+        // ==================================================
+        // REMOVE DUPLICATES
+        // ==================================================
+
+        const uniqueConnectedUserIds = [
+            ...new Set(
+                connectedUserIds.map(
+                    id => id.toString()
+                )
+            )
+        ];
 
         // ==================================================
         // CREATE CONVERSATION FOR EACH CONNECTION
-        // IF IT DOESN'T EXIST
         // ==================================================
 
-        for (const connectedUserId of connectedUserIds) {
+        for (
+            const connectedUserId
+            of uniqueConnectedUserIds
+        ) {
+            try {
 
-            const {
-                participantIds,
-                participantKey
-            } = createParticipantKey(
-                userId,
-                connectedUserId
-            );
+                // Make sure connected user still exists
+                const connectedUser =
+                    await User.findById(
+                        connectedUserId
+                    ).select(
+                        "_id role"
+                    );
 
-            await Conversation.findOneAndUpdate(
-                {
-                    participantKey
-                },
-                {
-                    $setOnInsert: {
-                        participants: participantIds,
-                        participantKey
-                    }
-                },
-                {
-                    new: true,
-                    upsert: true
+                if (!connectedUser) {
+                    continue;
                 }
-            );
+
+                // ==================================================
+                // VERIFY CHAT PAIR
+                // ==================================================
+
+                const connectionCheck =
+                    await checkAcceptedConnection(
+                        userId,
+                        connectedUserId
+                    );
+
+                if (!connectionCheck.allowed) {
+                    continue;
+                }
+
+                // ==================================================
+                // PARTICIPANT KEY
+                // ==================================================
+
+                const {
+                    participantIds,
+                    participantKey
+                } = createParticipantKey(
+                    userId,
+                    connectedUserId
+                );
+
+                // ==================================================
+                // CHECK EXISTING CONVERSATION
+                // ==================================================
+
+                const existingConversation =
+                    await Conversation.findOne({
+                        participantKey
+                    });
+
+                // ==================================================
+                // CREATE CONVERSATION
+                // ==================================================
+
+                if (!existingConversation) {
+                    try {
+
+                        await Conversation.create({
+                            participants:
+                                participantIds,
+
+                            participantKey
+                        });
+
+                    } catch (createError) {
+
+                        // Ignore duplicate key caused
+                        // by simultaneous requests.
+
+                        if (
+                            createError.code !==
+                            11000
+                        ) {
+                            console.error(
+                                "Conversation create error:",
+                                createError
+                            );
+                        }
+                    }
+                }
+
+            } catch (conversationError) {
+
+                console.error(
+                    "Conversation processing error:",
+                    conversationError
+                );
+
+                // Don't break the whole Messages page
+                // because of one bad connection.
+                continue;
+            }
         }
 
-
         // ==================================================
-        // GET ALL USER CONVERSATIONS
+        // GET ALL CONVERSATIONS
         // ==================================================
 
         const conversations =
             await Conversation.find({
                 participants: userId
             })
-            .populate(
-                "participants",
-                "name email role profilePic"
-            )
-            .populate(
-                "lastMessage",
-                "sender receiver text read createdAt"
-            )
-            .sort({
-                lastMessageAt: -1,
-                updatedAt: -1
-            });
-
+                .populate(
+                    "participants",
+                    "name email role profilePic"
+                )
+                .populate(
+                    "lastMessage",
+                    "sender receiver text read createdAt"
+                )
+                .sort({
+                    lastMessageAt: -1,
+                    updatedAt: -1
+                });
 
         // ==================================================
         // ADD UNREAD COUNT
@@ -309,7 +605,6 @@ async function getMyConversations(req, res) {
 
         const conversationsWithUnreadCount =
             await Promise.all(
-
                 conversations.map(
                     async conversation => {
 
@@ -317,18 +612,21 @@ async function getMyConversations(req, res) {
                             await Message.countDocuments({
                                 conversation:
                                     conversation._id,
-                                receiver: userId,
+
+                                receiver:
+                                    userId,
+
                                 read: false
                             });
 
                         return {
                             ...conversation.toObject(),
+
                             unreadCount
                         };
                     }
                 )
             );
-
 
         // ==================================================
         // RETURN
@@ -343,6 +641,7 @@ async function getMyConversations(req, res) {
         });
 
     } catch (error) {
+
         console.error(
             "Get conversations error:",
             error
@@ -370,6 +669,10 @@ async function getConversationMessages(req, res) {
         const conversationId =
             req.params.conversationId;
 
+        // ==================================================
+        // FIND CONVERSATION
+        // ==================================================
+
         const conversation =
             await Conversation.findById(
                 conversationId
@@ -377,16 +680,20 @@ async function getConversationMessages(req, res) {
 
         if (!conversation) {
             return res.status(404).json({
-                message: "Conversation not found"
+                message:
+                    "Conversation not found"
             });
         }
 
-        // Make sure logged-in user belongs
-        // to this conversation
+        // ==================================================
+        // CHECK PARTICIPANT
+        // ==================================================
+
         const isParticipant =
             conversation.participants.some(
                 participant =>
-                    participant.toString() === userId
+                    participant.toString() ===
+                    userId.toString()
             );
 
         if (!isParticipant) {
@@ -396,36 +703,47 @@ async function getConversationMessages(req, res) {
             });
         }
 
+        // ==================================================
+        // GET MESSAGES
+        // ==================================================
+
         const messages =
             await Message.find({
-                conversation: conversationId
+                conversation:
+                    conversationId
             })
-            .populate(
-                "sender",
-                "name role profilePic"
-            )
-            .populate(
-                "receiver",
-                "name role profilePic"
-            )
-            .sort({
-                createdAt: 1
-            });
+                .populate(
+                    "sender",
+                    "name role profilePic"
+                )
+                .populate(
+                    "receiver",
+                    "name role profilePic"
+                )
+                .sort({
+                    createdAt: 1
+                });
 
         return res.status(200).json({
-            count: messages.length,
+            count:
+                messages.length,
+
             messages
         });
 
     } catch (error) {
+
         console.error(
             "Get conversation messages error:",
             error
         );
 
         return res.status(500).json({
-            message: "Failed to fetch messages",
-            error: error.message
+            message:
+                "Failed to fetch messages",
+
+            error:
+                error.message
         });
     }
 }
@@ -444,12 +762,23 @@ async function sendMessage(req, res) {
 
         const { text } = req.body;
 
-        // Validate message
-        if (!text || !text.trim()) {
+        // ==================================================
+        // VALIDATE TEXT
+        // ==================================================
+
+        if (
+            !text ||
+            !text.trim()
+        ) {
             return res.status(400).json({
-                message: "Message cannot be empty"
+                message:
+                    "Message cannot be empty"
             });
         }
+
+        // ==================================================
+        // FIND CONVERSATION
+        // ==================================================
 
         const conversation =
             await Conversation.findById(
@@ -458,15 +787,20 @@ async function sendMessage(req, res) {
 
         if (!conversation) {
             return res.status(404).json({
-                message: "Conversation not found"
+                message:
+                    "Conversation not found"
             });
         }
 
-        // Check sender belongs to conversation
+        // ==================================================
+        // CHECK SENDER
+        // ==================================================
+
         const isParticipant =
             conversation.participants.some(
                 participant =>
-                    participant.toString() === senderId
+                    participant.toString() ===
+                    senderId.toString()
             );
 
         if (!isParticipant) {
@@ -476,20 +810,28 @@ async function sendMessage(req, res) {
             });
         }
 
-        // Find receiver
+        // ==================================================
+        // FIND RECEIVER
+        // ==================================================
+
         const receiverId =
             conversation.participants.find(
                 participant =>
-                    participant.toString() !== senderId
+                    participant.toString() !==
+                    senderId.toString()
             );
 
         if (!receiverId) {
             return res.status(400).json({
-                message: "Receiver not found"
+                message:
+                    "Receiver not found"
             });
         }
 
-        // Check connection is still accepted
+        // ==================================================
+        // CHECK ACCEPTED CONNECTION
+        // ==================================================
+
         const connectionCheck =
             await checkAcceptedConnection(
                 senderId,
@@ -498,20 +840,34 @@ async function sendMessage(req, res) {
 
         if (!connectionCheck.allowed) {
             return res.status(403).json({
-                message: connectionCheck.message
+                message:
+                    connectionCheck.message
             });
         }
 
-        // Create message
+        // ==================================================
+        // CREATE MESSAGE
+        // ==================================================
+
         const message =
             await Message.create({
-                conversation: conversationId,
-                sender: senderId,
-                receiver: receiverId,
-                text: text.trim()
+                conversation:
+                    conversationId,
+
+                sender:
+                    senderId,
+
+                receiver:
+                    receiverId,
+
+                text:
+                    text.trim()
             });
 
-        // Update conversation
+        // ==================================================
+        // UPDATE CONVERSATION
+        // ==================================================
+
         conversation.lastMessage =
             message._id;
 
@@ -520,19 +876,22 @@ async function sendMessage(req, res) {
 
         await conversation.save();
 
-        // Return populated message
+        // ==================================================
+        // POPULATE MESSAGE
+        // ==================================================
+
         const populatedMessage =
             await Message.findById(
                 message._id
             )
-            .populate(
-                "sender",
-                "name role profilePic"
-            )
-            .populate(
-                "receiver",
-                "name role profilePic"
-            );
+                .populate(
+                    "sender",
+                    "name role profilePic"
+                )
+                .populate(
+                    "receiver",
+                    "name role profilePic"
+                );
 
         return res.status(201).json({
             message:
@@ -540,14 +899,18 @@ async function sendMessage(req, res) {
         });
 
     } catch (error) {
+
         console.error(
             "Send message error:",
             error
         );
 
         return res.status(500).json({
-            message: "Failed to send message",
-            error: error.message
+            message:
+                "Failed to send message",
+
+            error:
+                error.message
         });
     }
 }
@@ -564,6 +927,10 @@ async function markMessagesAsRead(req, res) {
         const conversationId =
             req.params.conversationId;
 
+        // ==================================================
+        // FIND CONVERSATION
+        // ==================================================
+
         const conversation =
             await Conversation.findById(
                 conversationId
@@ -571,14 +938,20 @@ async function markMessagesAsRead(req, res) {
 
         if (!conversation) {
             return res.status(404).json({
-                message: "Conversation not found"
+                message:
+                    "Conversation not found"
             });
         }
+
+        // ==================================================
+        // CHECK PARTICIPANT
+        // ==================================================
 
         const isParticipant =
             conversation.participants.some(
                 participant =>
-                    participant.toString() === userId
+                    participant.toString() ===
+                    userId.toString()
             );
 
         if (!isParticipant) {
@@ -588,10 +961,18 @@ async function markMessagesAsRead(req, res) {
             });
         }
 
+        // ==================================================
+        // MARK RECEIVED MESSAGES AS READ
+        // ==================================================
+
         await Message.updateMany(
             {
-                conversation: conversationId,
-                receiver: userId,
+                conversation:
+                    conversationId,
+
+                receiver:
+                    userId,
+
                 read: false
             },
             {
@@ -607,6 +988,7 @@ async function markMessagesAsRead(req, res) {
         });
 
     } catch (error) {
+
         console.error(
             "Mark messages as read error:",
             error
@@ -615,7 +997,9 @@ async function markMessagesAsRead(req, res) {
         return res.status(500).json({
             message:
                 "Failed to mark messages as read",
-            error: error.message
+
+            error:
+                error.message
         });
     }
 }
@@ -631,16 +1015,20 @@ async function getUnreadMessageCount(req, res) {
 
         const unreadCount =
             await Message.countDocuments({
-                receiver: userId,
+                receiver:
+                    userId,
+
                 read: false
             });
 
         return res.status(200).json({
             success: true,
+
             unreadCount
         });
 
     } catch (error) {
+
         console.error(
             "Get unread message count error:",
             error
@@ -648,9 +1036,12 @@ async function getUnreadMessageCount(req, res) {
 
         return res.status(500).json({
             success: false,
+
             message:
                 "Failed to get unread message count",
-            error: error.message
+
+            error:
+                error.message
         });
     }
 }

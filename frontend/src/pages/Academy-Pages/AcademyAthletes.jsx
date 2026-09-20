@@ -574,20 +574,7 @@ const AcademyAthletes = () => {
                                 View Profile
                               </span>
 
-                              <button
-                                type="button"
-                                onClick={(e) =>
-                                  handleMessage(
-                                    e,
-                                    athlete
-                                  )
-                                }
-                                title="Message athlete"
-                              >
-                                <FiMessageCircle
-                                  size={17}
-                                />
-                              </button>
+                             
 
                               <span className="arrow">
                                 →

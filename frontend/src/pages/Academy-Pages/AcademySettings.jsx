@@ -464,7 +464,7 @@ const AcademySettings = () => {
                         type="button"
                         onClick={() =>
                             navigate(
-                                "/academy/my-profile/edit"
+                                "/academy/edit-profile"
                             )
                         }
                     >

@@ -1,6 +1,7 @@
 const Connection = require("../models/connection.model");
 const User = require("../models/user.model");
 const Athlete = require("../models/athlete.model");
+const Academy = require("../models/academy.model");
 
 const coachFields =
     "name email role profilePic sport specialization experience organization";
@@ -25,6 +26,54 @@ function populateConnection(query) {
 
 
 // ======================================================
+// HELPER: RESOLVE ATHLETE USER
+//
+// Public Athlete Profile uses Athlete document _id.
+// Some other APIs may use User _id.
+//
+// This helper supports BOTH.
+// ======================================================
+
+async function resolveAthleteUser(athleteId) {
+    // ------------------------------------------
+    // First try as User ID
+    // ------------------------------------------
+
+    let athleteUser = await User.findById(athleteId).select(
+        "_id name email role profilePic"
+    );
+
+    if (athleteUser && athleteUser.role === "athlete") {
+        return athleteUser;
+    }
+
+    // ------------------------------------------
+    // If not User ID, try Athlete profile ID
+    // ------------------------------------------
+
+    const athleteProfile = await Athlete.findById(
+        athleteId
+    ).select("user");
+
+    if (!athleteProfile) {
+        return null;
+    }
+
+    athleteUser = await User.findById(
+        athleteProfile.user
+    ).select(
+        "_id name email role profilePic"
+    );
+
+    if (!athleteUser || athleteUser.role !== "athlete") {
+        return null;
+    }
+
+    return athleteUser;
+}
+
+
+// ======================================================
 // COACH → ATHLETE : SEND REQUEST
 // ======================================================
 
@@ -33,26 +82,32 @@ async function sendConnectionRequest(req, res) {
         const coachId = req.user.id;
         const athleteProfileId = req.params.athleteId;
 
-        if (req.user.role !== "coach" && 
-            req.user.role !== "academy"
-        ) {
+        // ------------------------------------------
+        // ONLY COACH
+        // ------------------------------------------
+
+        if (req.user.role !== "coach") {
             return res.status(403).json({
-                message: "Only coaches can send connection requests"
+                message:
+                    "Only coaches can send connection requests"
             });
         }
 
         const coach = await User.findById(coachId);
 
-       if (
-    !coach ||
-    (coach.role !== "coach" && coach.role !== "academy")
-) {
-    return res.status(403).json({
-        message: "Coach or academy account not found"
-    });
-}
+        if (!coach || coach.role !== "coach") {
+            return res.status(403).json({
+                message: "Coach account not found"
+            });
+        }
 
-        const athlete = await Athlete.findById(athleteProfileId);
+        // ------------------------------------------
+        // Athlete profile → Athlete user
+        // ------------------------------------------
+
+        const athlete = await Athlete.findById(
+            athleteProfileId
+        );
 
         if (!athlete) {
             return res.status(404).json({
@@ -60,19 +115,31 @@ async function sendConnectionRequest(req, res) {
             });
         }
 
-        const athleteUser = await User.findById(athlete.user);
+        const athleteUser = await User.findById(
+            athlete.user
+        );
 
-        if (!athleteUser || athleteUser.role !== "athlete") {
+        if (
+            !athleteUser ||
+            athleteUser.role !== "athlete"
+        ) {
             return res.status(404).json({
                 message: "Athlete user not found"
             });
         }
 
-        if (coachId === athleteUser._id.toString()) {
+        if (
+            coachId === athleteUser._id.toString()
+        ) {
             return res.status(400).json({
-                message: "You cannot send a request to yourself"
+                message:
+                    "You cannot send a request to yourself"
             });
         }
+
+        // ------------------------------------------
+        // Existing connection
+        // ------------------------------------------
 
         let connection = await Connection.findOne({
             coach: coachId,
@@ -82,14 +149,16 @@ async function sendConnectionRequest(req, res) {
         if (connection) {
             if (connection.status === "pending") {
                 return res.status(400).json({
-                    message: "Connection request already sent",
+                    message:
+                        "Connection request already sent",
                     status: "pending"
                 });
             }
 
             if (connection.status === "accepted") {
                 return res.status(400).json({
-                    message: "You are already connected with this athlete",
+                    message:
+                        "You are already connected with this athlete",
                     status: "accepted"
                 });
             }
@@ -104,14 +173,22 @@ async function sendConnectionRequest(req, res) {
                 await connection.save();
 
                 return res.status(200).json({
-                    message: "Connection request sent successfully",
+                    message:
+                        "Connection request sent successfully",
                     status: "pending",
-                    connection: await populateConnection(
-                        Connection.findById(connection._id)
-                    )
+                    connection:
+                        await populateConnection(
+                            Connection.findById(
+                                connection._id
+                            )
+                        )
                 });
             }
         }
+
+        // ------------------------------------------
+        // Create new coach → athlete connection
+        // ------------------------------------------
 
         connection = await Connection.create({
             coach: coachId,
@@ -121,23 +198,32 @@ async function sendConnectionRequest(req, res) {
         });
 
         return res.status(201).json({
-            message: "Connection request sent successfully",
+            message:
+                "Connection request sent successfully",
             status: "pending",
-            connection: await populateConnection(
-                Connection.findById(connection._id)
-            )
+            connection:
+                await populateConnection(
+                    Connection.findById(
+                        connection._id
+                    )
+                )
         });
     } catch (error) {
-        console.error("Send connection request error:", error);
+        console.error(
+            "Send connection request error:",
+            error
+        );
 
         if (error.code === 11000) {
             return res.status(400).json({
-                message: "Connection request already exists"
+                message:
+                    "Connection request already exists"
             });
         }
 
         return res.status(500).json({
-            message: "Error sending connection request",
+            message:
+                "Error sending connection request",
             error: error.message
         });
     }
@@ -155,19 +241,28 @@ async function sendAthleteConnectionRequest(req, res) {
 
         if (req.user.role !== "athlete") {
             return res.status(403).json({
-                message: "Only athletes can send connection requests"
+                message:
+                    "Only athletes can send connection requests"
             });
         }
 
-        const athlete = await User.findById(athleteId);
+        const athlete = await User.findById(
+            athleteId
+        );
 
-        if (!athlete || athlete.role !== "athlete") {
+        if (
+            !athlete ||
+            athlete.role !== "athlete"
+        ) {
             return res.status(403).json({
-                message: "Athlete account not found"
+                message:
+                    "Athlete account not found"
             });
         }
 
-        const coach = await User.findById(coachId);
+        const coach = await User.findById(
+            coachId
+        );
 
         if (!coach || coach.role !== "coach") {
             return res.status(404).json({
@@ -177,7 +272,8 @@ async function sendAthleteConnectionRequest(req, res) {
 
         if (athleteId === coachId) {
             return res.status(400).json({
-                message: "You cannot send a request to yourself"
+                message:
+                    "You cannot send a request to yourself"
             });
         }
 
@@ -189,14 +285,16 @@ async function sendAthleteConnectionRequest(req, res) {
         if (connection) {
             if (connection.status === "pending") {
                 return res.status(400).json({
-                    message: "Connection request already sent",
+                    message:
+                        "Connection request already sent",
                     status: "pending"
                 });
             }
 
             if (connection.status === "accepted") {
                 return res.status(400).json({
-                    message: "You are already connected with this coach",
+                    message:
+                        "You are already connected with this coach",
                     status: "accepted"
                 });
             }
@@ -211,11 +309,15 @@ async function sendAthleteConnectionRequest(req, res) {
                 await connection.save();
 
                 return res.status(200).json({
-                    message: "Connection request sent successfully",
+                    message:
+                        "Connection request sent successfully",
                     status: "pending",
-                    connection: await populateConnection(
-                        Connection.findById(connection._id)
-                    )
+                    connection:
+                        await populateConnection(
+                            Connection.findById(
+                                connection._id
+                            )
+                        )
                 });
             }
         }
@@ -228,11 +330,15 @@ async function sendAthleteConnectionRequest(req, res) {
         });
 
         return res.status(201).json({
-            message: "Connection request sent successfully",
+            message:
+                "Connection request sent successfully",
             status: "pending",
-            connection: await populateConnection(
-                Connection.findById(connection._id)
-            )
+            connection:
+                await populateConnection(
+                    Connection.findById(
+                        connection._id
+                    )
+                )
         });
     } catch (error) {
         console.error(
@@ -242,12 +348,14 @@ async function sendAthleteConnectionRequest(req, res) {
 
         if (error.code === 11000) {
             return res.status(400).json({
-                message: "Connection request already exists"
+                message:
+                    "Connection request already exists"
             });
         }
 
         return res.status(500).json({
-            message: "Error sending connection request",
+            message:
+                "Error sending connection request",
             error: error.message
         });
     }
@@ -261,15 +369,20 @@ async function sendAthleteConnectionRequest(req, res) {
 async function getCoachConnectionStatus(req, res) {
     try {
         const coachId = req.user.id;
-        const athleteProfileId = req.params.athleteId;
+        const athleteProfileId =
+            req.params.athleteId;
 
         if (req.user.role !== "coach") {
             return res.status(403).json({
-                message: "Only coaches can check connection status"
+                message:
+                    "Only coaches can check connection status"
             });
         }
 
-        const athlete = await Athlete.findById(athleteProfileId);
+        const athlete =
+            await Athlete.findById(
+                athleteProfileId
+            );
 
         if (!athlete) {
             return res.status(404).json({
@@ -277,10 +390,11 @@ async function getCoachConnectionStatus(req, res) {
             });
         }
 
-        const connection = await Connection.findOne({
-            coach: coachId,
-            athlete: athlete.user
-        });
+        const connection =
+            await Connection.findOne({
+                coach: coachId,
+                athlete: athlete.user
+            });
 
         if (!connection) {
             return res.status(200).json({
@@ -290,7 +404,8 @@ async function getCoachConnectionStatus(req, res) {
         }
 
         return res.status(200).json({
-            connected: connection.status === "accepted",
+            connected:
+                connection.status === "accepted",
             status: connection.status,
             connectionId: connection._id
         });
@@ -301,7 +416,8 @@ async function getCoachConnectionStatus(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to get connection status",
+            message:
+                "Failed to get connection status",
             error: error.message
         });
     }
@@ -319,11 +435,14 @@ async function getAthleteConnectionStatus(req, res) {
 
         if (req.user.role !== "athlete") {
             return res.status(403).json({
-                message: "Only athletes can check connection status"
+                message:
+                    "Only athletes can check connection status"
             });
         }
 
-        const coach = await User.findById(coachId);
+        const coach = await User.findById(
+            coachId
+        );
 
         if (!coach || coach.role !== "coach") {
             return res.status(404).json({
@@ -331,10 +450,11 @@ async function getAthleteConnectionStatus(req, res) {
             });
         }
 
-        const connection = await Connection.findOne({
-            coach: coachId,
-            athlete: athleteId
-        });
+        const connection =
+            await Connection.findOne({
+                coach: coachId,
+                athlete: athleteId
+            });
 
         if (!connection) {
             return res.status(200).json({
@@ -344,7 +464,8 @@ async function getAthleteConnectionStatus(req, res) {
         }
 
         return res.status(200).json({
-            connected: connection.status === "accepted",
+            connected:
+                connection.status === "accepted",
             status: connection.status,
             connectionId: connection._id
         });
@@ -355,7 +476,8 @@ async function getAthleteConnectionStatus(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to get connection status",
+            message:
+                "Failed to get connection status",
             error: error.message
         });
     }
@@ -372,17 +494,24 @@ async function getAthleteConnectionRequests(req, res) {
 
         if (req.user.role !== "athlete") {
             return res.status(403).json({
-                message: "Only athletes can view connection requests"
+                message:
+                    "Only athletes can view connection requests"
             });
         }
 
-        const requests = await Connection.find({
-            athlete: athleteId,
-            requestedBy: "coach",
-            status: "pending"
-        })
-            .populate("coach", coachFields)
-            .sort({ createdAt: -1 });
+        const requests =
+            await Connection.find({
+                athlete: athleteId,
+                requestedBy: "coach",
+                status: "pending"
+            })
+                .populate(
+                    "coach",
+                    coachFields
+                )
+                .sort({
+                    createdAt: -1
+                });
 
         return res.status(200).json({
             count: requests.length,
@@ -395,7 +524,8 @@ async function getAthleteConnectionRequests(req, res) {
         );
 
         return res.status(500).json({
-            message: "Error fetching connection requests",
+            message:
+                "Error fetching connection requests",
             error: error.message
         });
     }
@@ -412,17 +542,24 @@ async function getCoachConnectionRequests(req, res) {
 
         if (req.user.role !== "coach") {
             return res.status(403).json({
-                message: "Only coaches can view connection requests"
+                message:
+                    "Only coaches can view connection requests"
             });
         }
 
-        const requests = await Connection.find({
-            coach: coachId,
-            requestedBy: "athlete",
-            status: "pending"
-        })
-            .populate("athlete", athleteFields)
-            .sort({ createdAt: -1 });
+        const requests =
+            await Connection.find({
+                coach: coachId,
+                requestedBy: "athlete",
+                status: "pending"
+            })
+                .populate(
+                    "athlete",
+                    athleteFields
+                )
+                .sort({
+                    createdAt: -1
+                });
 
         return res.status(200).json({
             count: requests.length,
@@ -435,7 +572,8 @@ async function getCoachConnectionRequests(req, res) {
         );
 
         return res.status(500).json({
-            message: "Error fetching connection requests",
+            message:
+                "Error fetching connection requests",
             error: error.message
         });
     }
@@ -451,50 +589,102 @@ async function sendAcademyConnectionRequest(req, res) {
         const academyId = req.user.id;
         const athleteId = req.params.athleteId;
 
+        // ------------------------------------------
+        // ROLE CHECK
+        // ------------------------------------------
+
         if (req.user.role !== "academy") {
             return res.status(403).json({
-                message: "Only academies can send connection requests"
+                message:
+                    "Only academies can send connection requests"
             });
         }
 
-        const academy = await User.findById(academyId);
+        // ------------------------------------------
+        // CHECK ACADEMY
+        // ------------------------------------------
 
-        if (!academy || academy.role !== "academy") {
+        const academy = await User.findById(
+            academyId
+        );
+
+        if (
+            !academy ||
+            academy.role !== "academy"
+        ) {
             return res.status(403).json({
-                message: "Academy account not found"
+                message:
+                    "Academy account not found"
             });
         }
 
-        const athlete = await User.findById(athleteId);
+        // ------------------------------------------
+        // RESOLVE ATHLETE
+        //
+        // athleteId may be:
+        // 1. Athlete profile _id
+        // 2. Athlete User _id
+        // ------------------------------------------
 
-        if (!athlete || athlete.role !== "athlete") {
+        const athlete =
+            await resolveAthleteUser(
+                athleteId
+            );
+
+        if (!athlete) {
             return res.status(404).json({
-                message: "Athlete not found"
+                message:
+                    "Athlete not found"
             });
         }
 
-        if (academyId === athleteId) {
+        const athleteUserId =
+            athlete._id.toString();
+
+        // ------------------------------------------
+        // SELF CHECK
+        // ------------------------------------------
+
+        if (
+            academyId === athleteUserId
+        ) {
             return res.status(400).json({
-                message: "You cannot send a request to yourself"
+                message:
+                    "You cannot send a request to yourself"
             });
         }
 
-        let connection = await Connection.findOne({
-            academy: academyId,
-            athlete: athleteId
-        });
+        // ------------------------------------------
+        // FIND EXISTING CONNECTION
+        // ------------------------------------------
+
+        let connection =
+            await Connection.findOne({
+                academy: academyId,
+                athlete: athlete._id
+            });
+
+        // ------------------------------------------
+        // EXISTING CONNECTION
+        // ------------------------------------------
 
         if (connection) {
-            if (connection.status === "pending") {
+            if (
+                connection.status === "pending"
+            ) {
                 return res.status(400).json({
-                    message: "Connection request already sent",
+                    message:
+                        "Connection request already sent",
                     status: "pending"
                 });
             }
 
-            if (connection.status === "accepted") {
+            if (
+                connection.status === "accepted"
+            ) {
                 return res.status(400).json({
-                    message: "You are already connected with this athlete",
+                    message:
+                        "You are already connected with this athlete",
                     status: "accepted"
                 });
             }
@@ -503,34 +693,50 @@ async function sendAcademyConnectionRequest(req, res) {
                 connection.status === "rejected" ||
                 connection.status === "cancelled"
             ) {
-                connection.requestedBy = "academy";
-                connection.status = "pending";
+                connection.requestedBy =
+                    "academy";
+
+                connection.status =
+                    "pending";
 
                 await connection.save();
 
                 return res.status(200).json({
-                    message: "Connection request sent successfully",
+                    message:
+                        "Connection request sent successfully",
                     status: "pending",
-                    connection: await populateConnection(
-                        Connection.findById(connection._id)
-                    )
+                    connection:
+                        await populateConnection(
+                            Connection.findById(
+                                connection._id
+                            )
+                        )
                 });
             }
         }
 
-        connection = await Connection.create({
-            academy: academyId,
-            athlete: athleteId,
-            requestedBy: "academy",
-            status: "pending"
-        });
+        // ------------------------------------------
+        // CREATE ACADEMY → ATHLETE CONNECTION
+        // ------------------------------------------
+
+        connection =
+            await Connection.create({
+                academy: academyId,
+                athlete: athlete._id,
+                requestedBy: "academy",
+                status: "pending"
+            });
 
         return res.status(201).json({
-            message: "Connection request sent successfully",
+            message:
+                "Connection request sent successfully",
             status: "pending",
-            connection: await populateConnection(
-                Connection.findById(connection._id)
-            )
+            connection:
+                await populateConnection(
+                    Connection.findById(
+                        connection._id
+                    )
+                )
         });
     } catch (error) {
         console.error(
@@ -540,12 +746,14 @@ async function sendAcademyConnectionRequest(req, res) {
 
         if (error.code === 11000) {
             return res.status(400).json({
-                message: "Connection request already exists"
+                message:
+                    "Connection request already exists"
             });
         }
 
         return res.status(500).json({
-            message: "Error sending academy connection request",
+            message:
+                "Error sending academy connection request",
             error: error.message
         });
     }
@@ -556,20 +764,29 @@ async function sendAcademyConnectionRequest(req, res) {
 // ATHLETE → ACADEMY : SEND REQUEST
 // ======================================================
 
-async function sendAthleteAcademyConnectionRequest(req, res) {
+async function sendAthleteAcademyConnectionRequest(
+    req,
+    res
+) {
     try {
         const athleteId = req.user.id;
         const academyId = req.params.academyId;
 
         if (req.user.role !== "athlete") {
             return res.status(403).json({
-                message: "Only athletes can send connection requests"
+                message:
+                    "Only athletes can send connection requests"
             });
         }
 
-        const academy = await User.findById(academyId);
+        const academy = await User.findById(
+            academyId
+        );
 
-        if (!academy || academy.role !== "academy") {
+        if (
+            !academy ||
+            academy.role !== "academy"
+        ) {
             return res.status(404).json({
                 message: "Academy not found"
             });
@@ -577,26 +794,34 @@ async function sendAthleteAcademyConnectionRequest(req, res) {
 
         if (athleteId === academyId) {
             return res.status(400).json({
-                message: "You cannot send a request to yourself"
+                message:
+                    "You cannot send a request to yourself"
             });
         }
 
-        let connection = await Connection.findOne({
-            academy: academyId,
-            athlete: athleteId
-        });
+        let connection =
+            await Connection.findOne({
+                academy: academyId,
+                athlete: athleteId
+            });
 
         if (connection) {
-            if (connection.status === "pending") {
+            if (
+                connection.status === "pending"
+            ) {
                 return res.status(400).json({
-                    message: "Connection request already sent",
+                    message:
+                        "Connection request already sent",
                     status: "pending"
                 });
             }
 
-            if (connection.status === "accepted") {
+            if (
+                connection.status === "accepted"
+            ) {
                 return res.status(400).json({
-                    message: "You are already connected with this academy",
+                    message:
+                        "You are already connected with this academy",
                     status: "accepted"
                 });
             }
@@ -605,34 +830,46 @@ async function sendAthleteAcademyConnectionRequest(req, res) {
                 connection.status === "rejected" ||
                 connection.status === "cancelled"
             ) {
-                connection.requestedBy = "athlete";
-                connection.status = "pending";
+                connection.requestedBy =
+                    "athlete";
+
+                connection.status =
+                    "pending";
 
                 await connection.save();
 
                 return res.status(200).json({
-                    message: "Connection request sent successfully",
+                    message:
+                        "Connection request sent successfully",
                     status: "pending",
-                    connection: await populateConnection(
-                        Connection.findById(connection._id)
-                    )
+                    connection:
+                        await populateConnection(
+                            Connection.findById(
+                                connection._id
+                            )
+                        )
                 });
             }
         }
 
-        connection = await Connection.create({
-            academy: academyId,
-            athlete: athleteId,
-            requestedBy: "athlete",
-            status: "pending"
-        });
+        connection =
+            await Connection.create({
+                academy: academyId,
+                athlete: athleteId,
+                requestedBy: "athlete",
+                status: "pending"
+            });
 
         return res.status(201).json({
-            message: "Connection request sent successfully",
+            message:
+                "Connection request sent successfully",
             status: "pending",
-            connection: await populateConnection(
-                Connection.findById(connection._id)
-            )
+            connection:
+                await populateConnection(
+                    Connection.findById(
+                        connection._id
+                    )
+                )
         });
     } catch (error) {
         console.error(
@@ -642,12 +879,14 @@ async function sendAthleteAcademyConnectionRequest(req, res) {
 
         if (error.code === 11000) {
             return res.status(400).json({
-                message: "Connection request already exists"
+                message:
+                    "Connection request already exists"
             });
         }
 
         return res.status(500).json({
-            message: "Error sending connection request",
+            message:
+                "Error sending connection request",
             error: error.message
         });
     }
@@ -658,29 +897,46 @@ async function sendAthleteAcademyConnectionRequest(req, res) {
 // ACADEMY : CHECK ATHLETE CONNECTION STATUS
 // ======================================================
 
-async function getAcademyConnectionStatus(req, res) {
+async function getAcademyConnectionStatus(
+    req,
+    res
+) {
     try {
         const academyId = req.user.id;
         const athleteId = req.params.athleteId;
 
         if (req.user.role !== "academy") {
             return res.status(403).json({
-                message: "Only academies can check connection status"
+                message:
+                    "Only academies can check connection status"
             });
         }
 
-        const athlete = await User.findById(athleteId);
+        // ------------------------------------------
+        // Resolve Athlete Profile/User ID
+        // ------------------------------------------
 
-        if (!athlete || athlete.role !== "athlete") {
+        const athlete =
+            await resolveAthleteUser(
+                athleteId
+            );
+
+        if (!athlete) {
             return res.status(404).json({
-                message: "Athlete not found"
+                message:
+                    "Athlete not found"
             });
         }
 
-        const connection = await Connection.findOne({
-            academy: academyId,
-            athlete: athleteId
-        });
+        // ------------------------------------------
+        // Find connection
+        // ------------------------------------------
+
+        const connection =
+            await Connection.findOne({
+                academy: academyId,
+                athlete: athlete._id
+            });
 
         if (!connection) {
             return res.status(200).json({
@@ -690,9 +946,11 @@ async function getAcademyConnectionStatus(req, res) {
         }
 
         return res.status(200).json({
-            connected: connection.status === "accepted",
+            connected:
+                connection.status === "accepted",
             status: connection.status,
-            connectionId: connection._id
+            connectionId:
+                connection._id
         });
     } catch (error) {
         console.error(
@@ -701,7 +959,8 @@ async function getAcademyConnectionStatus(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to get connection status",
+            message:
+                "Failed to get connection status",
             error: error.message
         });
     }
@@ -712,29 +971,40 @@ async function getAcademyConnectionStatus(req, res) {
 // ATHLETE : CHECK ACADEMY CONNECTION STATUS
 // ======================================================
 
-async function getAthleteAcademyConnectionStatus(req, res) {
+async function getAthleteAcademyConnectionStatus(
+    req,
+    res
+) {
     try {
         const athleteId = req.user.id;
         const academyId = req.params.academyId;
 
         if (req.user.role !== "athlete") {
             return res.status(403).json({
-                message: "Only athletes can check connection status"
+                message:
+                    "Only athletes can check connection status"
             });
         }
 
-        const academy = await User.findById(academyId);
+        const academy =
+            await User.findById(
+                academyId
+            );
 
-        if (!academy || academy.role !== "academy") {
+        if (
+            !academy ||
+            academy.role !== "academy"
+        ) {
             return res.status(404).json({
                 message: "Academy not found"
             });
         }
 
-        const connection = await Connection.findOne({
-            academy: academyId,
-            athlete: athleteId
-        });
+        const connection =
+            await Connection.findOne({
+                academy: academyId,
+                athlete: athleteId
+            });
 
         if (!connection) {
             return res.status(200).json({
@@ -744,9 +1014,11 @@ async function getAthleteAcademyConnectionStatus(req, res) {
         }
 
         return res.status(200).json({
-            connected: connection.status === "accepted",
+            connected:
+                connection.status === "accepted",
             status: connection.status,
-            connectionId: connection._id
+            connectionId:
+                connection._id
         });
     } catch (error) {
         console.error(
@@ -755,7 +1027,8 @@ async function getAthleteAcademyConnectionStatus(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to get connection status",
+            message:
+                "Failed to get connection status",
             error: error.message
         });
     }
@@ -766,28 +1039,43 @@ async function getAthleteAcademyConnectionStatus(req, res) {
 // ACADEMY → COACH : SEND REQUEST
 // ======================================================
 
-async function sendAcademyCoachConnectionRequest(req, res) {
+async function sendAcademyCoachConnectionRequest(
+    req,
+    res
+) {
     try {
         const academyId = req.user.id;
         const coachId = req.params.coachId;
 
         if (req.user.role !== "academy") {
             return res.status(403).json({
-                message: "Only academies can send connection requests"
+                message:
+                    "Only academies can send connection requests"
             });
         }
 
-        const academy = await User.findById(academyId);
+        const academy = await User.findById(
+            academyId
+        );
 
-        if (!academy || academy.role !== "academy") {
+        if (
+            !academy ||
+            academy.role !== "academy"
+        ) {
             return res.status(403).json({
-                message: "Academy account not found"
+                message:
+                    "Academy account not found"
             });
         }
 
-        const coach = await User.findById(coachId);
+        const coach = await User.findById(
+            coachId
+        );
 
-        if (!coach || coach.role !== "coach") {
+        if (
+            !coach ||
+            coach.role !== "coach"
+        ) {
             return res.status(404).json({
                 message: "Coach not found"
             });
@@ -795,26 +1083,34 @@ async function sendAcademyCoachConnectionRequest(req, res) {
 
         if (academyId === coachId) {
             return res.status(400).json({
-                message: "You cannot send a request to yourself"
+                message:
+                    "You cannot send a request to yourself"
             });
         }
 
-        let connection = await Connection.findOne({
-            academy: academyId,
-            coach: coachId
-        });
+        let connection =
+            await Connection.findOne({
+                academy: academyId,
+                coach: coachId
+            });
 
         if (connection) {
-            if (connection.status === "pending") {
+            if (
+                connection.status === "pending"
+            ) {
                 return res.status(400).json({
-                    message: "Connection request already sent",
+                    message:
+                        "Connection request already sent",
                     status: "pending"
                 });
             }
 
-            if (connection.status === "accepted") {
+            if (
+                connection.status === "accepted"
+            ) {
                 return res.status(400).json({
-                    message: "You are already connected with this coach",
+                    message:
+                        "You are already connected with this coach",
                     status: "accepted"
                 });
             }
@@ -823,34 +1119,46 @@ async function sendAcademyCoachConnectionRequest(req, res) {
                 connection.status === "rejected" ||
                 connection.status === "cancelled"
             ) {
-                connection.requestedBy = "academy";
-                connection.status = "pending";
+                connection.requestedBy =
+                    "academy";
+
+                connection.status =
+                    "pending";
 
                 await connection.save();
 
                 return res.status(200).json({
-                    message: "Connection request sent successfully",
+                    message:
+                        "Connection request sent successfully",
                     status: "pending",
-                    connection: await populateConnection(
-                        Connection.findById(connection._id)
-                    )
+                    connection:
+                        await populateConnection(
+                            Connection.findById(
+                                connection._id
+                            )
+                        )
                 });
             }
         }
 
-        connection = await Connection.create({
-            academy: academyId,
-            coach: coachId,
-            requestedBy: "academy",
-            status: "pending"
-        });
+        connection =
+            await Connection.create({
+                academy: academyId,
+                coach: coachId,
+                requestedBy: "academy",
+                status: "pending"
+            });
 
         return res.status(201).json({
-            message: "Connection request sent successfully",
+            message:
+                "Connection request sent successfully",
             status: "pending",
-            connection: await populateConnection(
-                Connection.findById(connection._id)
-            )
+            connection:
+                await populateConnection(
+                    Connection.findById(
+                        connection._id
+                    )
+                )
         });
     } catch (error) {
         console.error(
@@ -860,12 +1168,14 @@ async function sendAcademyCoachConnectionRequest(req, res) {
 
         if (error.code === 11000) {
             return res.status(400).json({
-                message: "Connection request already exists"
+                message:
+                    "Connection request already exists"
             });
         }
 
         return res.status(500).json({
-            message: "Error sending academy coach connection request",
+            message:
+                "Error sending academy coach connection request",
             error: error.message
         });
     }
@@ -876,20 +1186,30 @@ async function sendAcademyCoachConnectionRequest(req, res) {
 // COACH → ACADEMY : SEND REQUEST
 // ======================================================
 
-async function sendCoachAcademyConnectionRequest(req, res) {
+async function sendCoachAcademyConnectionRequest(
+    req,
+    res
+) {
     try {
         const coachId = req.user.id;
         const academyId = req.params.academyId;
 
         if (req.user.role !== "coach") {
             return res.status(403).json({
-                message: "Only coaches can send connection requests"
+                message:
+                    "Only coaches can send connection requests"
             });
         }
 
-        const academy = await User.findById(academyId);
+        const academy =
+            await User.findById(
+                academyId
+            );
 
-        if (!academy || academy.role !== "academy") {
+        if (
+            !academy ||
+            academy.role !== "academy"
+        ) {
             return res.status(404).json({
                 message: "Academy not found"
             });
@@ -897,26 +1217,34 @@ async function sendCoachAcademyConnectionRequest(req, res) {
 
         if (coachId === academyId) {
             return res.status(400).json({
-                message: "You cannot send a request to yourself"
+                message:
+                    "You cannot send a request to yourself"
             });
         }
 
-        let connection = await Connection.findOne({
-            academy: academyId,
-            coach: coachId
-        });
+        let connection =
+            await Connection.findOne({
+                academy: academyId,
+                coach: coachId
+            });
 
         if (connection) {
-            if (connection.status === "pending") {
+            if (
+                connection.status === "pending"
+            ) {
                 return res.status(400).json({
-                    message: "Connection request already sent",
+                    message:
+                        "Connection request already sent",
                     status: "pending"
                 });
             }
 
-            if (connection.status === "accepted") {
+            if (
+                connection.status === "accepted"
+            ) {
                 return res.status(400).json({
-                    message: "You are already connected with this academy",
+                    message:
+                        "You are already connected with this academy",
                     status: "accepted"
                 });
             }
@@ -925,34 +1253,46 @@ async function sendCoachAcademyConnectionRequest(req, res) {
                 connection.status === "rejected" ||
                 connection.status === "cancelled"
             ) {
-                connection.requestedBy = "coach";
-                connection.status = "pending";
+                connection.requestedBy =
+                    "coach";
+
+                connection.status =
+                    "pending";
 
                 await connection.save();
 
                 return res.status(200).json({
-                    message: "Connection request sent successfully",
+                    message:
+                        "Connection request sent successfully",
                     status: "pending",
-                    connection: await populateConnection(
-                        Connection.findById(connection._id)
-                    )
+                    connection:
+                        await populateConnection(
+                            Connection.findById(
+                                connection._id
+                            )
+                        )
                 });
             }
         }
 
-        connection = await Connection.create({
-            academy: academyId,
-            coach: coachId,
-            requestedBy: "coach",
-            status: "pending"
-        });
+        connection =
+            await Connection.create({
+                academy: academyId,
+                coach: coachId,
+                requestedBy: "coach",
+                status: "pending"
+            });
 
         return res.status(201).json({
-            message: "Connection request sent successfully",
+            message:
+                "Connection request sent successfully",
             status: "pending",
-            connection: await populateConnection(
-                Connection.findById(connection._id)
-            )
+            connection:
+                await populateConnection(
+                    Connection.findById(
+                        connection._id
+                    )
+                )
         });
     } catch (error) {
         console.error(
@@ -962,12 +1302,14 @@ async function sendCoachAcademyConnectionRequest(req, res) {
 
         if (error.code === 11000) {
             return res.status(400).json({
-                message: "Connection request already exists"
+                message:
+                    "Connection request already exists"
             });
         }
 
         return res.status(500).json({
-            message: "Error sending coach academy connection request",
+            message:
+                "Error sending coach academy connection request",
             error: error.message
         });
     }
@@ -978,29 +1320,40 @@ async function sendCoachAcademyConnectionRequest(req, res) {
 // ACADEMY : CHECK COACH CONNECTION STATUS
 // ======================================================
 
-async function getAcademyCoachConnectionStatus(req, res) {
+async function getAcademyCoachConnectionStatus(
+    req,
+    res
+) {
     try {
         const academyId = req.user.id;
         const coachId = req.params.coachId;
 
         if (req.user.role !== "academy") {
             return res.status(403).json({
-                message: "Only academies can check connection status"
+                message:
+                    "Only academies can check connection status"
             });
         }
 
-        const coach = await User.findById(coachId);
+        const coach =
+            await User.findById(
+                coachId
+            );
 
-        if (!coach || coach.role !== "coach") {
+        if (
+            !coach ||
+            coach.role !== "coach"
+        ) {
             return res.status(404).json({
                 message: "Coach not found"
             });
         }
 
-        const connection = await Connection.findOne({
-            academy: academyId,
-            coach: coachId
-        });
+        const connection =
+            await Connection.findOne({
+                academy: academyId,
+                coach: coachId
+            });
 
         if (!connection) {
             return res.status(200).json({
@@ -1010,9 +1363,11 @@ async function getAcademyCoachConnectionStatus(req, res) {
         }
 
         return res.status(200).json({
-            connected: connection.status === "accepted",
+            connected:
+                connection.status === "accepted",
             status: connection.status,
-            connectionId: connection._id
+            connectionId:
+                connection._id
         });
     } catch (error) {
         console.error(
@@ -1021,7 +1376,8 @@ async function getAcademyCoachConnectionStatus(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to get connection status",
+            message:
+                "Failed to get connection status",
             error: error.message
         });
     }
@@ -1032,29 +1388,41 @@ async function getAcademyCoachConnectionStatus(req, res) {
 // COACH : CHECK ACADEMY CONNECTION STATUS
 // ======================================================
 
-async function getCoachAcademyConnectionStatus(req, res) {
+async function getCoachAcademyConnectionStatus(
+    req,
+    res
+) {
     try {
         const coachId = req.user.id;
-        const academyId = req.params.academyId;
+        const academyId =
+            req.params.academyId;
 
         if (req.user.role !== "coach") {
             return res.status(403).json({
-                message: "Only coaches can check connection status"
+                message:
+                    "Only coaches can check connection status"
             });
         }
 
-        const academy = await User.findById(academyId);
+        const academy =
+            await User.findById(
+                academyId
+            );
 
-        if (!academy || academy.role !== "academy") {
+        if (
+            !academy ||
+            academy.role !== "academy"
+        ) {
             return res.status(404).json({
                 message: "Academy not found"
             });
         }
 
-        const connection = await Connection.findOne({
-            academy: academyId,
-            coach: coachId
-        });
+        const connection =
+            await Connection.findOne({
+                academy: academyId,
+                coach: coachId
+            });
 
         if (!connection) {
             return res.status(200).json({
@@ -1064,9 +1432,11 @@ async function getCoachAcademyConnectionStatus(req, res) {
         }
 
         return res.status(200).json({
-            connected: connection.status === "accepted",
+            connected:
+                connection.status === "accepted",
             status: connection.status,
-            connectionId: connection._id
+            connectionId:
+                connection._id
         });
     } catch (error) {
         console.error(
@@ -1075,7 +1445,8 @@ async function getCoachAcademyConnectionStatus(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to get connection status",
+            message:
+                "Failed to get connection status",
             error: error.message
         });
     }
@@ -1086,26 +1457,39 @@ async function getCoachAcademyConnectionStatus(req, res) {
 // ACADEMY : GET INCOMING REQUESTS
 // ======================================================
 
-async function getAcademyConnectionRequests(req, res) {
+async function getAcademyConnectionRequests(
+    req,
+    res
+) {
     try {
         const academyId = req.user.id;
 
         if (req.user.role !== "academy") {
             return res.status(403).json({
-                message: "Only academies can view connection requests"
+                message:
+                    "Only academies can view connection requests"
             });
         }
 
-        const requests = await Connection.find({
-            academy: academyId,
-            requestedBy: {
-                $in: ["athlete", "coach"]
-            },
-            status: "pending"
-        })
-            .populate("athlete", athleteFields)
-            .populate("coach", coachFields)
-            .sort({ createdAt: -1 });
+        const requests =
+            await Connection.find({
+                academy: academyId,
+                requestedBy: {
+                    $in: ["athlete", "coach"]
+                },
+                status: "pending"
+            })
+                .populate(
+                    "athlete",
+                    athleteFields
+                )
+                .populate(
+                    "coach",
+                    coachFields
+                )
+                .sort({
+                    createdAt: -1
+                });
 
         return res.status(200).json({
             count: requests.length,
@@ -1118,7 +1502,8 @@ async function getAcademyConnectionRequests(req, res) {
         );
 
         return res.status(500).json({
-            message: "Error fetching academy requests",
+            message:
+                "Error fetching academy requests",
             error: error.message
         });
     }
@@ -1129,24 +1514,36 @@ async function getAcademyConnectionRequests(req, res) {
 // ATHLETE : GET INCOMING ACADEMY REQUESTS
 // ======================================================
 
-async function getAthleteAcademyConnectionRequests(req, res) {
+async function getAthleteAcademyConnectionRequests(
+    req,
+    res
+) {
     try {
         const athleteId = req.user.id;
 
         if (req.user.role !== "athlete") {
             return res.status(403).json({
-                message: "Only athletes can view academy requests"
+                message:
+                    "Only athletes can view academy requests"
             });
         }
 
-        const requests = await Connection.find({
-            athlete: athleteId,
-            academy: { $ne: null },
-            requestedBy: "academy",
-            status: "pending"
-        })
-            .populate("academy", academyFields)
-            .sort({ createdAt: -1 });
+        const requests =
+            await Connection.find({
+                athlete: athleteId,
+                academy: {
+                    $ne: null
+                },
+                requestedBy: "academy",
+                status: "pending"
+            })
+                .populate(
+                    "academy",
+                    academyFields
+                )
+                .sort({
+                    createdAt: -1
+                });
 
         return res.status(200).json({
             count: requests.length,
@@ -1159,7 +1556,8 @@ async function getAthleteAcademyConnectionRequests(req, res) {
         );
 
         return res.status(500).json({
-            message: "Error fetching academy requests",
+            message:
+                "Error fetching academy requests",
             error: error.message
         });
     }
@@ -1170,24 +1568,36 @@ async function getAthleteAcademyConnectionRequests(req, res) {
 // COACH : GET INCOMING ACADEMY REQUESTS
 // ======================================================
 
-async function getCoachAcademyConnectionRequests(req, res) {
+async function getCoachAcademyConnectionRequests(
+    req,
+    res
+) {
     try {
         const coachId = req.user.id;
 
         if (req.user.role !== "coach") {
             return res.status(403).json({
-                message: "Only coaches can view academy requests"
+                message:
+                    "Only coaches can view academy requests"
             });
         }
 
-        const requests = await Connection.find({
-            coach: coachId,
-            academy: { $ne: null },
-            requestedBy: "academy",
-            status: "pending"
-        })
-            .populate("academy", academyFields)
-            .sort({ createdAt: -1 });
+        const requests =
+            await Connection.find({
+                coach: coachId,
+                academy: {
+                    $ne: null
+                },
+                requestedBy: "academy",
+                status: "pending"
+            })
+                .populate(
+                    "academy",
+                    academyFields
+                )
+                .sort({
+                    createdAt: -1
+                });
 
         return res.status(200).json({
             count: requests.length,
@@ -1200,7 +1610,8 @@ async function getCoachAcademyConnectionRequests(req, res) {
         );
 
         return res.status(500).json({
-            message: "Error fetching academy requests",
+            message:
+                "Error fetching academy requests",
             error: error.message
         });
     }
@@ -1211,49 +1622,85 @@ async function getCoachAcademyConnectionRequests(req, res) {
 // RESPOND TO CONNECTION REQUEST
 // ======================================================
 
-async function respondToConnectionRequest(req, res) {
+async function respondToConnectionRequest(
+    req,
+    res
+) {
     try {
         const userId = req.user.id;
-        const connectionId = req.params.connectionId;
+        const connectionId =
+            req.params.connectionId;
         const { action } = req.body;
 
-        if (!["accepted", "rejected"].includes(action)) {
+        if (
+            !["accepted", "rejected"].includes(
+                action
+            )
+        ) {
             return res.status(400).json({
                 message: "Invalid action"
             });
         }
 
-        const connection = await Connection.findById(connectionId);
+        const connection =
+            await Connection.findById(
+                connectionId
+            );
 
         if (!connection) {
             return res.status(404).json({
-                message: "Connection request not found"
+                message:
+                    "Connection request not found"
             });
         }
 
-        if (connection.status !== "pending") {
+        if (
+            connection.status !== "pending"
+        ) {
             return res.status(400).json({
-                message: "This request is no longer pending"
+                message:
+                    "This request is no longer pending"
             });
         }
+
+        // ------------------------------------------
+        // ATHLETE RESPONDING
+        // ------------------------------------------
 
         const isAthleteResponding =
             req.user.role === "athlete" &&
             connection.athlete &&
-            connection.athlete.toString() === userId &&
-            ["coach", "academy"].includes(connection.requestedBy);
+            connection.athlete.toString() ===
+                userId &&
+            ["coach", "academy"].includes(
+                connection.requestedBy
+            );
+
+        // ------------------------------------------
+        // COACH RESPONDING
+        // ------------------------------------------
 
         const isCoachResponding =
             req.user.role === "coach" &&
             connection.coach &&
-            connection.coach.toString() === userId &&
-            ["athlete", "academy"].includes(connection.requestedBy);
+            connection.coach.toString() ===
+                userId &&
+            ["athlete", "academy"].includes(
+                connection.requestedBy
+            );
+
+        // ------------------------------------------
+        // ACADEMY RESPONDING
+        // ------------------------------------------
 
         const isAcademyResponding =
             req.user.role === "academy" &&
             connection.academy &&
-            connection.academy.toString() === userId &&
-            ["athlete", "coach"].includes(connection.requestedBy);
+            connection.academy.toString() ===
+                userId &&
+            ["athlete", "coach"].includes(
+                connection.requestedBy
+            );
 
         if (
             !isAthleteResponding &&
@@ -1270,9 +1717,12 @@ async function respondToConnectionRequest(req, res) {
 
         await connection.save();
 
-        const updatedConnection = await populateConnection(
-            Connection.findById(connection._id)
-        );
+        const updatedConnection =
+            await populateConnection(
+                Connection.findById(
+                    connection._id
+                )
+            );
 
         return res.status(200).json({
             message:
@@ -1280,7 +1730,8 @@ async function respondToConnectionRequest(req, res) {
                     ? "Connection request accepted"
                     : "Connection request rejected",
             status: action,
-            connection: updatedConnection
+            connection:
+                updatedConnection
         });
     } catch (error) {
         console.error(
@@ -1289,7 +1740,8 @@ async function respondToConnectionRequest(req, res) {
         );
 
         return res.status(500).json({
-            message: "Error responding to connection request",
+            message:
+                "Error responding to connection request",
             error: error.message
         });
     }
@@ -1300,59 +1752,93 @@ async function respondToConnectionRequest(req, res) {
 // COACH : GET CONNECTED ATHLETES
 // ======================================================
 
-async function getCoachConnectedAthletes(req, res) {
+async function getCoachConnectedAthletes(
+    req,
+    res
+) {
     try {
         const coachId = req.user.id;
 
         if (req.user.role !== "coach") {
             return res.status(403).json({
-                message: "Only coaches can view connected athletes"
+                message:
+                    "Only coaches can view connected athletes"
             });
         }
 
-        const connections = await Connection.find({
-            coach: coachId,
-            athlete: { $ne: null },
-            status: "accepted"
-        })
-            .populate("athlete", athleteFields)
-            .sort({ updatedAt: -1 });
+        const connections =
+            await Connection.find({
+                coach: coachId,
+                athlete: {
+                    $ne: null
+                },
+                status: "accepted"
+            })
+                .populate(
+                    "athlete",
+                    athleteFields
+                )
+                .sort({
+                    updatedAt: -1
+                });
 
-        const athletes = await Promise.all(
-            connections
-                .filter(connection => connection.athlete)
-                .map(async connection => {
-                    const athleteUser = connection.athlete;
+        const athletes =
+            await Promise.all(
+                connections
+                    .filter(
+                        connection =>
+                            connection.athlete
+                    )
+                    .map(
+                        async connection => {
+                            const athleteUser =
+                                connection.athlete;
 
-                    const athleteProfile = await Athlete.findOne({
-                        user: athleteUser._id
-                    });
+                            const athleteProfile =
+                                await Athlete.findOne(
+                                    {
+                                        user:
+                                            athleteUser._id
+                                    }
+                                );
 
-                    if (!athleteProfile) {
-                        return null;
-                    }
+                            if (
+                                !athleteProfile
+                            ) {
+                                return null;
+                            }
 
-                    return {
-                        ...athleteProfile.toObject(),
+                            return {
+                                ...athleteProfile.toObject(),
 
-                        connectionId: connection._id,
+                                connectionId:
+                                    connection._id,
 
-                        user: {
-                            _id: athleteUser._id,
-                            name: athleteUser.name,
-                            email: athleteUser.email,
-                            role: athleteUser.role,
-                            profilePic: athleteUser.profilePic
+                                user: {
+                                    _id:
+                                        athleteUser._id,
+                                    name:
+                                        athleteUser.name,
+                                    email:
+                                        athleteUser.email,
+                                    role:
+                                        athleteUser.role,
+                                    profilePic:
+                                        athleteUser.profilePic
+                                }
+                            };
                         }
-                    };
-                })
-        );
+                    )
+            );
 
-        const validAthletes = athletes.filter(Boolean);
+        const validAthletes =
+            athletes.filter(Boolean);
 
         return res.status(200).json({
-            count: validAthletes.length,
-            athletes: validAthletes
+            count:
+                validAthletes.length,
+            athletes:
+                validAthletes
         });
     } catch (error) {
         console.error(
@@ -1361,7 +1847,8 @@ async function getCoachConnectedAthletes(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to fetch connected athletes",
+            message:
+                "Failed to fetch connected athletes",
             error: error.message
         });
     }
@@ -1370,43 +1857,81 @@ async function getCoachConnectedAthletes(req, res) {
 
 // ======================================================
 // ATHLETE : GET CONNECTED COACHES
+// Only Coach ↔ Athlete connections
 // ======================================================
 
-async function getAthleteConnectedCoaches(req, res) {
-    try {
-        const athleteId = req.user.id;
+const getAthleteConnectedCoaches =
+    async (req, res) => {
+        try {
+            if (
+                req.user.role !==
+                "athlete"
+            ) {
+                return res.status(403).json({
+                    success: false,
+                    message:
+                        "Only athletes can view connected coaches"
+                });
+            }
 
-        if (req.user.role !== "athlete") {
-            return res.status(403).json({
-                message: "Only athletes can view connected coaches"
+            const connections =
+                await Connection.find({
+                    athlete: req.user.id,
+                    coach: {
+                        $exists: true,
+                        $ne: null
+                    },
+
+                    // Exclude Academy ↔ Athlete
+                    academy: {
+                        $in: [null]
+                    },
+
+                    status: "accepted"
+                })
+                    .populate(
+                        "coach",
+                        "name email role profilePic sport specialization experience organization address"
+                    )
+                    .sort({
+                        updatedAt: -1
+                    });
+
+            const validConnections =
+                connections.filter(
+                    connection =>
+                        connection.coach &&
+                        connection.coach
+                            .role ===
+                            "coach"
+                );
+
+            return res.status(200).json({
+                success: true,
+                count:
+                    validConnections.length,
+                connections:
+                    validConnections
+            });
+        } catch (error) {
+            console.error(
+                "Get athlete connected coaches error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Failed to fetch connected coaches",
+                error: error.message
             });
         }
+    };
 
-        const connections = await Connection.find({
-            athlete: athleteId,
-            coach: { $ne: null },
-            status: "accepted"
-        })
-            .populate("coach", coachFields)
-            .sort({ updatedAt: -1 });
 
-        return res.status(200).json({
-            count: connections.length,
-            connections
-        });
-    } catch (error) {
-        console.error(
-            "Get athlete connected coaches error:",
-            error
-        );
-
-        return res.status(500).json({
-            message: "Failed to fetch connected coaches",
-            error: error.message
-        });
-    }
-}
-
+// ======================================================
+// ACADEMY : GET CONNECTED ATHLETES
+// ======================================================
 
 // ======================================================
 // ACADEMY : GET CONNECTED ATHLETES
@@ -1416,24 +1941,112 @@ async function getAcademyConnectedAthletes(req, res) {
     try {
         const academyId = req.user.id;
 
+        // ------------------------------------------
+        // ROLE CHECK
+        // ------------------------------------------
+
         if (req.user.role !== "academy") {
             return res.status(403).json({
-                message: "Only academies can view connected athletes"
+                message:
+                    "Only academies can view connected athletes"
             });
         }
 
+        // ------------------------------------------
+        // GET ONLY ACCEPTED ACADEMY ↔ ATHLETE
+        // CONNECTIONS
+        // ------------------------------------------
+
         const connections = await Connection.find({
             academy: academyId,
-            athlete: { $ne: null },
+            athlete: {
+                $ne: null
+            },
             status: "accepted"
         })
-            .populate("athlete", athleteFields)
-            .sort({ updatedAt: -1 });
+            .populate(
+                "athlete",
+                athleteFields
+            )
+            .sort({
+                updatedAt: -1
+            });
+
+        // ------------------------------------------
+        // GET ATHLETE PROFILE DATA
+        // ------------------------------------------
+
+        const athletes = await Promise.all(
+            connections
+                .filter(
+                    connection =>
+                        connection.athlete
+                )
+                .map(
+                    async connection => {
+                        const athleteUser =
+                            connection.athlete;
+
+                        // Athlete profile is stored
+                        // separately from User
+                        const athleteProfile =
+                            await Athlete.findOne({
+                                user:
+                                    athleteUser._id
+                            }).lean();
+
+                        if (!athleteProfile) {
+                            return null;
+                        }
+
+                        // ------------------------------------------
+                        // RETURN COMBINED ATHLETE DATA
+                        // ------------------------------------------
+
+                        return {
+                            ...athleteProfile,
+
+                            connectionId:
+                                connection._id,
+
+                            connectionStatus:
+                                connection.status,
+
+                            user: {
+                                _id:
+                                    athleteUser._id,
+                                name:
+                                    athleteUser.name,
+                                email:
+                                    athleteUser.email,
+                                role:
+                                    athleteUser.role,
+                                profilePic:
+                                    athleteUser.profilePic
+                            }
+                        };
+                    }
+                )
+        );
+
+        // Remove null profiles
+        const validAthletes =
+            athletes.filter(Boolean);
+
+        // ------------------------------------------
+        // RESPONSE
+        // IMPORTANT:
+        // Frontend expects response.data.athletes
+        // ------------------------------------------
 
         return res.status(200).json({
-            count: connections.length,
-            connections
+            count:
+                validAthletes.length,
+
+            athletes:
+                validAthletes
         });
+
     } catch (error) {
         console.error(
             "Get academy connected athletes error:",
@@ -1441,8 +2054,10 @@ async function getAcademyConnectedAthletes(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to fetch connected athletes",
-            error: error.message
+            message:
+                "Failed to fetch connected athletes",
+            error:
+                error.message
         });
     }
 }
@@ -1452,26 +2067,39 @@ async function getAcademyConnectedAthletes(req, res) {
 // ACADEMY : GET CONNECTED COACHES
 // ======================================================
 
-async function getAcademyConnectedCoaches(req, res) {
+async function getAcademyConnectedCoaches(
+    req,
+    res
+) {
     try {
         const academyId = req.user.id;
 
         if (req.user.role !== "academy") {
             return res.status(403).json({
-                message: "Only academies can view connected coaches"
+                message:
+                    "Only academies can view connected coaches"
             });
         }
 
-        const connections = await Connection.find({
-            academy: academyId,
-            coach: { $ne: null },
-            status: "accepted"
-        })
-            .populate("coach", coachFields)
-            .sort({ updatedAt: -1 });
+        const connections =
+            await Connection.find({
+                academy: academyId,
+                coach: {
+                    $ne: null
+                },
+                status: "accepted"
+            })
+                .populate(
+                    "coach",
+                    coachFields
+                )
+                .sort({
+                    updatedAt: -1
+                });
 
         return res.status(200).json({
-            count: connections.length,
+            count:
+                connections.length,
             connections
         });
     } catch (error) {
@@ -1481,7 +2109,8 @@ async function getAcademyConnectedCoaches(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to fetch connected coaches",
+            message:
+                "Failed to fetch connected coaches",
             error: error.message
         });
     }
@@ -1490,68 +2119,226 @@ async function getAcademyConnectedCoaches(req, res) {
 
 // ======================================================
 // ATHLETE : GET CONNECTED ACADEMIES
+// Only Academy ↔ Athlete connections
 // ======================================================
 
-async function getAthleteConnectedAcademies(req, res) {
-    try {
-        const athleteId = req.user.id;
+const getAthleteConnectedAcademies =
+    async (req, res) => {
+        try {
+            if (
+                req.user.role !==
+                "athlete"
+            ) {
+                return res.status(403).json({
+                    success: false,
+                    message:
+                        "Only athletes can view connected academies"
+                });
+            }
 
-        if (req.user.role !== "athlete") {
-            return res.status(403).json({
-                message: "Only athletes can view connected academies"
+            const athleteId =
+                req.user.id;
+
+            const connections =
+                await Connection.find({
+                    athlete: athleteId,
+                    academy: {
+                        $exists: true,
+                        $ne: null
+                    },
+                    status: "accepted"
+                })
+                    .populate(
+                        "academy",
+                        "name email role profilePic"
+                    )
+                    .sort({
+                        updatedAt: -1
+                    });
+
+            const validConnections = [];
+
+            for (
+                const connection of
+                connections
+            ) {
+                if (
+                    !connection.academy
+                ) {
+                    continue;
+                }
+
+                const academyUser =
+                    connection.academy;
+
+                if (
+                    academyUser.role !==
+                    "academy"
+                ) {
+                    continue;
+                }
+
+                const academyProfile =
+                    await Academy.findOne(
+                        {
+                            user:
+                                academyUser._id
+                        }
+                    ).lean();
+
+                const academy = {
+                    _id:
+                        academyUser._id,
+                    name:
+                        academyUser.name,
+                    email:
+                        academyUser.email,
+                    role:
+                        academyUser.role,
+                    profilePic:
+                        academyUser.profilePic,
+
+                    academyName:
+                        academyProfile?.academyName ||
+                        academyUser.name ||
+                        "Academy",
+
+                    sport:
+                        academyProfile?.sport ||
+                        "",
+
+                    specialization:
+                        academyProfile?.specialization ||
+                        "",
+
+                    establishedYear:
+                        academyProfile?.establishedYear ||
+                        null,
+
+                    phone:
+                        academyProfile?.phone ||
+                        "",
+
+                    address:
+                        academyProfile?.address ||
+                        null,
+
+                    city:
+                        academyProfile?.city ||
+                        academyProfile?.address
+                            ?.city ||
+                        "",
+
+                    state:
+                        academyProfile?.state ||
+                        academyProfile?.address
+                            ?.state ||
+                        "",
+
+                    trainingPrograms:
+                        academyProfile?.trainingPrograms ||
+                        [],
+
+                    facilities:
+                        academyProfile?.facilities ||
+                        [],
+
+                    achievements:
+                        academyProfile?.achievements ||
+                        [],
+
+                    bio:
+                        academyProfile?.bio ||
+                        "",
+
+                    isAvailable:
+                        academyProfile
+                            ?.isAvailable ??
+                        true,
+
+                    socialLinks:
+                        academyProfile
+                            ?.socialLinks ||
+                        {}
+                };
+
+                validConnections.push({
+                    _id:
+                        connection._id,
+                    athlete:
+                        connection.athlete,
+                    academy,
+                    status:
+                        connection.status,
+                    requestedBy:
+                        connection.requestedBy,
+                    createdAt:
+                        connection.createdAt,
+                    updatedAt:
+                        connection.updatedAt
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                count:
+                    validConnections.length,
+                connections:
+                    validConnections
+            });
+        } catch (error) {
+            console.error(
+                "Get athlete connected academies error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Failed to fetch connected academies",
+                error: error.message
             });
         }
-
-        const connections = await Connection.find({
-            athlete: athleteId,
-            academy: { $ne: null },
-            status: "accepted"
-        })
-            .populate("academy", academyFields)
-            .sort({ updatedAt: -1 });
-
-        return res.status(200).json({
-            count: connections.length,
-            connections
-        });
-    } catch (error) {
-        console.error(
-            "Get athlete connected academies error:",
-            error
-        );
-
-        return res.status(500).json({
-            message: "Failed to fetch connected academies",
-            error: error.message
-        });
-    }
-}
+    };
 
 
 // ======================================================
 // COACH : GET CONNECTED ACADEMIES
 // ======================================================
 
-async function getCoachConnectedAcademies(req, res) {
+async function getCoachConnectedAcademies(
+    req,
+    res
+) {
     try {
         const coachId = req.user.id;
 
         if (req.user.role !== "coach") {
             return res.status(403).json({
-                message: "Only coaches can view connected academies"
+                message:
+                    "Only coaches can view connected academies"
             });
         }
 
-        const connections = await Connection.find({
-            coach: coachId,
-            academy: { $ne: null },
-            status: "accepted"
-        })
-            .populate("academy", academyFields)
-            .sort({ updatedAt: -1 });
+        const connections =
+            await Connection.find({
+                coach: coachId,
+                academy: {
+                    $ne: null
+                },
+                status: "accepted"
+            })
+                .populate(
+                    "academy",
+                    academyFields
+                )
+                .sort({
+                    updatedAt: -1
+                });
 
         return res.status(200).json({
-            count: connections.length,
+            count:
+                connections.length,
             connections
         });
     } catch (error) {
@@ -1561,7 +2348,8 @@ async function getCoachConnectedAcademies(req, res) {
         );
 
         return res.status(500).json({
-            message: "Failed to fetch connected academies",
+            message:
+                "Failed to fetch connected academies",
             error: error.message
         });
     }
@@ -1575,60 +2363,82 @@ async function getCoachConnectedAcademies(req, res) {
 async function disconnectConnection(req, res) {
     try {
         const userId = req.user.id;
-        const connectionId = req.params.connectionId;
+        const connectionId =
+            req.params.connectionId;
 
-        const connection = await Connection.findById(connectionId);
+        const connection =
+            await Connection.findById(
+                connectionId
+            );
 
         if (!connection) {
             return res.status(404).json({
-                message: "Connection not found"
+                message:
+                    "Connection not found"
             });
         }
 
         const isCoach =
             req.user.role === "coach" &&
             connection.coach &&
-            connection.coach.toString() === userId;
+            connection.coach.toString() ===
+                userId;
 
         const isAthlete =
             req.user.role === "athlete" &&
             connection.athlete &&
-            connection.athlete.toString() === userId;
+            connection.athlete.toString() ===
+                userId;
 
         const isAcademy =
             req.user.role === "academy" &&
             connection.academy &&
-            connection.academy.toString() === userId;
+            connection.academy.toString() ===
+                userId;
 
-        if (!isCoach && !isAthlete && !isAcademy) {
+        if (
+            !isCoach &&
+            !isAthlete &&
+            !isAcademy
+        ) {
             return res.status(403).json({
                 message:
                     "You are not authorized to disconnect this connection"
             });
         }
 
-        if (connection.status !== "accepted") {
+        if (
+            connection.status !==
+            "accepted"
+        ) {
             return res.status(400).json({
                 message:
                     "Only an accepted connection can be disconnected",
-                status: connection.status
+                status:
+                    connection.status
             });
         }
 
-        connection.status = "cancelled";
+        connection.status =
+            "cancelled";
 
         await connection.save();
 
         return res.status(200).json({
-            message: "Connection disconnected successfully",
+            message:
+                "Connection disconnected successfully",
             status: "cancelled",
             connection
         });
     } catch (error) {
-        console.error("Disconnect connection error:", error);
+        console.error(
+            "Disconnect connection error:",
+            error
+        );
 
         return res.status(500).json({
-            message: "Error disconnecting connection",
+            message:
+                "Error disconnecting connection",
             error: error.message
         });
     }

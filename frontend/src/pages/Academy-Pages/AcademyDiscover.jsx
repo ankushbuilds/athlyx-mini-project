@@ -5,7 +5,8 @@ import {
   FiUser,
   FiMapPin,
   FiAward,
-  FiSearch
+  FiSearch,
+  FiUserPlus
 } from "react-icons/fi";
 import AcademySidebar from "../../components/AcademySidebar";
 
@@ -25,6 +26,8 @@ const AcademyDiscover = () => {
   const [academySport, setAcademySport] = useState("");
 
   const [connectionStatuses, setConnectionStatuses] = useState({});
+
+  const [connectingAthlete, setConnectingAthlete] = useState(null);
 
   // ==========================================
   // LOAD ATHLETES
@@ -106,8 +109,6 @@ const AcademyDiscover = () => {
       setLoading(true);
       setError("");
 
-   
-
       const response = await axios.get(
         `${API}/athletes/academy-athletes`,
         {
@@ -138,7 +139,7 @@ const AcademyDiscover = () => {
           try {
             const statusResponse =
               await axios.get(
-                `${API}/connections/status/academy/athlete/${athlete._id}`,
+                `${API}/connections/status/academy/${athlete._id}`,
                 {
                   headers: {
                     Authorization: `Bearer ${token}`
@@ -206,6 +207,60 @@ const AcademyDiscover = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ==========================================
+  // SEND ACADEMY → ATHLETE CONNECTION REQUEST
+  // ==========================================
+
+  const sendConnectionRequest = async (athleteId) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/auth", {
+        replace: true
+      });
+
+      return;
+    }
+
+    try {
+      setConnectingAthlete(athleteId);
+
+      const response = await axios.post(
+        `${API}/connections/send/academy/${athleteId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      console.log(
+        "Academy connection request sent:",
+        response.data
+      );
+
+      // Immediately show Pending
+      setConnectionStatuses((previous) => ({
+        ...previous,
+        [athleteId]: "pending"
+      }));
+
+    } catch (error) {
+      console.error(
+        "Failed to send academy connection request:",
+        error
+      );
+
+      alert(
+        error.response?.data?.message ||
+          "Failed to send connection request."
+      );
+    } finally {
+      setConnectingAthlete(null);
     }
   };
 
@@ -510,6 +565,10 @@ const AcademyDiscover = () => {
                             athlete
                           );
 
+                        const isConnecting =
+                          connectingAthlete ===
+                          athlete._id;
+
                         return (
                           <div
                             key={athlete._id}
@@ -643,6 +702,8 @@ const AcademyDiscover = () => {
                               </span>
 
                             </div>
+
+                            
 
                           </div>
                         );

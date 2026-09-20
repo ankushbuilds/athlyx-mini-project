@@ -268,86 +268,100 @@ const AthleteProfileView = () => {
   // ==========================================
   // SEND CONNECTION REQUEST
   // ==========================================
+// ==========================================
+// SEND CONNECTION REQUEST
+// ==========================================
 
-  const sendConnectionRequest = async () => {
-    if (
-      sendingRequest ||
-      connectionStatus === "pending" ||
-      connectionStatus === "connected"
-    ) {
+const sendConnectionRequest = async () => {
+  if (
+    sendingRequest ||
+    connectionStatus === "pending" ||
+    connectionStatus === "connected"
+  ) {
+    return;
+  }
+
+  try {
+    setSendingRequest(true);
+    setRequestError("");
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/auth", {
+        replace: true
+      });
       return;
     }
 
-    try {
-      setSendingRequest(true);
-      setRequestError("");
+    // ==========================================
+    // ROLE BASED CONNECTION ENDPOINT
+    // ==========================================
 
-      const token = localStorage.getItem("token");
+    let endpoint = `${API}/connections/send/${athleteId}`;
 
-      if (!token) {
-        navigate("/auth", {
-          replace: true
-        });
-        return;
-      }
+    if (currentUserRole === "academy") {
+      endpoint = `${API}/connections/send/academy/${athleteId}`;
+    }
 
-      const response = await axios.post(
-        `${API}/connections/send/${athleteId}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+    const response = await axios.post(
+      endpoint,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      );
+      }
+    );
+
+    if (
+      response.status === 200 ||
+      response.status === 201
+    ) {
+      setConnectionStatus("pending");
+      setRequestError("");
+    }
+  } catch (error) {
+    console.error(
+      "Send connection request error:",
+      error
+    );
+
+    const status =
+      error.response?.data?.status;
+
+    if (status === "pending") {
+      setConnectionStatus("pending");
+    } else if (status === "accepted") {
+      setConnectionStatus("connected");
+    } else {
+      const message =
+        error.response?.data?.message
+          ?.toLowerCase() || "";
 
       if (
-        response.status === 200 ||
-        response.status === 201
+        message.includes("pending") ||
+        message.includes("already sent")
       ) {
         setConnectionStatus("pending");
       }
-    } catch (error) {
-      console.error(
-        "Send connection request error:",
-        error
-      );
 
-      const status =
-        error.response?.data?.status;
-
-      if (status === "pending") {
-        setConnectionStatus("pending");
-      } else if (status === "accepted") {
+      if (
+        message.includes("connected") ||
+        message.includes("already connected")
+      ) {
         setConnectionStatus("connected");
-      } else {
-        const message =
-          error.response?.data?.message
-            ?.toLowerCase() || "";
-
-        if (
-          message.includes("pending") ||
-          message.includes("already sent")
-        ) {
-          setConnectionStatus("pending");
-        }
-
-        if (
-          message.includes("connected") ||
-          message.includes("already connected")
-        ) {
-          setConnectionStatus("connected");
-        }
       }
-
-      setRequestError(
-        error.response?.data?.message ||
-          "Failed to send connection request."
-      );
-    } finally {
-      setSendingRequest(false);
     }
-  };
+
+    setRequestError(
+      error.response?.data?.message ||
+        "Failed to send connection request."
+    );
+  } finally {
+    setSendingRequest(false);
+  }
+};
 
   // ==========================================
   // FORMAT HELPERS
