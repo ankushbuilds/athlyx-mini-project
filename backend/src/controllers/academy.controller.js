@@ -78,12 +78,12 @@ const getMyAcademyProfile = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const academy = await Academy.findOne({
-      user: userId
-    }).populate(
-      "user",
-      "name email role"
-    );
+const academy = await Academy.findOne({
+    user: userId
+}).populate(
+    "user",
+    "name email role profilePic"
+);
 
     if (!academy) {
       return res.status(404).json({
@@ -112,9 +112,9 @@ const getAcademyProfileById = async (req, res) => {
     const { id } = req.params;
 
     const academy = await Academy.findById(id).populate(
-      "user",
-      "name email role"
-    );
+    "user",
+    "name email role profilePic"
+);
 
     if (!academy) {
       return res.status(404).json({
@@ -283,11 +283,14 @@ const deleteAcademyProfile = async (req, res) => {
 const getAllAcademies = async (req, res) => {
   try {
     const academies = await Academy.find()
-      .select(
-        "user academyName profilePic sport specialization establishedYear address city state bio isAvailable"
-      )
-      .sort({ createdAt: -1 });
-
+    .select(
+        "user academyName sport specialization establishedYear address city state bio isAvailable"
+    )
+    .populate(
+        "user",
+        "name profilePic role"
+    )
+    .sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
       academies

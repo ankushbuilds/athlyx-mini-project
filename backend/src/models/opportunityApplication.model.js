@@ -1,31 +1,40 @@
 const mongoose = require("mongoose");
 
-const opportunityApplicationSchema = new mongoose.Schema(
-  {
-    opportunity: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Opportunity",
-      required: true
-    },
+const opportunityApplicationSchema =
+  new mongoose.Schema(
+    {
+      opportunity: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Opportunity",
+        required: true
+      },
 
-    athlete: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true
-    },
+      athlete: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+      },
 
-    status: {
-      type: String,
-      enum: ["pending", "accepted", "rejected"],
-      default: "pending"
+      resumeUrl: {
+        type: String,
+        required: true
+      },
+
+      status: {
+        type: String,
+        enum: [
+          "pending",
+          "accepted",
+          "rejected"
+        ],
+        default: "pending"
+      }
+    },
+    {
+      timestamps: true
     }
-  },
-  {
-    timestamps: true
-  }
-);
+  );
 
-// Same athlete cannot apply to the same event twice
 opportunityApplicationSchema.index(
   {
     opportunity: 1,
@@ -36,7 +45,8 @@ opportunityApplicationSchema.index(
   }
 );
 
-module.exports = mongoose.model(
-  "OpportunityApplication",
-  opportunityApplicationSchema
-);
+module.exports =
+  mongoose.model(
+    "OpportunityApplication",
+    opportunityApplicationSchema
+  );

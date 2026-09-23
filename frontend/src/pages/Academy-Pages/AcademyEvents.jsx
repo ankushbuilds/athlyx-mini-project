@@ -23,7 +23,8 @@ import {
   FiCheck,
   FiUser,
   FiMail,
-  FiActivity
+  FiActivity,
+  FiFileText
 } from "react-icons/fi";
 
 import AcademySidebar from "../../components/AcademySidebar";
@@ -35,10 +36,6 @@ const AcademyEvents = () => {
   const { id } = useParams();
   const location = useLocation();
 
-  // ======================================================
-  // ROUTE MODES
-  // ======================================================
-
   const isEditMode =
     Boolean(id) && location.pathname.endsWith("/edit");
 
@@ -47,17 +44,9 @@ const AcademyEvents = () => {
 
   const isListMode = !id;
 
-  // ======================================================
-  // LIST STATE
-  // ======================================================
-
   const [search, setSearch] = useState("");
   const [type, setType] = useState("All");
   const [events, setEvents] = useState([]);
-
-  // ======================================================
-  // SINGLE EVENT STATE
-  // ======================================================
 
   const [event, setEvent] = useState(null);
 
@@ -73,17 +62,9 @@ const AcademyEvents = () => {
     status: "active"
   });
 
-  // ======================================================
-  // COMMON STATE
-  // ======================================================
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  // ======================================================
-  // APPLICANTS STATE
-  // ======================================================
 
   const [showApplicants, setShowApplicants] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -95,22 +76,12 @@ const AcademyEvents = () => {
   const [updatingApplication, setUpdatingApplication] =
     useState(null);
 
-  // ======================================================
-  // TOKEN
-  // ======================================================
-
   const getToken = () => {
     return localStorage.getItem("token");
   };
 
-  // ======================================================
-  // FORMAT DATE FOR INPUT
-  // ======================================================
-
   const formatDateForInput = (date) => {
-    if (!date) {
-      return "";
-    }
+    if (!date) return "";
 
     const d = new Date(date);
 
@@ -120,10 +91,6 @@ const AcademyEvents = () => {
 
     return d.toISOString().slice(0, 10);
   };
-
-  // ======================================================
-  // FORMAT DATE FOR DISPLAY
-  // ======================================================
 
   const formatDate = (date) => {
     if (!date) {
@@ -142,10 +109,6 @@ const AcademyEvents = () => {
       year: "numeric"
     });
   };
-
-  // ======================================================
-  // FETCH ACADEMY EVENTS
-  // ======================================================
 
   const fetchEvents = async () => {
     try {
@@ -188,10 +151,6 @@ const AcademyEvents = () => {
     }
   };
 
-  // ======================================================
-  // FETCH SINGLE EVENT
-  // ======================================================
-
   const fetchSingleEvent = async () => {
     try {
       setLoading(true);
@@ -222,9 +181,7 @@ const AcademyEvents = () => {
 
       setFormData({
         title: fetchedEvent?.title || "",
-        type:
-          fetchedEvent?.type ||
-          "Tournament",
+        type: fetchedEvent?.type || "Tournament",
         sport: fetchedEvent?.sport || "",
         date: formatDateForInput(
           fetchedEvent?.date
@@ -233,15 +190,13 @@ const AcademyEvents = () => {
           formatDateForInput(
             fetchedEvent?.registrationDeadline
           ),
-        location:
-          fetchedEvent?.location || "",
+        location: fetchedEvent?.location || "",
         description:
           fetchedEvent?.description || "",
         eligibility:
           fetchedEvent?.eligibility || "",
         status:
-          fetchedEvent?.status ||
-          "active"
+          fetchedEvent?.status || "active"
       });
     } catch (err) {
       console.error(
@@ -258,10 +213,6 @@ const AcademyEvents = () => {
     }
   };
 
-  // ======================================================
-  // INITIAL LOAD / ROUTE CHANGE
-  // ======================================================
-
   useEffect(() => {
     if (isListMode) {
       fetchEvents();
@@ -269,10 +220,6 @@ const AcademyEvents = () => {
       fetchSingleEvent();
     }
   }, [id, location.pathname]);
-
-  // ======================================================
-  // FORM CHANGE
-  // ======================================================
 
   const handleChange = (e) => {
     const {
@@ -285,10 +232,6 @@ const AcademyEvents = () => {
       [name]: value
     }));
   };
-
-  // ======================================================
-  // OPEN APPLICANTS
-  // ======================================================
 
   const handleViewApplicants = async (eventItem) => {
     try {
@@ -338,20 +281,12 @@ const AcademyEvents = () => {
     }
   };
 
-  // ======================================================
-  // CLOSE APPLICANTS
-  // ======================================================
-
   const closeApplicants = () => {
     setShowApplicants(false);
     setSelectedEvent(null);
     setApplicants([]);
     setApplicantsError("");
   };
-
-  // ======================================================
-  // UPDATE APPLICATION STATUS
-  // ======================================================
 
   const handleApplicationStatus = async (
     applicationId,
@@ -377,8 +312,7 @@ const AcademyEvents = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type":
-              "application/json"
+            "Content-Type": "application/json"
           }
         }
       );
@@ -386,23 +320,18 @@ const AcademyEvents = () => {
       const updatedApplication =
         response.data?.application;
 
-      // --------------------------------------------------
-      // UPDATE LOCAL APPLICANT
-      // --------------------------------------------------
-
       setApplicants((prev) =>
         prev.map((item) =>
           item._id === applicationId
             ? {
-                ...item,
-                status:
-                  updatedApplication?.status ||
-                  status
-              }
+              ...item,
+              status:
+                updatedApplication?.status ||
+                status
+            }
             : item
         )
       );
-
     } catch (err) {
       console.error(
         "Failed to update application:",
@@ -417,10 +346,6 @@ const AcademyEvents = () => {
       setUpdatingApplication(null);
     }
   };
-
-  // ======================================================
-  // DELETE EVENT
-  // ======================================================
 
   const handleDelete = async (
     eventId = id
@@ -476,10 +401,6 @@ const AcademyEvents = () => {
     }
   };
 
-  // ======================================================
-  // UPDATE EVENT
-  // ======================================================
-
   const handleUpdate = async (e) => {
     e.preventDefault();
 
@@ -510,9 +431,7 @@ const AcademyEvents = () => {
       );
 
     if (
-      Number.isNaN(
-        eventDate.getTime()
-      ) ||
+      Number.isNaN(eventDate.getTime()) ||
       Number.isNaN(
         registrationDate.getTime()
       )
@@ -520,6 +439,7 @@ const AcademyEvents = () => {
       setError(
         "Please enter valid dates."
       );
+
       return;
     }
 
@@ -540,9 +460,7 @@ const AcademyEvents = () => {
       const token = getToken();
 
       if (!token) {
-        setError(
-          "Please login again."
-        );
+        setError("Please login again.");
         return;
       }
 
@@ -578,9 +496,7 @@ const AcademyEvents = () => {
         }
       );
 
-      navigate(
-        "/academy/events"
-      );
+      navigate("/academy/events");
     } catch (err) {
       console.error(
         "Failed to update event:",
@@ -596,16 +512,10 @@ const AcademyEvents = () => {
     }
   };
 
-  // ======================================================
-  // FILTER EVENTS
-  // ======================================================
-
   const filteredEvents =
     events.filter((item) => {
       const searchText =
-        search
-          .toLowerCase()
-          .trim();
+        search.toLowerCase().trim();
 
       const matchesSearch =
         item.title
@@ -628,46 +538,28 @@ const AcademyEvents = () => {
       );
     });
 
-  // ======================================================
-  // LOADING
-  // ======================================================
-
   if (loading) {
     return (
       <div className="dashboard-layout">
-
         <AcademySidebar />
 
         <main className="opportunities-page">
-
           <div className="opportunities-content">
-
             <div className="opportunities-empty">
-
               <FiBriefcase />
 
-              <h3>
-                Loading...
-              </h3>
+              <h3>Loading...</h3>
 
               <p>
                 Please wait while we
                 load the event.
               </p>
-
             </div>
-
           </div>
-
         </main>
-
       </div>
     );
   }
-
-  // ======================================================
-  // ERROR FOR VIEW / EDIT
-  // ======================================================
 
   if (
     !isListMode &&
@@ -676,30 +568,24 @@ const AcademyEvents = () => {
   ) {
     return (
       <div className="dashboard-layout">
-
         <AcademySidebar />
 
         <main className="opportunities-page">
-
           <div className="opportunities-content">
 
             <div className="opportunities-header">
 
               <div>
-
                 <span className="page-eyebrow">
                   ACADEMY EVENTS
                 </span>
 
-                <h1>
-                  Event
-                </h1>
+                <h1>Event</h1>
 
                 <p>
                   Unable to load this
                   event.
                 </p>
-
               </div>
 
               <button
@@ -724,23 +610,15 @@ const AcademyEvents = () => {
                 Unable to load event
               </h3>
 
-              <p>
-                {error}
-              </p>
+              <p>{error}</p>
 
             </div>
 
           </div>
-
         </main>
-
       </div>
     );
   }
-
-  // ======================================================
-  // VIEW EVENT
-  // ======================================================
 
   if (isViewMode) {
     return (
@@ -807,8 +685,6 @@ const AcademyEvents = () => {
               </div>
             )}
 
-            {/* EVENT CARD */}
-
             <article className="opportunity-card">
 
               <div className="opportunity-card-main">
@@ -869,8 +745,6 @@ const AcademyEvents = () => {
 
             </article>
 
-            {/* EVENT INFORMATION */}
-
             <div className="event-form-card">
 
               <div className="event-form-section">
@@ -906,8 +780,7 @@ const AcademyEvents = () => {
 
                     <input
                       value={
-                        event?.type ||
-                        ""
+                        event?.type || ""
                       }
                       readOnly
                     />
@@ -922,8 +795,7 @@ const AcademyEvents = () => {
 
                     <input
                       value={
-                        event?.sport ||
-                        ""
+                        event?.sport || ""
                       }
                       readOnly
                     />
@@ -968,8 +840,7 @@ const AcademyEvents = () => {
 
                     <input
                       value={
-                        event?.location ||
-                        ""
+                        event?.location || ""
                       }
                       readOnly
                     />
@@ -984,8 +855,7 @@ const AcademyEvents = () => {
 
                     <input
                       value={
-                        event?.status ||
-                        ""
+                        event?.status || ""
                       }
                       readOnly
                     />
@@ -1060,10 +930,6 @@ const AcademyEvents = () => {
     );
   }
 
-  // ======================================================
-  // EDIT EVENT
-  // ======================================================
-
   if (isEditMode) {
     return (
       <div className="dashboard-layout">
@@ -1111,8 +977,6 @@ const AcademyEvents = () => {
               className="event-form-card"
               onSubmit={handleUpdate}
             >
-
-              {/* BASIC INFORMATION */}
 
               <div className="event-form-section">
 
@@ -1266,8 +1130,6 @@ const AcademyEvents = () => {
 
               </div>
 
-              {/* DATE & LOCATION */}
-
               <div className="event-form-section">
 
                 <div className="event-form-section-header">
@@ -1381,8 +1243,6 @@ const AcademyEvents = () => {
                 </div>
 
               </div>
-
-              {/* DESCRIPTION */}
 
               <div className="event-form-section">
 
@@ -1499,10 +1359,6 @@ const AcademyEvents = () => {
     );
   }
 
-  // ======================================================
-  // LIST MODE
-  // ======================================================
-
   return (
     <div className="dashboard-layout">
 
@@ -1511,10 +1367,6 @@ const AcademyEvents = () => {
       <main className="opportunities-page">
 
         <div className="opportunities-content">
-
-          {/* ==================================================
-              HEADER
-          ================================================== */}
 
           <div className="opportunities-header">
 
@@ -1550,10 +1402,6 @@ const AcademyEvents = () => {
             </button>
 
           </div>
-
-          {/* ==================================================
-              TOOLBAR
-          ================================================== */}
 
           <div className="opportunities-toolbar">
 
@@ -1620,10 +1468,6 @@ const AcademyEvents = () => {
 
           </div>
 
-          {/* ==================================================
-              SECTION HEADING
-          ================================================== */}
-
           <div className="opportunities-section-heading">
 
             <div>
@@ -1645,10 +1489,6 @@ const AcademyEvents = () => {
 
           </div>
 
-          {/* ==================================================
-              ERROR
-          ================================================== */}
-
           {error && (
             <div className="opportunities-empty">
 
@@ -1658,9 +1498,7 @@ const AcademyEvents = () => {
                 Unable to load events
               </h3>
 
-              <p>
-                {error}
-              </p>
+              <p>{error}</p>
 
               <button
                 className="opportunity-card-btn"
@@ -1672,10 +1510,6 @@ const AcademyEvents = () => {
 
             </div>
           )}
-
-          {/* ==================================================
-              EVENTS
-          ================================================== */}
 
           {!error &&
             filteredEvents.length > 0 && (
@@ -1689,8 +1523,6 @@ const AcademyEvents = () => {
                       className="opportunity-card"
                       key={item._id}
                     >
-
-                      {/* MAIN CONTENT */}
 
                       <div className="opportunity-card-main">
 
@@ -1748,13 +1580,7 @@ const AcademyEvents = () => {
 
                       </div>
 
-                      {/* ==================================================
-                          ACTIONS
-                      ================================================== */}
-
                       <div className="opportunity-event-actions">
-
-                        {/* APPLICANTS */}
 
                         <button
                           className="opportunity-card-btn"
@@ -1769,8 +1595,6 @@ const AcademyEvents = () => {
                           Applicants
                         </button>
 
-                        {/* VIEW */}
-
                         <button
                           className="opportunity-card-btn"
                           type="button"
@@ -1784,8 +1608,6 @@ const AcademyEvents = () => {
                           <FiArrowRight />
                         </button>
 
-                        {/* EDIT */}
-
                         <button
                           className="opportunity-icon-btn"
                           title="Edit Event"
@@ -1798,8 +1620,6 @@ const AcademyEvents = () => {
                         >
                           <FiEdit2 />
                         </button>
-
-                        {/* DELETE */}
 
                         <button
                           className="opportunity-icon-btn event-delete-btn"
@@ -1823,10 +1643,6 @@ const AcademyEvents = () => {
 
               </div>
             )}
-
-          {/* ==================================================
-              EMPTY STATE
-          ================================================== */}
 
           {!error &&
             filteredEvents.length === 0 && (
@@ -1865,17 +1681,11 @@ const AcademyEvents = () => {
                 )}
 
               </div>
-
             )}
 
         </div>
 
       </main>
-
-
-      {/* ======================================================
-          APPLICANTS MODAL / PANEL
-      ====================================================== */}
 
       {showApplicants && (
 
@@ -1907,10 +1717,6 @@ const AcademyEvents = () => {
             }
           >
 
-            {/* ==================================================
-                APPLICANTS HEADER
-            ================================================== */}
-
             <div className="event-form-section">
 
               <div
@@ -1923,7 +1729,8 @@ const AcademyEvents = () => {
                 }}
               >
 
-                <div className="event-form-section-header"
+                <div
+                  className="event-form-section-header"
                   style={{
                     marginBottom: 0
                   }}
@@ -1963,11 +1770,6 @@ const AcademyEvents = () => {
 
             </div>
 
-
-            {/* ==================================================
-                LOADING
-            ================================================== */}
-
             {applicantsLoading && (
 
               <div className="opportunities-empty">
@@ -1987,11 +1789,6 @@ const AcademyEvents = () => {
 
             )}
 
-
-            {/* ==================================================
-                ERROR
-            ================================================== */}
-
             {!applicantsLoading &&
               applicantsError && (
 
@@ -2000,11 +1797,6 @@ const AcademyEvents = () => {
                 </div>
 
               )}
-
-
-            {/* ==================================================
-                EMPTY
-            ================================================== */}
 
             {!applicantsLoading &&
               !applicantsError &&
@@ -2027,11 +1819,6 @@ const AcademyEvents = () => {
                 </div>
 
               )}
-
-
-            {/* ==================================================
-                APPLICANTS LIST
-            ================================================== */}
 
             {!applicantsLoading &&
               !applicantsError &&
@@ -2056,7 +1843,6 @@ const AcademyEvents = () => {
                       ? "application"
                       : "applications"}
                   </div>
-
 
                   {applicants.map(
                     (application) => {
@@ -2084,15 +1870,10 @@ const AcademyEvents = () => {
                           }}
                         >
 
-                          {/* ==================================================
-                              ATHLETE INFO
-                          ================================================== */}
-
                           <div className="opportunity-card-main">
 
-                            <div
-                              className="opportunity-icon"
-                            >
+                            <div className="opportunity-icon">
+
                               {athlete?.profilePic ? (
 
                                 <img
@@ -2123,7 +1904,6 @@ const AcademyEvents = () => {
 
                             </div>
 
-
                             <div className="opportunity-info">
 
                               <div className="opportunity-title-row">
@@ -2133,22 +1913,19 @@ const AcademyEvents = () => {
                                     "Athlete"}
                                 </h3>
 
-                                <span
-                                  className="opportunity-type"
-                                >
+                                <span className="opportunity-type">
+
                                   {status ===
-                                  "accepted"
+                                    "accepted"
                                     ? "Accepted"
                                     : status ===
                                       "rejected"
-                                    ? "Rejected"
-                                    : "Pending"}
+                                      ? "Rejected"
+                                      : "Pending"}
+
                                 </span>
 
                               </div>
-
-
-                              {/* EMAIL */}
 
                               <p className="opportunity-organization">
 
@@ -2163,9 +1940,6 @@ const AcademyEvents = () => {
                                   "Email not available"}
 
                               </p>
-
-
-                              {/* SPORT / POSITION */}
 
                               <div className="opportunity-meta">
 
@@ -2197,9 +1971,6 @@ const AcademyEvents = () => {
 
                               </div>
 
-
-                              {/* EXPERIENCE */}
-
                               {athlete?.experience && (
 
                                 <p
@@ -2223,67 +1994,104 @@ const AcademyEvents = () => {
 
                           </div>
 
+                          <div
+                            className="opportunity-event-actions"
+                            style={{
+                              marginTop:
+                                "16px",
+                              paddingTop:
+                                "16px",
+                              borderTop:
+                                "1px solid #292929"
+                            }}
+                          >
 
-                          {/* ==================================================
-                              ACTIONS
-                          ================================================== */}
+                            {/* VIEW RESUME */}
 
-                          {status ===
-                            "pending" && (
+                            {application.resumeUrl && (
 
-                            <div
-                              className="opportunity-event-actions"
-                              style={{
-                                marginTop:
-                                  "16px",
-                                paddingTop:
-                                  "16px",
-                                borderTop:
-                                  "1px solid #292929"
-                              }}
-                            >
-
-                              <button
-                                className="opportunity-card-btn"
-                                type="button"
-                                disabled={
-                                  isUpdating
+                              <a
+                                href={
+                                  application.resumeUrl
                                 }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="opportunity-card-btn"
+                              >
+                                <FiFileText />
+                                View Resume
+                              </a>
+
+                            )}
+
+                            {/* VIEW ATHLETE PROFILE */}
+                            {application.athleteProfile?._id && (
+                              <button
+                                type="button"
+                                className="opportunity-card-btn"
                                 onClick={() =>
-                                  handleApplicationStatus(
-                                    application._id,
-                                    "accepted"
+                                  navigate(
+                                    `/profile/athlete/${application.athleteProfile._id}`
                                   )
                                 }
                               >
-                                <FiCheck />
-
-                                {isUpdating
-                                  ? "Updating..."
-                                  : "Accept"}
+                                <FiUser />
+                                View Profile
                               </button>
+                            )}
 
+                            {/* ACCEPT */}
 
-                              <button
-                                className="opportunity-card-btn"
-                                type="button"
-                                disabled={
-                                  isUpdating
-                                }
-                                onClick={() =>
-                                  handleApplicationStatus(
-                                    application._id,
-                                    "rejected"
-                                  )
-                                }
-                              >
-                                <FiX />
-                                Reject
-                              </button>
+                            {status ===
+                              "pending" && (
 
-                            </div>
+                                <button
+                                  className="opportunity-card-btn"
+                                  type="button"
+                                  disabled={
+                                    isUpdating
+                                  }
+                                  onClick={() =>
+                                    handleApplicationStatus(
+                                      application._id,
+                                      "accepted"
+                                    )
+                                  }
+                                >
+                                  <FiCheck />
 
-                          )}
+                                  {isUpdating
+                                    ? "Updating..."
+                                    : "Accept"}
+                                </button>
+
+                              )}
+
+                            {/* REJECT */}
+
+                            {status ===
+                              "pending" && (
+
+                                <button
+                                  className="opportunity-card-btn"
+                                  type="button"
+                                  disabled={
+                                    isUpdating
+                                  }
+                                  onClick={() =>
+                                    handleApplicationStatus(
+                                      application._id,
+                                      "rejected"
+                                    )
+                                  }
+                                >
+                                  <FiX />
+                                  Reject
+                                </button>
+
+                              )}
+
+                          </div>
 
                         </div>
 
@@ -2294,10 +2102,6 @@ const AcademyEvents = () => {
                 </div>
 
               )}
-
-            {/* ==================================================
-                FOOTER
-            ================================================== */}
 
             <div className="event-form-actions">
 

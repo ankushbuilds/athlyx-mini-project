@@ -1,35 +1,26 @@
-
 const mongoose = require("mongoose");
 
 const Opportunity = require("../models/opportunity.model");
 const OpportunityApplication = require("../models/opportunityApplication.model");
-
+const imagekit = require("../config/imagekit");
+const Athlete = require("../models/athlete.model");
 // ======================================================
 // CREATE OPPORTUNITY / EVENT
 // ======================================================
 const createOpportunity = async (req, res) => {
   try {
-    // --------------------------------------------------
-    // CHECK LOGIN
-    // --------------------------------------------------
     if (!req.user) {
       return res.status(401).json({
         message: "Authentication required"
       });
     }
 
-    // --------------------------------------------------
-    // ONLY ACADEMY CAN CREATE EVENTS
-    // --------------------------------------------------
     if (req.user.role !== "academy") {
       return res.status(403).json({
         message: "Only academies can create events"
       });
     }
 
-    // --------------------------------------------------
-    // GET DATA
-    // --------------------------------------------------
     const {
       title,
       type,
@@ -41,9 +32,6 @@ const createOpportunity = async (req, res) => {
       eligibility
     } = req.body;
 
-    // --------------------------------------------------
-    // REQUIRED FIELDS
-    // --------------------------------------------------
     if (
       !title?.trim() ||
       !type ||
@@ -58,11 +46,10 @@ const createOpportunity = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // CHECK DATES
-    // --------------------------------------------------
     const eventDate = new Date(date);
-    const registrationDate = new Date(registrationDeadline);
+    const registrationDate = new Date(
+      registrationDeadline
+    );
 
     if (
       Number.isNaN(eventDate.getTime()) ||
@@ -80,9 +67,6 @@ const createOpportunity = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // ACADEMY USER ID
-    // --------------------------------------------------
     const academyId = req.user._id || req.user.id;
 
     if (!academyId) {
@@ -97,9 +81,6 @@ const createOpportunity = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // CREATE EVENT
-    // --------------------------------------------------
     const opportunity = await Opportunity.create({
       academy: academyId,
 
@@ -118,22 +99,15 @@ const createOpportunity = async (req, res) => {
       status: "active"
     });
 
-    // --------------------------------------------------
-    // POPULATE ACADEMY
-    // --------------------------------------------------
     await opportunity.populate(
       "academy",
       "name email role profilePic"
     );
 
-    // --------------------------------------------------
-    // RESPONSE
-    // --------------------------------------------------
     return res.status(201).json({
       message: "Event created successfully",
       opportunity
     });
-
   } catch (error) {
     console.error(
       "Create Opportunity Error:",
@@ -146,7 +120,6 @@ const createOpportunity = async (req, res) => {
     });
   }
 };
-
 
 // ======================================================
 // GET ALL ACTIVE OPPORTUNITIES
@@ -167,7 +140,6 @@ const getAllOpportunities = async (req, res) => {
     return res.status(200).json({
       opportunities
     });
-
   } catch (error) {
     console.error(
       "Get All Opportunities Error:",
@@ -181,24 +153,17 @@ const getAllOpportunities = async (req, res) => {
   }
 };
 
-
 // ======================================================
 // GET ACADEMY'S OWN OPPORTUNITIES
 // ======================================================
 const getAcademyOpportunities = async (req, res) => {
   try {
-    // --------------------------------------------------
-    // CHECK LOGIN
-    // --------------------------------------------------
     if (!req.user) {
       return res.status(401).json({
         message: "Authentication required"
       });
     }
 
-    // --------------------------------------------------
-    // ONLY ACADEMY
-    // --------------------------------------------------
     if (req.user.role !== "academy") {
       return res.status(403).json({
         message:
@@ -215,9 +180,6 @@ const getAcademyOpportunities = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // GET EVENTS
-    // --------------------------------------------------
     const opportunities = await Opportunity.find({
       academy: academyId
     })
@@ -232,7 +194,6 @@ const getAcademyOpportunities = async (req, res) => {
     return res.status(200).json({
       opportunities
     });
-
   } catch (error) {
     console.error(
       "Get Academy Opportunities Error:",
@@ -246,7 +207,6 @@ const getAcademyOpportunities = async (req, res) => {
   }
 };
 
-
 // ======================================================
 // GET SINGLE OPPORTUNITY
 // ======================================================
@@ -254,18 +214,12 @@ const getOpportunityById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // --------------------------------------------------
-    // VALIDATE OBJECT ID
-    // --------------------------------------------------
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         message: "Invalid event ID"
       });
     }
 
-    // --------------------------------------------------
-    // FIND EVENT
-    // --------------------------------------------------
     const opportunity = await Opportunity.findById(id)
       .populate(
         "academy",
@@ -281,7 +235,6 @@ const getOpportunityById = async (req, res) => {
     return res.status(200).json({
       opportunity
     });
-
   } catch (error) {
     console.error(
       "Get Opportunity By ID Error:",
@@ -295,24 +248,17 @@ const getOpportunityById = async (req, res) => {
   }
 };
 
-
 // ======================================================
 // UPDATE OPPORTUNITY
 // ======================================================
 const updateOpportunity = async (req, res) => {
   try {
-    // --------------------------------------------------
-    // CHECK LOGIN
-    // --------------------------------------------------
     if (!req.user) {
       return res.status(401).json({
         message: "Authentication required"
       });
     }
 
-    // --------------------------------------------------
-    // ONLY ACADEMY
-    // --------------------------------------------------
     if (req.user.role !== "academy") {
       return res.status(403).json({
         message: "Only academies can update events"
@@ -328,18 +274,12 @@ const updateOpportunity = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // VALIDATE EVENT ID
-    // --------------------------------------------------
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({
         message: "Invalid event ID"
       });
     }
 
-    // --------------------------------------------------
-    // FIND EVENT
-    // --------------------------------------------------
     const opportunity = await Opportunity.findById(
       req.params.id
     );
@@ -350,9 +290,6 @@ const updateOpportunity = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // CHECK OWNERSHIP
-    // --------------------------------------------------
     if (
       opportunity.academy.toString() !==
       academyId.toString()
@@ -363,9 +300,6 @@ const updateOpportunity = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // GET DATA
-    // --------------------------------------------------
     const {
       title,
       type,
@@ -378,9 +312,6 @@ const updateOpportunity = async (req, res) => {
       status
     } = req.body;
 
-    // --------------------------------------------------
-    // UPDATE FIELDS
-    // --------------------------------------------------
     if (title !== undefined) {
       if (!title.trim()) {
         return res.status(400).json({
@@ -418,10 +349,15 @@ const updateOpportunity = async (req, res) => {
     }
 
     if (registrationDeadline !== undefined) {
-      const updatedDeadline =
-        new Date(registrationDeadline);
+      const updatedDeadline = new Date(
+        registrationDeadline
+      );
 
-      if (Number.isNaN(updatedDeadline.getTime())) {
+      if (
+        Number.isNaN(
+          updatedDeadline.getTime()
+        )
+      ) {
         return res.status(400).json({
           message:
             "Please enter a valid registration deadline."
@@ -462,9 +398,6 @@ const updateOpportunity = async (req, res) => {
       opportunity.status = status;
     }
 
-    // --------------------------------------------------
-    // CHECK DATES AGAIN
-    // --------------------------------------------------
     if (
       opportunity.registrationDeadline >
       opportunity.date
@@ -475,14 +408,8 @@ const updateOpportunity = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // SAVE
-    // --------------------------------------------------
     await opportunity.save();
 
-    // --------------------------------------------------
-    // POPULATE ACADEMY
-    // --------------------------------------------------
     await opportunity.populate(
       "academy",
       "name email role profilePic"
@@ -492,7 +419,6 @@ const updateOpportunity = async (req, res) => {
       message: "Event updated successfully",
       opportunity
     });
-
   } catch (error) {
     console.error(
       "Update Opportunity Error:",
@@ -506,24 +432,17 @@ const updateOpportunity = async (req, res) => {
   }
 };
 
-
 // ======================================================
 // DELETE OPPORTUNITY
 // ======================================================
 const deleteOpportunity = async (req, res) => {
   try {
-    // --------------------------------------------------
-    // CHECK LOGIN
-    // --------------------------------------------------
     if (!req.user) {
       return res.status(401).json({
         message: "Authentication required"
       });
     }
 
-    // --------------------------------------------------
-    // ONLY ACADEMY
-    // --------------------------------------------------
     if (req.user.role !== "academy") {
       return res.status(403).json({
         message: "Only academies can delete events"
@@ -539,18 +458,12 @@ const deleteOpportunity = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // VALIDATE EVENT ID
-    // --------------------------------------------------
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({
         message: "Invalid event ID"
       });
     }
 
-    // --------------------------------------------------
-    // FIND EVENT
-    // --------------------------------------------------
     const opportunity = await Opportunity.findById(
       req.params.id
     );
@@ -561,9 +474,6 @@ const deleteOpportunity = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // CHECK OWNERSHIP
-    // --------------------------------------------------
     if (
       opportunity.academy.toString() !==
       academyId.toString()
@@ -574,22 +484,15 @@ const deleteOpportunity = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // DELETE APPLICATIONS FIRST
-    // --------------------------------------------------
     await OpportunityApplication.deleteMany({
       opportunity: opportunity._id
     });
 
-    // --------------------------------------------------
-    // DELETE EVENT
-    // --------------------------------------------------
     await opportunity.deleteOne();
 
     return res.status(200).json({
       message: "Event deleted successfully"
     });
-
   } catch (error) {
     console.error(
       "Delete Opportunity Error:",
@@ -602,7 +505,6 @@ const deleteOpportunity = async (req, res) => {
     });
   }
 };
-
 
 // ======================================================
 // APPLY TO OPPORTUNITY
@@ -628,7 +530,9 @@ const applyToOpportunity = async (req, res) => {
       });
     }
 
-    const athleteId = req.user._id || req.user.id;
+    const athleteId =
+      req.user._id || req.user.id;
+
     const { id } = req.params;
 
     if (!athleteId) {
@@ -648,9 +552,33 @@ const applyToOpportunity = async (req, res) => {
     }
 
     // --------------------------------------------------
+    // CHECK RESUME
+    // --------------------------------------------------
+    if (!req.file) {
+      return res.status(400).json({
+        message:
+          "Resume is required to apply."
+      });
+    }
+
+    // --------------------------------------------------
+    // VALIDATE FILE TYPE
+    // --------------------------------------------------
+    if (
+      req.file.mimetype !==
+      "application/pdf"
+    ) {
+      return res.status(400).json({
+        message:
+          "Only PDF resumes are allowed."
+      });
+    }
+
+    // --------------------------------------------------
     // FIND EVENT
     // --------------------------------------------------
-    const opportunity = await Opportunity.findById(id);
+    const opportunity =
+      await Opportunity.findById(id);
 
     if (!opportunity) {
       return res.status(404).json({
@@ -661,7 +589,9 @@ const applyToOpportunity = async (req, res) => {
     // --------------------------------------------------
     // EVENT MUST BE ACTIVE
     // --------------------------------------------------
-    if (opportunity.status !== "active") {
+    if (
+      opportunity.status !== "active"
+    ) {
       return res.status(400).json({
         message:
           "Applications are not open for this event."
@@ -675,7 +605,8 @@ const applyToOpportunity = async (req, res) => {
 
     if (
       opportunity.registrationDeadline &&
-      now > opportunity.registrationDeadline
+      now >
+        opportunity.registrationDeadline
     ) {
       return res.status(400).json({
         message:
@@ -701,12 +632,44 @@ const applyToOpportunity = async (req, res) => {
     }
 
     // --------------------------------------------------
+    // UPLOAD RESUME TO IMAGEKIT
+    // --------------------------------------------------
+    const uploadResult =
+      await imagekit.upload({
+        file: req.file.buffer,
+
+        fileName: `resume-${athleteId}-${Date.now()}.pdf`,
+
+        folder:
+          "/athlyx/opportunity-resumes"
+      });
+
+    // --------------------------------------------------
+    // CHECK IMAGEKIT RESPONSE
+    // --------------------------------------------------
+    if (!uploadResult?.url) {
+      console.error(
+        "ImageKit Resume Upload Response:",
+        uploadResult
+      );
+
+      return res.status(500).json({
+        message:
+          "Failed to upload resume."
+      });
+    }
+
+    // --------------------------------------------------
     // CREATE APPLICATION
     // --------------------------------------------------
     const application =
       await OpportunityApplication.create({
         opportunity: opportunity._id,
+
         athlete: athleteId,
+
+        resumeUrl: uploadResult.url,
+
         status: "pending"
       });
 
@@ -716,7 +679,8 @@ const applyToOpportunity = async (req, res) => {
     await application.populate([
       {
         path: "athlete",
-        select: "name email role profilePic"
+        select:
+          "name email role profilePic"
       },
       {
         path: "opportunity",
@@ -725,11 +689,14 @@ const applyToOpportunity = async (req, res) => {
       }
     ]);
 
+    // --------------------------------------------------
+    // RESPONSE
+    // --------------------------------------------------
     return res.status(201).json({
-      message: "Application submitted successfully",
+      message:
+        "Application submitted successfully",
       application
     });
-
   } catch (error) {
     // --------------------------------------------------
     // DUPLICATE APPLICATION
@@ -754,24 +721,17 @@ const applyToOpportunity = async (req, res) => {
   }
 };
 
-
 // ======================================================
 // GET APPLICATION STATUS FOR ONE OPPORTUNITY
 // ======================================================
 const getApplicationStatus = async (req, res) => {
   try {
-    // --------------------------------------------------
-    // CHECK LOGIN
-    // --------------------------------------------------
     if (!req.user) {
       return res.status(401).json({
         message: "Authentication required"
       });
     }
 
-    // --------------------------------------------------
-    // ONLY ATHLETE
-    // --------------------------------------------------
     if (req.user.role !== "athlete") {
       return res.status(403).json({
         message:
@@ -779,21 +739,17 @@ const getApplicationStatus = async (req, res) => {
       });
     }
 
-    const athleteId = req.user._id || req.user.id;
+    const athleteId =
+      req.user._id || req.user.id;
+
     const { id } = req.params;
 
-    // --------------------------------------------------
-    // VALIDATE ID
-    // --------------------------------------------------
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         message: "Invalid event ID"
       });
     }
 
-    // --------------------------------------------------
-    // FIND APPLICATION
-    // --------------------------------------------------
     const application =
       await OpportunityApplication.findOne({
         opportunity: id,
@@ -803,9 +759,6 @@ const getApplicationStatus = async (req, res) => {
         "title type sport date registrationDeadline location status"
       );
 
-    // --------------------------------------------------
-    // NOT APPLIED
-    // --------------------------------------------------
     if (!application) {
       return res.status(200).json({
         applied: false,
@@ -813,14 +766,10 @@ const getApplicationStatus = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // APPLIED
-    // --------------------------------------------------
     return res.status(200).json({
       applied: true,
       application
     });
-
   } catch (error) {
     console.error(
       "Get Application Status Error:",
@@ -835,24 +784,17 @@ const getApplicationStatus = async (req, res) => {
   }
 };
 
-
 // ======================================================
 // GET CURRENT ATHLETE'S APPLICATIONS
 // ======================================================
 const getMyApplications = async (req, res) => {
   try {
-    // --------------------------------------------------
-    // CHECK LOGIN
-    // --------------------------------------------------
     if (!req.user) {
       return res.status(401).json({
         message: "Authentication required"
       });
     }
 
-    // --------------------------------------------------
-    // ONLY ATHLETE
-    // --------------------------------------------------
     if (req.user.role !== "athlete") {
       return res.status(403).json({
         message:
@@ -860,7 +802,8 @@ const getMyApplications = async (req, res) => {
       });
     }
 
-    const athleteId = req.user._id || req.user.id;
+    const athleteId =
+      req.user._id || req.user.id;
 
     if (!athleteId) {
       return res.status(401).json({
@@ -869,9 +812,6 @@ const getMyApplications = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // GET APPLICATIONS
-    // --------------------------------------------------
     const applications =
       await OpportunityApplication.find({
         athlete: athleteId
@@ -880,7 +820,8 @@ const getMyApplications = async (req, res) => {
           path: "opportunity",
           populate: {
             path: "academy",
-            select: "name email role profilePic"
+            select:
+              "name email role profilePic"
           }
         })
         .sort({
@@ -890,7 +831,6 @@ const getMyApplications = async (req, res) => {
     return res.status(200).json({
       applications
     });
-
   } catch (error) {
     console.error(
       "Get My Applications Error:",
@@ -904,10 +844,17 @@ const getMyApplications = async (req, res) => {
     });
   }
 };
+
 // ======================================================
 // GET APPLICANTS FOR ACADEMY EVENT
 // ======================================================
-const getOpportunityApplicants = async (req, res) => {
+// ======================================================
+// GET APPLICANTS FOR ACADEMY EVENT
+// ======================================================
+const getOpportunityApplicants = async (
+  req,
+  res
+) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -917,11 +864,14 @@ const getOpportunityApplicants = async (req, res) => {
 
     if (req.user.role !== "academy") {
       return res.status(403).json({
-        message: "Only academies can view applicants"
+        message:
+          "Only academies can view applicants"
       });
     }
 
-    const academyId = req.user._id || req.user.id;
+    const academyId =
+      req.user._id || req.user.id;
+
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -930,7 +880,8 @@ const getOpportunityApplicants = async (req, res) => {
       });
     }
 
-    const opportunity = await Opportunity.findById(id);
+    const opportunity =
+      await Opportunity.findById(id);
 
     if (!opportunity) {
       return res.status(404).json({
@@ -938,7 +889,9 @@ const getOpportunityApplicants = async (req, res) => {
       });
     }
 
-    // Only event owner can see applicants
+    // --------------------------------------------------
+    // ONLY EVENT OWNER CAN SEE APPLICANTS
+    // --------------------------------------------------
     if (
       opportunity.academy.toString() !==
       academyId.toString()
@@ -949,13 +902,16 @@ const getOpportunityApplicants = async (req, res) => {
       });
     }
 
+    // --------------------------------------------------
+    // GET APPLICATIONS
+    // --------------------------------------------------
     const applications =
       await OpportunityApplication.find({
         opportunity: opportunity._id
       })
         .populate(
           "athlete",
-          "name email role profilePic sport position experience achievements skills"
+          "name email role profilePic"
         )
         .populate(
           "opportunity",
@@ -965,10 +921,34 @@ const getOpportunityApplicants = async (req, res) => {
           createdAt: -1
         });
 
-    return res.status(200).json({
-      applications
-    });
+    // --------------------------------------------------
+    // GET ACTUAL ATHLETE PROFILE FOR EACH USER
+    // --------------------------------------------------
+    const applicationsWithAthleteProfile =
+      await Promise.all(
+        applications.map(async (application) => {
+          const athleteProfile =
+            await Athlete.findOne({
+              user: application.athlete?._id
+            }).select(
+              "_id user sport position experience achievements skills bio height weight address dateOfBirth gender phone socialLinks isAvailable"
+            );
 
+          return {
+            ...application.toObject(),
+
+            athleteProfile
+          };
+        })
+      );
+
+    // --------------------------------------------------
+    // RESPONSE
+    // --------------------------------------------------
+    return res.status(200).json({
+      applications:
+        applicationsWithAthleteProfile
+    });
   } catch (error) {
     console.error(
       "Get Opportunity Applicants Error:",
@@ -982,12 +962,14 @@ const getOpportunityApplicants = async (req, res) => {
   }
 };
 
-
 // ======================================================
 // UPDATE APPLICATION STATUS
 // ACCEPT / REJECT ATHLETE
 // ======================================================
-const updateApplicationStatus = async (req, res) => {
+const updateApplicationStatus = async (
+  req,
+  res
+) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -1002,15 +984,21 @@ const updateApplicationStatus = async (req, res) => {
       });
     }
 
-    const academyId = req.user._id || req.user.id;
-    const { applicationId } = req.params;
+    const academyId =
+      req.user._id || req.user.id;
+
+    const { applicationId } =
+      req.params;
+
     const { status } = req.body;
 
     // --------------------------------------------------
     // VALIDATE APPLICATION ID
     // --------------------------------------------------
     if (
-      !mongoose.Types.ObjectId.isValid(applicationId)
+      !mongoose.Types.ObjectId.isValid(
+        applicationId
+      )
     ) {
       return res.status(400).json({
         message: "Invalid application ID"
@@ -1020,7 +1008,11 @@ const updateApplicationStatus = async (req, res) => {
     // --------------------------------------------------
     // VALIDATE STATUS
     // --------------------------------------------------
-    if (!["accepted", "rejected"].includes(status)) {
+    if (
+      !["accepted", "rejected"].includes(
+        status
+      )
+    ) {
       return res.status(400).json({
         message:
           "Status must be either accepted or rejected"
@@ -1082,7 +1074,6 @@ const updateApplicationStatus = async (req, res) => {
         `Application ${status} successfully`,
       application
     });
-
   } catch (error) {
     console.error(
       "Update Application Status Error:",
@@ -1096,7 +1087,6 @@ const updateApplicationStatus = async (req, res) => {
     });
   }
 };
-
 
 // ======================================================
 // EXPORTS
@@ -1116,4 +1106,3 @@ module.exports = {
   getOpportunityApplicants,
   updateApplicationStatus
 };
-

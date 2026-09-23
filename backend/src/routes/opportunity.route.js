@@ -1,144 +1,141 @@
-
 const express = require("express");
+const multer = require("multer");
 
 const router = express.Router();
 
 const authMiddleware = require("../middleware/auth.middleware");
 
 const {
-  // Opportunity / Event
   createOpportunity,
   getAllOpportunities,
   getAcademyOpportunities,
   getOpportunityById,
   updateOpportunity,
   deleteOpportunity,
-
-  // Athlete Applications
   applyToOpportunity,
   getApplicationStatus,
   getMyApplications,
-
-  // Academy Applications
   getOpportunityApplicants,
   updateApplicationStatus
 } = require("../controllers/opportunity.controller");
 
+// ======================================================
+// MULTER CONFIG
+// Resume frontend se PDF ke form me memory me receive hoga
+// ======================================================
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5 MB
+  },
+
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype !== "application/pdf") {
+      return cb(
+        new Error("Only PDF resume files are allowed.")
+      );
+    }
+
+    cb(null, true);
+  }
+});
 
 // ======================================================
-// ATHLETE / GENERAL
+// GET ALL ACTIVE OPPORTUNITIES
 // ======================================================
 
-// Get all active events
 router.get(
   "/",
   authMiddleware,
   getAllOpportunities
 );
 
-
 // ======================================================
-// ATHLETE APPLICATIONS
-// IMPORTANT:
-// These routes MUST come before /:id
+// GET CURRENT ATHLETE APPLICATIONS
 // ======================================================
 
-// Get all applications of logged-in athlete
 router.get(
   "/applications/mine",
   authMiddleware,
   getMyApplications
 );
 
-
 // ======================================================
-// ACADEMY
+// GET ACADEMY OPPORTUNITIES
 // ======================================================
 
-// Get academy's own events
 router.get(
   "/academy",
   authMiddleware,
   getAcademyOpportunities
 );
 
-
 // ======================================================
-// CREATE EVENT
+// CREATE OPPORTUNITY
 // ======================================================
 
-// Academy creates event
 router.post(
   "/",
   authMiddleware,
   createOpportunity
 );
 
-
 // ======================================================
-// APPLICATION STATUS
+// GET APPLICATION STATUS
 // ======================================================
 
-// Athlete checks whether they applied to an event
 router.get(
   "/:id/application-status",
   authMiddleware,
   getApplicationStatus
 );
 
-
 // ======================================================
-// APPLY TO EVENT
+// APPLY TO OPPORTUNITY
+// Resume PDF required
 // ======================================================
 
-// Athlete applies to event
 router.post(
   "/:id/apply",
   authMiddleware,
+  upload.single("resume"),
   applyToOpportunity
 );
 
-
 // ======================================================
-// ACADEMY APPLICANTS
+// GET OPPORTUNITY APPLICANTS
 // ======================================================
 
-// Academy gets applicants for its event
 router.get(
   "/:id/applicants",
   authMiddleware,
   getOpportunityApplicants
 );
 
-
 // ======================================================
 // UPDATE APPLICATION STATUS
 // ======================================================
 
-// Academy accepts/rejects an athlete
 router.patch(
   "/applications/:applicationId/status",
   authMiddleware,
   updateApplicationStatus
 );
 
-
 // ======================================================
-// SINGLE EVENT
-// IMPORTANT:
-// Keep /:id AFTER all specific routes
+// GET SINGLE OPPORTUNITY
 // ======================================================
 
-// Get single event
 router.get(
   "/:id",
   authMiddleware,
   getOpportunityById
 );
 
-
 // ======================================================
-// UPDATE EVENT
+// UPDATE OPPORTUNITY
 // ======================================================
 
 router.put(
@@ -147,9 +144,8 @@ router.put(
   updateOpportunity
 );
 
-
 // ======================================================
-// DELETE EVENT
+// DELETE OPPORTUNITY
 // ======================================================
 
 router.delete(
@@ -158,9 +154,34 @@ router.delete(
   deleteOpportunity
 );
 
+// ======================================================
+// MULTER ERROR HANDLER
+// ======================================================
 
-// ======================================================
-// EXPORT
-// ======================================================
+router.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        message: "Resume file must be smaller than 5 MB."
+      });
+    }
+
+    return res.status(400).json({
+      message: error.message
+    });
+  }
+
+  if (
+    error &&
+    error.message ===
+      "Only PDF resume files are allowed."
+  ) {
+    return res.status(400).json({
+      message: error.message
+    });
+  }
+
+  next(error);
+});
 
 module.exports = router;

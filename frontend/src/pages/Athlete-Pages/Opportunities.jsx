@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -9,7 +10,10 @@ import {
   FiArrowRight,
   FiClock,
   FiCheck,
-  FiLoader
+  FiLoader,
+  FiUpload,
+  FiX,
+  FiFileText
 } from "react-icons/fi";
 
 import AthleteSidebar from "../../components/AthleteSidebar";
@@ -27,10 +31,22 @@ const Opportunities = () => {
   const [opportunities, setOpportunities] = useState([]);
   const [applicationStatus, setApplicationStatus] = useState({});
 
+  const [athleteProfile, setAthleteProfile] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [applyingId, setApplyingId] = useState(null);
 
   const [error, setError] = useState("");
+
+  // ======================================================
+  // APPLY MODAL STATES
+  // ======================================================
+
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [selectedOpportunity, setSelectedOpportunity] =
+    useState(null);
+
+  const [resumeFile, setResumeFile] = useState(null);
 
   // ======================================================
   // GET TOKEN
@@ -38,6 +54,48 @@ const Opportunities = () => {
 
   const getToken = () => {
     return localStorage.getItem("token");
+  };
+
+  // ======================================================
+  // FETCH ATHLETE PROFILE
+  // ======================================================
+
+  const fetchAthleteProfile = async () => {
+    try {
+      const token = getToken();
+
+      if (!token) {
+        return null;
+      }
+
+      const response = await axios.get(
+        `${API}/athletes/get-profile`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const profile =
+        response.data?.athlete ||
+        response.data?.profile ||
+        response.data;
+
+      setAthleteProfile(profile);
+
+      return profile;
+    } catch (err) {
+      console.error(
+        "Fetch Athlete Profile Error:",
+        err
+      );
+
+      throw new Error(
+        err.response?.data?.message ||
+          "Failed to load athlete profile."
+      );
+    }
   };
 
   // ======================================================
@@ -52,21 +110,30 @@ const Opportunities = () => {
       const token = getToken();
 
       if (!token) {
-        setError("Please login to view opportunities.");
+        setError(
+          "Please login to view opportunities."
+        );
         return;
       }
 
-      const response = await axios.get(`${API}/opportunities`, {
-        headers: {
-          Authorization: `Bearer ${token}`
+      const response = await axios.get(
+        `${API}/opportunities`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
-      });
+      );
 
-      const events = response.data?.opportunities || [];
+      const events =
+        response.data?.opportunities || [];
 
       setOpportunities(events);
     } catch (err) {
-      console.error("Fetch Opportunities Error:", err);
+      console.error(
+        "Fetch Opportunities Error:",
+        err
+      );
 
       setError(
         err.response?.data?.message ||
@@ -130,13 +197,94 @@ const Opportunities = () => {
   useEffect(() => {
     fetchOpportunities();
     fetchMyApplications();
+    fetchAthleteProfile();
   }, []);
 
   // ======================================================
-  // APPLY TO OPPORTUNITY
+  // OPEN APPLY MODAL
   // ======================================================
 
-  const handleApply = async (eventId) => {
+  const handleApply = (event) => {
+    const status =
+      applicationStatus[event._id];
+
+    if (
+      status === "pending" ||
+      status === "accepted"
+    ) {
+      return;
+    }
+
+    setSelectedOpportunity(event);
+    setResumeFile(null);
+    setShowApplyModal(true);
+  };
+
+  // ======================================================
+  // HANDLE RESUME FILE
+  // ======================================================
+
+  const handleResumeChange = (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) {
+      setResumeFile(null);
+      return;
+    }
+
+    // ----------------------------------------------------
+    // PDF CHECK
+    // ----------------------------------------------------
+
+    if (
+      file.type !== "application/pdf" &&
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
+      alert("Please upload a PDF resume.");
+
+      e.target.value = "";
+      setResumeFile(null);
+
+      return;
+    }
+
+    // ----------------------------------------------------
+    // SIZE CHECK - 5 MB
+    // ----------------------------------------------------
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(
+        "Resume must be smaller than 5 MB."
+      );
+
+      e.target.value = "";
+      setResumeFile(null);
+
+      return;
+    }
+
+    setResumeFile(file);
+  };
+
+  // ======================================================
+  // CLOSE APPLY MODAL
+  // ======================================================
+
+  const closeApplyModal = () => {
+    if (applyingId) {
+      return;
+    }
+
+    setShowApplyModal(false);
+    setSelectedOpportunity(null);
+    setResumeFile(null);
+  };
+
+  // ======================================================
+  // SUBMIT APPLICATION
+  // ======================================================
+
+  const handleSubmitApplication = async () => {
     try {
       const token = getToken();
 
@@ -145,11 +293,68 @@ const Opportunities = () => {
         return;
       }
 
-      setApplyingId(eventId);
+      if (!selectedOpportunity) {
+        return;
+      }
+
+      if (!resumeFile) {
+        alert("Please upload your resume.");
+        return;
+      }
+
+      // --------------------------------------------------
+      // PDF CHECK
+      // --------------------------------------------------
+
+      if (
+        resumeFile.type !== "application/pdf" &&
+        !resumeFile.name
+          .toLowerCase()
+          .endsWith(".pdf")
+      ) {
+        alert(
+          "Only PDF resume files are allowed."
+        );
+        return;
+      }
+
+      // --------------------------------------------------
+      // SIZE CHECK
+      // --------------------------------------------------
+
+      if (
+        resumeFile.size >
+        5 * 1024 * 1024
+      ) {
+        alert(
+          "Resume must be smaller than 5 MB."
+        );
+        return;
+      }
+
+      setApplyingId(
+        selectedOpportunity._id
+      );
+
+      // --------------------------------------------------
+      // CREATE FORM DATA
+      // --------------------------------------------------
+
+      const formData = new FormData();
+
+      formData.append(
+        "resume",
+        resumeFile,
+        resumeFile.name
+      );
+
+      // --------------------------------------------------
+      // SUBMIT APPLICATION
+      // --------------------------------------------------
 
       const response = await axios.post(
-        `${API}/opportunities/${eventId}/apply`,
-        {},
+        `${API}/opportunities/${selectedOpportunity._id}/apply`,
+        formData,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -157,32 +362,58 @@ const Opportunities = () => {
         }
       );
 
+      // --------------------------------------------------
+      // UPDATE STATUS
+      // --------------------------------------------------
+
       const application =
         response.data?.application;
 
       setApplicationStatus((prev) => ({
         ...prev,
-        [eventId]:
-          application?.status || "pending"
+        [selectedOpportunity._id]:
+          application?.status ||
+          "pending"
       }));
+
+      // --------------------------------------------------
+      // CLOSE MODAL
+      // --------------------------------------------------
+
+      setShowApplyModal(false);
+      setSelectedOpportunity(null);
+      setResumeFile(null);
 
       alert(
         response.data?.message ||
           "Application submitted successfully."
       );
-    } catch (err) {
-      console.error("Apply Error:", err);
 
-      // Backend says already applied
+    } catch (err) {
+      console.error(
+        "Submit Application Error:",
+        err
+      );
+
+      // --------------------------------------------------
+      // ALREADY APPLIED
+      // --------------------------------------------------
+
       if (err.response?.status === 409) {
         setApplicationStatus((prev) => ({
           ...prev,
-          [eventId]: "pending"
+          [selectedOpportunity?._id]:
+            "pending"
         }));
+
+        setShowApplyModal(false);
+        setSelectedOpportunity(null);
+        setResumeFile(null);
       }
 
       alert(
         err.response?.data?.message ||
+          err.message ||
           "Failed to submit application."
       );
     } finally {
@@ -309,7 +540,7 @@ const Opportunities = () => {
       <button
         className="athlyx-op-btn"
         onClick={() =>
-          handleApply(event._id)
+          handleApply(event)
         }
         disabled={isApplying}
       >
@@ -339,6 +570,7 @@ const Opportunities = () => {
     <div className="athlyx-op-page">
 
       {/* EXISTING SIDEBAR - NOT MODIFIED */}
+
       <AthleteSidebar />
 
       <main className="athlyx-op-main">
@@ -453,6 +685,7 @@ const Opportunities = () => {
                 onClick={() => {
                   fetchOpportunities();
                   fetchMyApplications();
+                  fetchAthleteProfile();
                 }}
               >
                 Try Again
@@ -579,7 +812,9 @@ const Opportunities = () => {
                         <FiCalendar size={16} />
 
                         <span>
-                          {formatDate(event.date)}
+                          {formatDate(
+                            event.date
+                          )}
                         </span>
 
                       </div>
@@ -611,8 +846,10 @@ const Opportunities = () => {
                     ------------------------------------------ */}
 
                     <p className="athlyx-op-description">
+
                       {event.description ||
                         "No description available."}
+
                     </p>
 
                     {/* ------------------------------------------
@@ -620,6 +857,7 @@ const Opportunities = () => {
                     ------------------------------------------ */}
 
                     {event.eligibility && (
+
                       <div className="athlyx-op-eligibility">
 
                         <strong>
@@ -631,6 +869,7 @@ const Opportunities = () => {
                         </span>
 
                       </div>
+
                     )}
 
                     {/* ------------------------------------------
@@ -657,6 +896,201 @@ const Opportunities = () => {
         </div>
 
       </main>
+
+      {/* ======================================================
+          APPLY MODAL
+      ====================================================== */}
+
+      {showApplyModal &&
+        selectedOpportunity && (
+
+          <div className="athlyx-op-modal-overlay">
+
+            <div className="athlyx-op-modal">
+
+              {/* ==================================================
+                  MODAL HEADER
+              ================================================== */}
+
+              <div className="athlyx-op-modal-header">
+
+                <div>
+
+                  <span className="athlyx-op-eyebrow">
+                    APPLY FOR OPPORTUNITY
+                  </span>
+
+                  <h2>
+                    {selectedOpportunity.title}
+                  </h2>
+
+                </div>
+
+                <button
+                  type="button"
+                  className="athlyx-op-modal-close"
+                  onClick={closeApplyModal}
+                  disabled={!!applyingId}
+                >
+                  <FiX size={20} />
+                </button>
+
+              </div>
+
+              {/* ==================================================
+                  MODAL BODY
+              ================================================== */}
+
+              <div className="athlyx-op-modal-body">
+
+                <p className="athlyx-op-modal-text">
+                  Upload your resume to apply
+                  for this opportunity.
+                </p>
+
+                <div className="athlyx-op-modal-opportunity">
+
+                  <strong>
+                    {selectedOpportunity.title}
+                  </strong>
+
+                  <span>
+                    {selectedOpportunity
+                      .academy?.name ||
+                      "Academy"}
+                  </span>
+
+                </div>
+
+                {/* ==================================================
+                    RESUME UPLOAD
+                ================================================== */}
+
+                <label className="athlyx-op-resume-upload">
+
+                  <input
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={handleResumeChange}
+                    disabled={!!applyingId}
+                  />
+
+                  <FiUpload size={22} />
+
+                  <strong>
+                    {resumeFile
+                      ? "Resume selected"
+                      : "Upload your resume"}
+                  </strong>
+
+                  <span>
+                    PDF only • Maximum 5 MB
+                  </span>
+
+                </label>
+
+                {/* ==================================================
+                    SELECTED FILE
+                ================================================== */}
+
+                {resumeFile && (
+
+                  <div className="athlyx-op-selected-file">
+
+                    <div className="athlyx-op-selected-file-info">
+
+                      <FiFileText size={20} />
+
+                      <div>
+
+                        <strong>
+                          {resumeFile.name}
+                        </strong>
+
+                        <span>
+                          {(
+                            resumeFile.size /
+                            (1024 * 1024)
+                          ).toFixed(2)}{" "}
+                          MB
+                        </span>
+
+                      </div>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setResumeFile(null)
+                      }
+                      disabled={!!applyingId}
+                    >
+                      <FiX size={16} />
+                    </button>
+
+                  </div>
+
+                )}
+
+              </div>
+
+              {/* ==================================================
+                  MODAL FOOTER
+              ================================================== */}
+
+              <div className="athlyx-op-modal-footer">
+
+                <button
+                  type="button"
+                  className="athlyx-op-modal-cancel"
+                  onClick={closeApplyModal}
+                  disabled={!!applyingId}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className="athlyx-op-btn"
+                  onClick={
+                    handleSubmitApplication
+                  }
+                  disabled={
+                    !resumeFile ||
+                    !!applyingId
+                  }
+                >
+
+                  {applyingId ? (
+
+                    <>
+                      <FiLoader
+                        size={16}
+                        className="athlyx-op-loading-icon"
+                      />
+
+                      Submitting...
+                    </>
+
+                  ) : (
+
+                    <>
+                      Submit Application
+                      <FiArrowRight size={16} />
+                    </>
+
+                  )}
+
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
 
     </div>
   );
