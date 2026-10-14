@@ -3,8 +3,16 @@ const User = require("../models/user.model");
 const Athlete = require("../models/athlete.model");
 const Academy = require("../models/academy.model");
 
+
+// ======================================================
+// FIELDS
+// ======================================================
+
 const coachFields =
     "name email role profilePic sport specialization experience organization";
+
+const scoutFields =
+    "name email role profilePic";
 
 const athleteFields =
     "name email role profilePic";
@@ -21,6 +29,7 @@ function populateConnection(query) {
     return query
         .populate("coach", coachFields)
         .populate("academy", academyFields)
+        .populate("scout", scoutFields)
         .populate("athlete", athleteFields);
 }
 
@@ -28,32 +37,38 @@ function populateConnection(query) {
 // ======================================================
 // HELPER: RESOLVE ATHLETE USER
 //
-// Public Athlete Profile uses Athlete document _id.
-// Some other APIs may use User _id.
-//
-// This helper supports BOTH.
+// Supports:
+// 1. Athlete User _id
+// 2. Athlete Profile _id
 // ======================================================
 
 async function resolveAthleteUser(athleteId) {
+
     // ------------------------------------------
-    // First try as User ID
+    // First try User ID
     // ------------------------------------------
 
-    let athleteUser = await User.findById(athleteId).select(
+    let athleteUser = await User.findById(
+        athleteId
+    ).select(
         "_id name email role profilePic"
     );
 
-    if (athleteUser && athleteUser.role === "athlete") {
+    if (
+        athleteUser &&
+        athleteUser.role === "athlete"
+    ) {
         return athleteUser;
     }
 
     // ------------------------------------------
-    // If not User ID, try Athlete profile ID
+    // Then try Athlete Profile ID
     // ------------------------------------------
 
-    const athleteProfile = await Athlete.findById(
-        athleteId
-    ).select("user");
+    const athleteProfile =
+        await Athlete.findById(
+            athleteId
+        ).select("user");
 
     if (!athleteProfile) {
         return null;
@@ -65,7 +80,10 @@ async function resolveAthleteUser(athleteId) {
         "_id name email role profilePic"
     );
 
-    if (!athleteUser || athleteUser.role !== "athlete") {
+    if (
+        !athleteUser ||
+        athleteUser.role !== "athlete"
+    ) {
         return null;
     }
 
@@ -80,11 +98,8 @@ async function resolveAthleteUser(athleteId) {
 async function sendConnectionRequest(req, res) {
     try {
         const coachId = req.user.id;
-        const athleteProfileId = req.params.athleteId;
-
-        // ------------------------------------------
-        // ONLY COACH
-        // ------------------------------------------
+        const athleteProfileId =
+            req.params.athleteId;
 
         if (req.user.role !== "coach") {
             return res.status(403).json({
@@ -93,43 +108,50 @@ async function sendConnectionRequest(req, res) {
             });
         }
 
-        const coach = await User.findById(coachId);
+        const coach = await User.findById(
+            coachId
+        );
 
-        if (!coach || coach.role !== "coach") {
+        if (
+            !coach ||
+            coach.role !== "coach"
+        ) {
             return res.status(403).json({
-                message: "Coach account not found"
+                message:
+                    "Coach account not found"
             });
         }
 
-        // ------------------------------------------
-        // Athlete profile → Athlete user
-        // ------------------------------------------
-
-        const athlete = await Athlete.findById(
-            athleteProfileId
-        );
+        const athlete =
+            await Athlete.findById(
+                athleteProfileId
+            );
 
         if (!athlete) {
             return res.status(404).json({
-                message: "Athlete not found"
+                message:
+                    "Athlete not found"
             });
         }
 
-        const athleteUser = await User.findById(
-            athlete.user
-        );
+        const athleteUser =
+            await User.findById(
+                athlete.user
+            );
 
         if (
             !athleteUser ||
             athleteUser.role !== "athlete"
         ) {
             return res.status(404).json({
-                message: "Athlete user not found"
+                message:
+                    "Athlete user not found"
             });
         }
 
         if (
-            coachId === athleteUser._id.toString()
+            coachId ===
+            athleteUser._id.toString()
         ) {
             return res.status(400).json({
                 message:
@@ -137,17 +159,17 @@ async function sendConnectionRequest(req, res) {
             });
         }
 
-        // ------------------------------------------
-        // Existing connection
-        // ------------------------------------------
-
-        let connection = await Connection.findOne({
-            coach: coachId,
-            athlete: athleteUser._id
-        });
+        let connection =
+            await Connection.findOne({
+                coach: coachId,
+                athlete: athleteUser._id
+            });
 
         if (connection) {
-            if (connection.status === "pending") {
+
+            if (
+                connection.status === "pending"
+            ) {
                 return res.status(400).json({
                     message:
                         "Connection request already sent",
@@ -155,7 +177,9 @@ async function sendConnectionRequest(req, res) {
                 });
             }
 
-            if (connection.status === "accepted") {
+            if (
+                connection.status === "accepted"
+            ) {
                 return res.status(400).json({
                     message:
                         "You are already connected with this athlete",
@@ -167,8 +191,11 @@ async function sendConnectionRequest(req, res) {
                 connection.status === "rejected" ||
                 connection.status === "cancelled"
             ) {
-                connection.requestedBy = "coach";
-                connection.status = "pending";
+                connection.requestedBy =
+                    "coach";
+
+                connection.status =
+                    "pending";
 
                 await connection.save();
 
@@ -186,16 +213,13 @@ async function sendConnectionRequest(req, res) {
             }
         }
 
-        // ------------------------------------------
-        // Create new coach → athlete connection
-        // ------------------------------------------
-
-        connection = await Connection.create({
-            coach: coachId,
-            athlete: athleteUser._id,
-            requestedBy: "coach",
-            status: "pending"
-        });
+        connection =
+            await Connection.create({
+                coach: coachId,
+                athlete: athleteUser._id,
+                requestedBy: "coach",
+                status: "pending"
+            });
 
         return res.status(201).json({
             message:
@@ -208,6 +232,7 @@ async function sendConnectionRequest(req, res) {
                     )
                 )
         });
+
     } catch (error) {
         console.error(
             "Send connection request error:",
@@ -234,7 +259,10 @@ async function sendConnectionRequest(req, res) {
 // ATHLETE → COACH : SEND REQUEST
 // ======================================================
 
-async function sendAthleteConnectionRequest(req, res) {
+async function sendAthleteConnectionRequest(
+    req,
+    res
+) {
     try {
         const athleteId = req.user.id;
         const coachId = req.params.coachId;
@@ -246,9 +274,10 @@ async function sendAthleteConnectionRequest(req, res) {
             });
         }
 
-        const athlete = await User.findById(
-            athleteId
-        );
+        const athlete =
+            await User.findById(
+                athleteId
+            );
 
         if (
             !athlete ||
@@ -260,13 +289,18 @@ async function sendAthleteConnectionRequest(req, res) {
             });
         }
 
-        const coach = await User.findById(
-            coachId
-        );
+        const coach =
+            await User.findById(
+                coachId
+            );
 
-        if (!coach || coach.role !== "coach") {
+        if (
+            !coach ||
+            coach.role !== "coach"
+        ) {
             return res.status(404).json({
-                message: "Coach not found"
+                message:
+                    "Coach not found"
             });
         }
 
@@ -277,13 +311,17 @@ async function sendAthleteConnectionRequest(req, res) {
             });
         }
 
-        let connection = await Connection.findOne({
-            coach: coachId,
-            athlete: athleteId
-        });
+        let connection =
+            await Connection.findOne({
+                coach: coachId,
+                athlete: athleteId
+            });
 
         if (connection) {
-            if (connection.status === "pending") {
+
+            if (
+                connection.status === "pending"
+            ) {
                 return res.status(400).json({
                     message:
                         "Connection request already sent",
@@ -291,7 +329,9 @@ async function sendAthleteConnectionRequest(req, res) {
                 });
             }
 
-            if (connection.status === "accepted") {
+            if (
+                connection.status === "accepted"
+            ) {
                 return res.status(400).json({
                     message:
                         "You are already connected with this coach",
@@ -303,8 +343,11 @@ async function sendAthleteConnectionRequest(req, res) {
                 connection.status === "rejected" ||
                 connection.status === "cancelled"
             ) {
-                connection.requestedBy = "athlete";
-                connection.status = "pending";
+                connection.requestedBy =
+                    "athlete";
+
+                connection.status =
+                    "pending";
 
                 await connection.save();
 
@@ -322,12 +365,13 @@ async function sendAthleteConnectionRequest(req, res) {
             }
         }
 
-        connection = await Connection.create({
-            coach: coachId,
-            athlete: athleteId,
-            requestedBy: "athlete",
-            status: "pending"
-        });
+        connection =
+            await Connection.create({
+                coach: coachId,
+                athlete: athleteId,
+                requestedBy: "athlete",
+                status: "pending"
+            });
 
         return res.status(201).json({
             message:
@@ -340,6 +384,7 @@ async function sendAthleteConnectionRequest(req, res) {
                     )
                 )
         });
+
     } catch (error) {
         console.error(
             "Send athlete connection request error:",
@@ -366,7 +411,10 @@ async function sendAthleteConnectionRequest(req, res) {
 // COACH : CHECK ATHLETE CONNECTION STATUS
 // ======================================================
 
-async function getCoachConnectionStatus(req, res) {
+async function getCoachConnectionStatus(
+    req,
+    res
+) {
     try {
         const coachId = req.user.id;
         const athleteProfileId =
@@ -386,7 +434,8 @@ async function getCoachConnectionStatus(req, res) {
 
         if (!athlete) {
             return res.status(404).json({
-                message: "Athlete not found"
+                message:
+                    "Athlete not found"
             });
         }
 
@@ -407,8 +456,10 @@ async function getCoachConnectionStatus(req, res) {
             connected:
                 connection.status === "accepted",
             status: connection.status,
-            connectionId: connection._id
+            connectionId:
+                connection._id
         });
+
     } catch (error) {
         console.error(
             "Get coach connection status error:",
@@ -428,7 +479,10 @@ async function getCoachConnectionStatus(req, res) {
 // ATHLETE : CHECK COACH CONNECTION STATUS
 // ======================================================
 
-async function getAthleteConnectionStatus(req, res) {
+async function getAthleteConnectionStatus(
+    req,
+    res
+) {
     try {
         const athleteId = req.user.id;
         const coachId = req.params.coachId;
@@ -440,13 +494,18 @@ async function getAthleteConnectionStatus(req, res) {
             });
         }
 
-        const coach = await User.findById(
-            coachId
-        );
+        const coach =
+            await User.findById(
+                coachId
+            );
 
-        if (!coach || coach.role !== "coach") {
+        if (
+            !coach ||
+            coach.role !== "coach"
+        ) {
             return res.status(404).json({
-                message: "Coach not found"
+                message:
+                    "Coach not found"
             });
         }
 
@@ -467,8 +526,10 @@ async function getAthleteConnectionStatus(req, res) {
             connected:
                 connection.status === "accepted",
             status: connection.status,
-            connectionId: connection._id
+            connectionId:
+                connection._id
         });
+
     } catch (error) {
         console.error(
             "Get athlete connection status error:",
@@ -488,7 +549,10 @@ async function getAthleteConnectionStatus(req, res) {
 // ATHLETE : GET INCOMING COACH REQUESTS
 // ======================================================
 
-async function getAthleteConnectionRequests(req, res) {
+async function getAthleteConnectionRequests(
+    req,
+    res
+) {
     try {
         const athleteId = req.user.id;
 
@@ -517,6 +581,7 @@ async function getAthleteConnectionRequests(req, res) {
             count: requests.length,
             requests
         });
+
     } catch (error) {
         console.error(
             "Get athlete connection requests error:",
@@ -536,7 +601,10 @@ async function getAthleteConnectionRequests(req, res) {
 // COACH : GET INCOMING ATHLETE REQUESTS
 // ======================================================
 
-async function getCoachConnectionRequests(req, res) {
+async function getCoachConnectionRequests(
+    req,
+    res
+) {
     try {
         const coachId = req.user.id;
 
@@ -565,6 +633,7 @@ async function getCoachConnectionRequests(req, res) {
             count: requests.length,
             requests
         });
+
     } catch (error) {
         console.error(
             "Get coach connection requests error:",
@@ -584,14 +653,13 @@ async function getCoachConnectionRequests(req, res) {
 // ACADEMY → ATHLETE : SEND REQUEST
 // ======================================================
 
-async function sendAcademyConnectionRequest(req, res) {
+async function sendAcademyConnectionRequest(
+    req,
+    res
+) {
     try {
         const academyId = req.user.id;
         const athleteId = req.params.athleteId;
-
-        // ------------------------------------------
-        // ROLE CHECK
-        // ------------------------------------------
 
         if (req.user.role !== "academy") {
             return res.status(403).json({
@@ -600,13 +668,10 @@ async function sendAcademyConnectionRequest(req, res) {
             });
         }
 
-        // ------------------------------------------
-        // CHECK ACADEMY
-        // ------------------------------------------
-
-        const academy = await User.findById(
-            academyId
-        );
+        const academy =
+            await User.findById(
+                academyId
+            );
 
         if (
             !academy ||
@@ -617,14 +682,6 @@ async function sendAcademyConnectionRequest(req, res) {
                     "Academy account not found"
             });
         }
-
-        // ------------------------------------------
-        // RESOLVE ATHLETE
-        //
-        // athleteId may be:
-        // 1. Athlete profile _id
-        // 2. Athlete User _id
-        // ------------------------------------------
 
         const athlete =
             await resolveAthleteUser(
@@ -641,10 +698,6 @@ async function sendAcademyConnectionRequest(req, res) {
         const athleteUserId =
             athlete._id.toString();
 
-        // ------------------------------------------
-        // SELF CHECK
-        // ------------------------------------------
-
         if (
             academyId === athleteUserId
         ) {
@@ -654,21 +707,14 @@ async function sendAcademyConnectionRequest(req, res) {
             });
         }
 
-        // ------------------------------------------
-        // FIND EXISTING CONNECTION
-        // ------------------------------------------
-
         let connection =
             await Connection.findOne({
                 academy: academyId,
                 athlete: athlete._id
             });
 
-        // ------------------------------------------
-        // EXISTING CONNECTION
-        // ------------------------------------------
-
         if (connection) {
+
             if (
                 connection.status === "pending"
             ) {
@@ -715,10 +761,6 @@ async function sendAcademyConnectionRequest(req, res) {
             }
         }
 
-        // ------------------------------------------
-        // CREATE ACADEMY → ATHLETE CONNECTION
-        // ------------------------------------------
-
         connection =
             await Connection.create({
                 academy: academyId,
@@ -738,6 +780,7 @@ async function sendAcademyConnectionRequest(req, res) {
                     )
                 )
         });
+
     } catch (error) {
         console.error(
             "Send academy connection request error:",
@@ -770,7 +813,8 @@ async function sendAthleteAcademyConnectionRequest(
 ) {
     try {
         const athleteId = req.user.id;
-        const academyId = req.params.academyId;
+        const academyId =
+            req.params.academyId;
 
         if (req.user.role !== "athlete") {
             return res.status(403).json({
@@ -779,16 +823,18 @@ async function sendAthleteAcademyConnectionRequest(
             });
         }
 
-        const academy = await User.findById(
-            academyId
-        );
+        const academy =
+            await User.findById(
+                academyId
+            );
 
         if (
             !academy ||
             academy.role !== "academy"
         ) {
             return res.status(404).json({
-                message: "Academy not found"
+                message:
+                    "Academy not found"
             });
         }
 
@@ -806,6 +852,7 @@ async function sendAthleteAcademyConnectionRequest(
             });
 
         if (connection) {
+
             if (
                 connection.status === "pending"
             ) {
@@ -871,6 +918,7 @@ async function sendAthleteAcademyConnectionRequest(
                     )
                 )
         });
+
     } catch (error) {
         console.error(
             "Send athlete academy connection request error:",
@@ -903,7 +951,8 @@ async function getAcademyConnectionStatus(
 ) {
     try {
         const academyId = req.user.id;
-        const athleteId = req.params.athleteId;
+        const athleteId =
+            req.params.athleteId;
 
         if (req.user.role !== "academy") {
             return res.status(403).json({
@@ -911,10 +960,6 @@ async function getAcademyConnectionStatus(
                     "Only academies can check connection status"
             });
         }
-
-        // ------------------------------------------
-        // Resolve Athlete Profile/User ID
-        // ------------------------------------------
 
         const athlete =
             await resolveAthleteUser(
@@ -927,10 +972,6 @@ async function getAcademyConnectionStatus(
                     "Athlete not found"
             });
         }
-
-        // ------------------------------------------
-        // Find connection
-        // ------------------------------------------
 
         const connection =
             await Connection.findOne({
@@ -952,6 +993,7 @@ async function getAcademyConnectionStatus(
             connectionId:
                 connection._id
         });
+
     } catch (error) {
         console.error(
             "Get academy athlete connection status error:",
@@ -977,7 +1019,8 @@ async function getAthleteAcademyConnectionStatus(
 ) {
     try {
         const athleteId = req.user.id;
-        const academyId = req.params.academyId;
+        const academyId =
+            req.params.academyId;
 
         if (req.user.role !== "athlete") {
             return res.status(403).json({
@@ -996,7 +1039,8 @@ async function getAthleteAcademyConnectionStatus(
             academy.role !== "academy"
         ) {
             return res.status(404).json({
-                message: "Academy not found"
+                message:
+                    "Academy not found"
             });
         }
 
@@ -1020,6 +1064,7 @@ async function getAthleteAcademyConnectionStatus(
             connectionId:
                 connection._id
         });
+
     } catch (error) {
         console.error(
             "Get athlete academy connection status error:",
@@ -1054,9 +1099,10 @@ async function sendAcademyCoachConnectionRequest(
             });
         }
 
-        const academy = await User.findById(
-            academyId
-        );
+        const academy =
+            await User.findById(
+                academyId
+            );
 
         if (
             !academy ||
@@ -1068,16 +1114,18 @@ async function sendAcademyCoachConnectionRequest(
             });
         }
 
-        const coach = await User.findById(
-            coachId
-        );
+        const coach =
+            await User.findById(
+                coachId
+            );
 
         if (
             !coach ||
             coach.role !== "coach"
         ) {
             return res.status(404).json({
-                message: "Coach not found"
+                message:
+                    "Coach not found"
             });
         }
 
@@ -1095,6 +1143,7 @@ async function sendAcademyCoachConnectionRequest(
             });
 
         if (connection) {
+
             if (
                 connection.status === "pending"
             ) {
@@ -1160,6 +1209,7 @@ async function sendAcademyCoachConnectionRequest(
                     )
                 )
         });
+
     } catch (error) {
         console.error(
             "Send academy coach connection request error:",
@@ -1192,7 +1242,8 @@ async function sendCoachAcademyConnectionRequest(
 ) {
     try {
         const coachId = req.user.id;
-        const academyId = req.params.academyId;
+        const academyId =
+            req.params.academyId;
 
         if (req.user.role !== "coach") {
             return res.status(403).json({
@@ -1211,7 +1262,8 @@ async function sendCoachAcademyConnectionRequest(
             academy.role !== "academy"
         ) {
             return res.status(404).json({
-                message: "Academy not found"
+                message:
+                    "Academy not found"
             });
         }
 
@@ -1229,6 +1281,7 @@ async function sendCoachAcademyConnectionRequest(
             });
 
         if (connection) {
+
             if (
                 connection.status === "pending"
             ) {
@@ -1294,6 +1347,7 @@ async function sendCoachAcademyConnectionRequest(
                     )
                 )
         });
+
     } catch (error) {
         console.error(
             "Send coach academy connection request error:",
@@ -1326,7 +1380,8 @@ async function getAcademyCoachConnectionStatus(
 ) {
     try {
         const academyId = req.user.id;
-        const coachId = req.params.coachId;
+        const coachId =
+            req.params.coachId;
 
         if (req.user.role !== "academy") {
             return res.status(403).json({
@@ -1345,7 +1400,8 @@ async function getAcademyCoachConnectionStatus(
             coach.role !== "coach"
         ) {
             return res.status(404).json({
-                message: "Coach not found"
+                message:
+                    "Coach not found"
             });
         }
 
@@ -1369,6 +1425,7 @@ async function getAcademyCoachConnectionStatus(
             connectionId:
                 connection._id
         });
+
     } catch (error) {
         console.error(
             "Get academy coach connection status error:",
@@ -1414,7 +1471,8 @@ async function getCoachAcademyConnectionStatus(
             academy.role !== "academy"
         ) {
             return res.status(404).json({
-                message: "Academy not found"
+                message:
+                    "Academy not found"
             });
         }
 
@@ -1438,6 +1496,7 @@ async function getCoachAcademyConnectionStatus(
             connectionId:
                 connection._id
         });
+
     } catch (error) {
         console.error(
             "Get coach academy connection status error:",
@@ -1475,7 +1534,10 @@ async function getAcademyConnectionRequests(
             await Connection.find({
                 academy: academyId,
                 requestedBy: {
-                    $in: ["athlete", "coach"]
+                    $in: [
+                        "athlete",
+                        "coach"
+                    ]
                 },
                 status: "pending"
             })
@@ -1495,6 +1557,7 @@ async function getAcademyConnectionRequests(
             count: requests.length,
             requests
         });
+
     } catch (error) {
         console.error(
             "Get academy connection requests error:",
@@ -1549,6 +1612,7 @@ async function getAthleteAcademyConnectionRequests(
             count: requests.length,
             requests
         });
+
     } catch (error) {
         console.error(
             "Get athlete academy requests error:",
@@ -1603,6 +1667,7 @@ async function getCoachAcademyConnectionRequests(
             count: requests.length,
             requests
         });
+
     } catch (error) {
         console.error(
             "Get coach academy requests error:",
@@ -1612,6 +1677,545 @@ async function getCoachAcademyConnectionRequests(
         return res.status(500).json({
             message:
                 "Error fetching academy requests",
+            error: error.message
+        });
+    }
+}
+
+
+// ======================================================
+// SCOUT → ATHLETE : SEND REQUEST
+// ======================================================
+
+async function sendScoutConnectionRequest(
+    req,
+    res
+) {
+    try {
+        const scoutId = req.user.id;
+        const athleteId =
+            req.params.athleteId;
+
+        // ------------------------------------------
+        // ROLE CHECK
+        // ------------------------------------------
+
+        if (req.user.role !== "scout") {
+            return res.status(403).json({
+                message:
+                    "Only scouts can send connection requests"
+            });
+        }
+
+        // ------------------------------------------
+        // CHECK SCOUT
+        // ------------------------------------------
+
+        const scout =
+            await User.findById(
+                scoutId
+            );
+
+        if (
+            !scout ||
+            scout.role !== "scout"
+        ) {
+            return res.status(403).json({
+                message:
+                    "Scout account not found"
+            });
+        }
+
+        // ------------------------------------------
+        // Resolve Athlete
+        //
+        // Supports:
+        // Athlete Profile ID
+        // Athlete User ID
+        // ------------------------------------------
+
+        const athlete =
+            await resolveAthleteUser(
+                athleteId
+            );
+
+        if (!athlete) {
+            return res.status(404).json({
+                message:
+                    "Athlete not found"
+            });
+        }
+
+        const athleteUserId =
+            athlete._id.toString();
+
+        // ------------------------------------------
+        // SELF CHECK
+        // ------------------------------------------
+
+        if (
+            scoutId === athleteUserId
+        ) {
+            return res.status(400).json({
+                message:
+                    "You cannot send a request to yourself"
+            });
+        }
+
+        // ------------------------------------------
+        // EXISTING CONNECTION
+        // ------------------------------------------
+
+        let connection =
+            await Connection.findOne({
+                scout: scoutId,
+                athlete: athlete._id
+            });
+
+        if (connection) {
+
+            if (
+                connection.status === "pending"
+            ) {
+                return res.status(400).json({
+                    message:
+                        "Connection request already sent",
+                    status: "pending"
+                });
+            }
+
+            if (
+                connection.status === "accepted"
+            ) {
+                return res.status(400).json({
+                    message:
+                        "You are already connected with this athlete",
+                    status: "accepted"
+                });
+            }
+
+            if (
+                connection.status === "rejected" ||
+                connection.status === "cancelled"
+            ) {
+                connection.requestedBy =
+                    "scout";
+
+                connection.status =
+                    "pending";
+
+                await connection.save();
+
+                return res.status(200).json({
+                    message:
+                        "Connection request sent successfully",
+                    status: "pending",
+                    connection:
+                        await populateConnection(
+                            Connection.findById(
+                                connection._id
+                            )
+                        )
+                });
+            }
+        }
+
+        // ------------------------------------------
+        // CREATE CONNECTION
+        // ------------------------------------------
+
+        connection =
+            await Connection.create({
+                scout: scoutId,
+                athlete: athlete._id,
+                requestedBy: "scout",
+                status: "pending"
+            });
+
+        return res.status(201).json({
+            message:
+                "Connection request sent successfully",
+            status: "pending",
+            connection:
+                await populateConnection(
+                    Connection.findById(
+                        connection._id
+                    )
+                )
+        });
+
+    } catch (error) {
+        console.error(
+            "Send scout connection request error:",
+            error
+        );
+
+        if (error.code === 11000) {
+            return res.status(400).json({
+                message:
+                    "Connection request already exists"
+            });
+        }
+
+        return res.status(500).json({
+            message:
+                "Error sending scout connection request",
+            error: error.message
+        });
+    }
+}
+
+
+// ======================================================
+// SCOUT : CHECK ATHLETE CONNECTION STATUS
+// ======================================================
+
+async function getScoutConnectionStatus(
+    req,
+    res
+) {
+    try {
+        const scoutId = req.user.id;
+        const athleteId =
+            req.params.athleteId;
+
+        if (req.user.role !== "scout") {
+            return res.status(403).json({
+                message:
+                    "Only scouts can check connection status"
+            });
+        }
+
+        const athlete =
+            await resolveAthleteUser(
+                athleteId
+            );
+
+        if (!athlete) {
+            return res.status(404).json({
+                message:
+                    "Athlete not found"
+            });
+        }
+
+        const connection =
+            await Connection.findOne({
+                scout: scoutId,
+                athlete: athlete._id
+            });
+
+        if (!connection) {
+            return res.status(200).json({
+                connected: false,
+                status: "none"
+            });
+        }
+
+        return res.status(200).json({
+            connected:
+                connection.status === "accepted",
+            status: connection.status,
+            connectionId:
+                connection._id
+        });
+
+    } catch (error) {
+        console.error(
+            "Get scout connection status error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to get connection status",
+            error: error.message
+        });
+    }
+}
+
+
+// ======================================================
+// SCOUT : GET INCOMING REQUESTS
+//
+// Currently Scout can receive requests only if
+// another role sends Scout request.
+// Kept here for future-safe structure.
+// ======================================================
+
+async function getScoutConnectionRequests(
+    req,
+    res
+) {
+    try {
+        const scoutId = req.user.id;
+
+        if (req.user.role !== "scout") {
+            return res.status(403).json({
+                message:
+                    "Only scouts can view connection requests"
+            });
+        }
+
+        const requests =
+            await Connection.find({
+                scout: scoutId,
+                requestedBy: {
+                    $ne: "scout"
+                },
+                status: "pending"
+            })
+                .populate(
+                    "athlete",
+                    athleteFields
+                )
+                .populate(
+                    "coach",
+                    coachFields
+                )
+                .populate(
+                    "academy",
+                    academyFields
+                )
+                .sort({
+                    createdAt: -1
+                });
+
+        return res.status(200).json({
+            count: requests.length,
+            requests
+        });
+
+    } catch (error) {
+        console.error(
+            "Get scout connection requests error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Error fetching scout requests",
+            error: error.message
+        });
+    }
+}
+
+
+// ======================================================
+// ATHLETE : GET INCOMING SCOUT REQUESTS
+// ======================================================
+
+async function getAthleteScoutConnectionRequests(
+    req,
+    res
+) {
+    try {
+        const athleteId = req.user.id;
+
+        if (req.user.role !== "athlete") {
+            return res.status(403).json({
+                message:
+                    "Only athletes can view scout requests"
+            });
+        }
+
+        const requests =
+            await Connection.find({
+                athlete: athleteId,
+                scout: {
+                    $ne: null
+                },
+                requestedBy: "scout",
+                status: "pending"
+            })
+                .populate(
+                    "scout",
+                    scoutFields
+                )
+                .sort({
+                    createdAt: -1
+                });
+
+        return res.status(200).json({
+            count: requests.length,
+            requests
+        });
+
+    } catch (error) {
+        console.error(
+            "Get athlete scout requests error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Error fetching scout requests",
+            error: error.message
+        });
+    }
+}
+
+
+// ======================================================
+// SCOUT : GET CONNECTED ATHLETES
+// ======================================================
+
+async function getScoutConnectedAthletes(
+    req,
+    res
+) {
+    try {
+        const scoutId = req.user.id;
+
+        if (req.user.role !== "scout") {
+            return res.status(403).json({
+                message:
+                    "Only scouts can view connected athletes"
+            });
+        }
+
+        const connections =
+            await Connection.find({
+                scout: scoutId,
+                athlete: {
+                    $ne: null
+                },
+                status: "accepted"
+            })
+                .populate(
+                    "athlete",
+                    athleteFields
+                )
+                .sort({
+                    updatedAt: -1
+                });
+
+        const athletes =
+            await Promise.all(
+                connections
+                    .filter(
+                        connection =>
+                            connection.athlete
+                    )
+                    .map(
+                        async connection => {
+
+                            const athleteUser =
+                                connection.athlete;
+
+                            const athleteProfile =
+                                await Athlete.findOne({
+                                    user:
+                                        athleteUser._id
+                                }).lean();
+
+                            if (
+                                !athleteProfile
+                            ) {
+                                return null;
+                            }
+
+                            return {
+                                ...athleteProfile,
+
+                                connectionId:
+                                    connection._id,
+
+                                connectionStatus:
+                                    connection.status,
+
+                                user: {
+                                    _id:
+                                        athleteUser._id,
+
+                                    name:
+                                        athleteUser.name,
+
+                                    email:
+                                        athleteUser.email,
+
+                                    role:
+                                        athleteUser.role,
+
+                                    profilePic:
+                                        athleteUser.profilePic
+                                }
+                            };
+                        }
+                    )
+            );
+
+        const validAthletes =
+            athletes.filter(Boolean);
+
+        return res.status(200).json({
+            count:
+                validAthletes.length,
+
+            athletes:
+                validAthletes
+        });
+
+    } catch (error) {
+        console.error(
+            "Get scout connected athletes error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to fetch connected athletes",
+            error: error.message
+        });
+    }
+}
+
+
+// ======================================================
+// SCOUT : GET SENT PENDING REQUESTS
+// ======================================================
+
+async function getScoutPendingRequests(
+    req,
+    res
+) {
+    try {
+        const scoutId = req.user.id;
+
+        if (req.user.role !== "scout") {
+            return res.status(403).json({
+                message:
+                    "Only scouts can view pending requests"
+            });
+        }
+
+        const requests =
+            await Connection.find({
+                scout: scoutId,
+                requestedBy: "scout",
+                status: "pending"
+            })
+                .populate(
+                    "athlete",
+                    athleteFields
+                )
+                .sort({
+                    createdAt: -1
+                });
+
+        return res.status(200).json({
+            count: requests.length,
+            requests
+        });
+
+    } catch (error) {
+        console.error(
+            "Get scout pending requests error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to fetch pending requests",
             error: error.message
         });
     }
@@ -1630,6 +2234,7 @@ async function respondToConnectionRequest(
         const userId = req.user.id;
         const connectionId =
             req.params.connectionId;
+
         const { action } = req.body;
 
         if (
@@ -1638,7 +2243,8 @@ async function respondToConnectionRequest(
             )
         ) {
             return res.status(400).json({
-                message: "Invalid action"
+                message:
+                    "Invalid action"
             });
         }
 
@@ -1665,6 +2271,11 @@ async function respondToConnectionRequest(
 
         // ------------------------------------------
         // ATHLETE RESPONDING
+        //
+        // Athlete can respond to:
+        // Coach
+        // Academy
+        // Scout
         // ------------------------------------------
 
         const isAthleteResponding =
@@ -1672,7 +2283,11 @@ async function respondToConnectionRequest(
             connection.athlete &&
             connection.athlete.toString() ===
                 userId &&
-            ["coach", "academy"].includes(
+            [
+                "coach",
+                "academy",
+                "scout"
+            ].includes(
                 connection.requestedBy
             );
 
@@ -1685,7 +2300,10 @@ async function respondToConnectionRequest(
             connection.coach &&
             connection.coach.toString() ===
                 userId &&
-            ["athlete", "academy"].includes(
+            [
+                "athlete",
+                "academy"
+            ].includes(
                 connection.requestedBy
             );
 
@@ -1698,14 +2316,30 @@ async function respondToConnectionRequest(
             connection.academy &&
             connection.academy.toString() ===
                 userId &&
-            ["athlete", "coach"].includes(
+            [
+                "athlete",
+                "coach"
+            ].includes(
                 connection.requestedBy
             );
+
+        // ------------------------------------------
+        // SCOUT RESPONDING
+        // ------------------------------------------
+
+        const isScoutResponding =
+            req.user.role === "scout" &&
+            connection.scout &&
+            connection.scout.toString() ===
+                userId &&
+            connection.requestedBy ===
+                "athlete";
 
         if (
             !isAthleteResponding &&
             !isCoachResponding &&
-            !isAcademyResponding
+            !isAcademyResponding &&
+            !isScoutResponding
         ) {
             return res.status(403).json({
                 message:
@@ -1713,7 +2347,8 @@ async function respondToConnectionRequest(
             });
         }
 
-        connection.status = action;
+        connection.status =
+            action;
 
         await connection.save();
 
@@ -1729,10 +2364,13 @@ async function respondToConnectionRequest(
                 action === "accepted"
                     ? "Connection request accepted"
                     : "Connection request rejected",
+
             status: action,
+
             connection:
                 updatedConnection
         });
+
     } catch (error) {
         console.error(
             "Respond to connection request error:",
@@ -1791,16 +2429,15 @@ async function getCoachConnectedAthletes(
                     )
                     .map(
                         async connection => {
+
                             const athleteUser =
                                 connection.athlete;
 
                             const athleteProfile =
-                                await Athlete.findOne(
-                                    {
-                                        user:
-                                            athleteUser._id
-                                    }
-                                );
+                                await Athlete.findOne({
+                                    user:
+                                        athleteUser._id
+                                });
 
                             if (
                                 !athleteProfile
@@ -1817,12 +2454,16 @@ async function getCoachConnectedAthletes(
                                 user: {
                                     _id:
                                         athleteUser._id,
+
                                     name:
                                         athleteUser.name,
+
                                     email:
                                         athleteUser.email,
+
                                     role:
                                         athleteUser.role,
+
                                     profilePic:
                                         athleteUser.profilePic
                                 }
@@ -1837,9 +2478,11 @@ async function getCoachConnectedAthletes(
         return res.status(200).json({
             count:
                 validAthletes.length,
+
             athletes:
                 validAthletes
         });
+
     } catch (error) {
         console.error(
             "Get coach connected athletes error:",
@@ -1857,93 +2500,162 @@ async function getCoachConnectedAthletes(
 
 // ======================================================
 // ATHLETE : GET CONNECTED COACHES
-// Only Coach ↔ Athlete connections
 // ======================================================
 
-const getAthleteConnectedCoaches =
-    async (req, res) => {
-        try {
-            if (
-                req.user.role !==
-                "athlete"
-            ) {
-                return res.status(403).json({
-                    success: false,
-                    message:
-                        "Only athletes can view connected coaches"
-                });
-            }
-
-            const connections =
-                await Connection.find({
-                    athlete: req.user.id,
-                    coach: {
-                        $exists: true,
-                        $ne: null
-                    },
-
-                    // Exclude Academy ↔ Athlete
-                    academy: {
-                        $in: [null]
-                    },
-
-                    status: "accepted"
-                })
-                    .populate(
-                        "coach",
-                        "name email role profilePic sport specialization experience organization address"
-                    )
-                    .sort({
-                        updatedAt: -1
-                    });
-
-            const validConnections =
-                connections.filter(
-                    connection =>
-                        connection.coach &&
-                        connection.coach
-                            .role ===
-                            "coach"
-                );
-
-            return res.status(200).json({
-                success: true,
-                count:
-                    validConnections.length,
-                connections:
-                    validConnections
-            });
-        } catch (error) {
-            console.error(
-                "Get athlete connected coaches error:",
-                error
-            );
-
-            return res.status(500).json({
+async function getAthleteConnectedCoaches(
+    req,
+    res
+) {
+    try {
+        if (
+            req.user.role !== "athlete"
+        ) {
+            return res.status(403).json({
                 success: false,
                 message:
-                    "Failed to fetch connected coaches",
-                error: error.message
+                    "Only athletes can view connected coaches"
             });
         }
-    };
+
+        const connections =
+            await Connection.find({
+                athlete: req.user.id,
+
+                coach: {
+                    $exists: true,
+                    $ne: null
+                },
+
+                academy: {
+                    $in: [null]
+                },
+
+                scout: {
+                    $in: [null]
+                },
+
+                status: "accepted"
+            })
+                .populate(
+                    "coach",
+                    "name email role profilePic sport specialization experience organization address"
+                )
+                .sort({
+                    updatedAt: -1
+                });
+
+        const validConnections =
+            connections.filter(
+                connection =>
+                    connection.coach &&
+                    connection.coach.role ===
+                        "coach"
+            );
+
+        return res.status(200).json({
+            success: true,
+            count:
+                validConnections.length,
+            connections:
+                validConnections
+        });
+
+    } catch (error) {
+        console.error(
+            "Get athlete connected coaches error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Failed to fetch connected coaches",
+            error: error.message
+        });
+    }
+}
+
+
+// ======================================================
+// ATHLETE : GET CONNECTED SCOUTS
+// ======================================================
+
+async function getAthleteConnectedScouts(
+    req,
+    res
+) {
+    try {
+        if (
+            req.user.role !== "athlete"
+        ) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    "Only athletes can view connected scouts"
+            });
+        }
+
+        const connections =
+            await Connection.find({
+                athlete: req.user.id,
+
+                scout: {
+                    $exists: true,
+                    $ne: null
+                },
+
+                status: "accepted"
+            })
+                .populate(
+                    "scout",
+                    scoutFields
+                )
+                .sort({
+                    updatedAt: -1
+                });
+
+        const validConnections =
+            connections.filter(
+                connection =>
+                    connection.scout &&
+                    connection.scout.role ===
+                        "scout"
+            );
+
+        return res.status(200).json({
+            success: true,
+            count:
+                validConnections.length,
+            connections:
+                validConnections
+        });
+
+    } catch (error) {
+        console.error(
+            "Get athlete connected scouts error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Failed to fetch connected scouts",
+            error: error.message
+        });
+    }
+}
 
 
 // ======================================================
 // ACADEMY : GET CONNECTED ATHLETES
 // ======================================================
 
-// ======================================================
-// ACADEMY : GET CONNECTED ATHLETES
-// ======================================================
-
-async function getAcademyConnectedAthletes(req, res) {
+async function getAcademyConnectedAthletes(
+    req,
+    res
+) {
     try {
         const academyId = req.user.id;
-
-        // ------------------------------------------
-        // ROLE CHECK
-        // ------------------------------------------
 
         if (req.user.role !== "academy") {
             return res.status(403).json({
@@ -1952,92 +2664,81 @@ async function getAcademyConnectedAthletes(req, res) {
             });
         }
 
-        // ------------------------------------------
-        // GET ONLY ACCEPTED ACADEMY ↔ ATHLETE
-        // CONNECTIONS
-        // ------------------------------------------
+        const connections =
+            await Connection.find({
+                academy: academyId,
 
-        const connections = await Connection.find({
-            academy: academyId,
-            athlete: {
-                $ne: null
-            },
-            status: "accepted"
-        })
-            .populate(
-                "athlete",
-                athleteFields
-            )
-            .sort({
-                updatedAt: -1
-            });
+                athlete: {
+                    $ne: null
+                },
 
-        // ------------------------------------------
-        // GET ATHLETE PROFILE DATA
-        // ------------------------------------------
-
-        const athletes = await Promise.all(
-            connections
-                .filter(
-                    connection =>
-                        connection.athlete
+                status: "accepted"
+            })
+                .populate(
+                    "athlete",
+                    athleteFields
                 )
-                .map(
-                    async connection => {
-                        const athleteUser =
-                            connection.athlete;
+                .sort({
+                    updatedAt: -1
+                });
 
-                        // Athlete profile is stored
-                        // separately from User
-                        const athleteProfile =
-                            await Athlete.findOne({
-                                user:
-                                    athleteUser._id
-                            }).lean();
+        const athletes =
+            await Promise.all(
+                connections
+                    .filter(
+                        connection =>
+                            connection.athlete
+                    )
+                    .map(
+                        async connection => {
 
-                        if (!athleteProfile) {
-                            return null;
-                        }
+                            const athleteUser =
+                                connection.athlete;
 
-                        // ------------------------------------------
-                        // RETURN COMBINED ATHLETE DATA
-                        // ------------------------------------------
+                            const athleteProfile =
+                                await Athlete.findOne({
+                                    user:
+                                        athleteUser._id
+                                }).lean();
 
-                        return {
-                            ...athleteProfile,
-
-                            connectionId:
-                                connection._id,
-
-                            connectionStatus:
-                                connection.status,
-
-                            user: {
-                                _id:
-                                    athleteUser._id,
-                                name:
-                                    athleteUser.name,
-                                email:
-                                    athleteUser.email,
-                                role:
-                                    athleteUser.role,
-                                profilePic:
-                                    athleteUser.profilePic
+                            if (
+                                !athleteProfile
+                            ) {
+                                return null;
                             }
-                        };
-                    }
-                )
-        );
 
-        // Remove null profiles
+                            return {
+                                ...athleteProfile,
+
+                                connectionId:
+                                    connection._id,
+
+                                connectionStatus:
+                                    connection.status,
+
+                                user: {
+                                    _id:
+                                        athleteUser._id,
+
+                                    name:
+                                        athleteUser.name,
+
+                                    email:
+                                        athleteUser.email,
+
+                                    role:
+                                        athleteUser.role,
+
+                                    profilePic:
+                                        athleteUser.profilePic
+                                }
+                            };
+                        }
+                    )
+            );
+
         const validAthletes =
             athletes.filter(Boolean);
-
-        // ------------------------------------------
-        // RESPONSE
-        // IMPORTANT:
-        // Frontend expects response.data.athletes
-        // ------------------------------------------
 
         return res.status(200).json({
             count:
@@ -2056,8 +2757,7 @@ async function getAcademyConnectedAthletes(req, res) {
         return res.status(500).json({
             message:
                 "Failed to fetch connected athletes",
-            error:
-                error.message
+            error: error.message
         });
     }
 }
@@ -2102,6 +2802,7 @@ async function getAcademyConnectedCoaches(
                 connections.length,
             connections
         });
+
     } catch (error) {
         console.error(
             "Get academy connected coaches error:",
@@ -2119,187 +2820,194 @@ async function getAcademyConnectedCoaches(
 
 // ======================================================
 // ATHLETE : GET CONNECTED ACADEMIES
-// Only Academy ↔ Athlete connections
 // ======================================================
 
-const getAthleteConnectedAcademies =
-    async (req, res) => {
-        try {
-            if (
-                req.user.role !==
-                "athlete"
-            ) {
-                return res.status(403).json({
-                    success: false,
-                    message:
-                        "Only athletes can view connected academies"
-                });
-            }
-
-            const athleteId =
-                req.user.id;
-
-            const connections =
-                await Connection.find({
-                    athlete: athleteId,
-                    academy: {
-                        $exists: true,
-                        $ne: null
-                    },
-                    status: "accepted"
-                })
-                    .populate(
-                        "academy",
-                        "name email role profilePic"
-                    )
-                    .sort({
-                        updatedAt: -1
-                    });
-
-            const validConnections = [];
-
-            for (
-                const connection of
-                connections
-            ) {
-                if (
-                    !connection.academy
-                ) {
-                    continue;
-                }
-
-                const academyUser =
-                    connection.academy;
-
-                if (
-                    academyUser.role !==
-                    "academy"
-                ) {
-                    continue;
-                }
-
-                const academyProfile =
-                    await Academy.findOne(
-                        {
-                            user:
-                                academyUser._id
-                        }
-                    ).lean();
-
-                const academy = {
-                    _id:
-                        academyUser._id,
-                    name:
-                        academyUser.name,
-                    email:
-                        academyUser.email,
-                    role:
-                        academyUser.role,
-                    profilePic:
-                        academyUser.profilePic,
-
-                    academyName:
-                        academyProfile?.academyName ||
-                        academyUser.name ||
-                        "Academy",
-
-                    sport:
-                        academyProfile?.sport ||
-                        "",
-
-                    specialization:
-                        academyProfile?.specialization ||
-                        "",
-
-                    establishedYear:
-                        academyProfile?.establishedYear ||
-                        null,
-
-                    phone:
-                        academyProfile?.phone ||
-                        "",
-
-                    address:
-                        academyProfile?.address ||
-                        null,
-
-                    city:
-                        academyProfile?.city ||
-                        academyProfile?.address
-                            ?.city ||
-                        "",
-
-                    state:
-                        academyProfile?.state ||
-                        academyProfile?.address
-                            ?.state ||
-                        "",
-
-                    trainingPrograms:
-                        academyProfile?.trainingPrograms ||
-                        [],
-
-                    facilities:
-                        academyProfile?.facilities ||
-                        [],
-
-                    achievements:
-                        academyProfile?.achievements ||
-                        [],
-
-                    bio:
-                        academyProfile?.bio ||
-                        "",
-
-                    isAvailable:
-                        academyProfile
-                            ?.isAvailable ??
-                        true,
-
-                    socialLinks:
-                        academyProfile
-                            ?.socialLinks ||
-                        {}
-                };
-
-                validConnections.push({
-                    _id:
-                        connection._id,
-                    athlete:
-                        connection.athlete,
-                    academy,
-                    status:
-                        connection.status,
-                    requestedBy:
-                        connection.requestedBy,
-                    createdAt:
-                        connection.createdAt,
-                    updatedAt:
-                        connection.updatedAt
-                });
-            }
-
-            return res.status(200).json({
-                success: true,
-                count:
-                    validConnections.length,
-                connections:
-                    validConnections
-            });
-        } catch (error) {
-            console.error(
-                "Get athlete connected academies error:",
-                error
-            );
-
-            return res.status(500).json({
+async function getAthleteConnectedAcademies(
+    req,
+    res
+) {
+    try {
+        if (
+            req.user.role !== "athlete"
+        ) {
+            return res.status(403).json({
                 success: false,
                 message:
-                    "Failed to fetch connected academies",
-                error: error.message
+                    "Only athletes can view connected academies"
             });
         }
-    };
+
+        const athleteId =
+            req.user.id;
+
+        const connections =
+            await Connection.find({
+                athlete: athleteId,
+
+                academy: {
+                    $exists: true,
+                    $ne: null
+                },
+
+                status: "accepted"
+            })
+                .populate(
+                    "academy",
+                    academyFields
+                )
+                .sort({
+                    updatedAt: -1
+                });
+
+        const validConnections = [];
+
+        for (
+            const connection of
+            connections
+        ) {
+            if (
+                !connection.academy
+            ) {
+                continue;
+            }
+
+            const academyUser =
+                connection.academy;
+
+            if (
+                academyUser.role !==
+                "academy"
+            ) {
+                continue;
+            }
+
+            const academyProfile =
+                await Academy.findOne({
+                    user:
+                        academyUser._id
+                }).lean();
+
+            const academy = {
+                _id:
+                    academyUser._id,
+
+                name:
+                    academyUser.name,
+
+                email:
+                    academyUser.email,
+
+                role:
+                    academyUser.role,
+
+                profilePic:
+                    academyUser.profilePic,
+
+                academyName:
+                    academyProfile?.academyName ||
+                    academyUser.name ||
+                    "Academy",
+
+                sport:
+                    academyProfile?.sport ||
+                    "",
+
+                specialization:
+                    academyProfile?.specialization ||
+                    "",
+
+                establishedYear:
+                    academyProfile?.establishedYear ||
+                    null,
+
+                phone:
+                    academyProfile?.phone ||
+                    "",
+
+                address:
+                    academyProfile?.address ||
+                    null,
+
+                city:
+                    academyProfile?.city ||
+                    academyProfile?.address?.city ||
+                    "",
+
+                state:
+                    academyProfile?.state ||
+                    academyProfile?.address?.state ||
+                    "",
+
+                trainingPrograms:
+                    academyProfile?.trainingPrograms ||
+                    [],
+
+                facilities:
+                    academyProfile?.facilities ||
+                    [],
+
+                achievements:
+                    academyProfile?.achievements ||
+                    [],
+
+                bio:
+                    academyProfile?.bio ||
+                    "",
+
+                isAvailable:
+                    academyProfile?.isAvailable ??
+                    true,
+
+                socialLinks:
+                    academyProfile?.socialLinks ||
+                    {}
+            };
+
+            validConnections.push({
+                _id:
+                    connection._id,
+
+                athlete:
+                    connection.athlete,
+
+                academy,
+
+                status:
+                    connection.status,
+
+                requestedBy:
+                    connection.requestedBy,
+
+                createdAt:
+                    connection.createdAt,
+
+                updatedAt:
+                    connection.updatedAt
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            count:
+                validConnections.length,
+            connections:
+                validConnections
+        });
+
+    } catch (error) {
+        console.error(
+            "Get athlete connected academies error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Failed to fetch connected academies",
+            error: error.message
+        });
+    }
+}
 
 
 // ======================================================
@@ -2341,6 +3049,7 @@ async function getCoachConnectedAcademies(
                 connections.length,
             connections
         });
+
     } catch (error) {
         console.error(
             "Get coach connected academies error:",
@@ -2360,7 +3069,10 @@ async function getCoachConnectedAcademies(
 // DISCONNECT CONNECTION
 // ======================================================
 
-async function disconnectConnection(req, res) {
+async function disconnectConnection(
+    req,
+    res
+) {
     try {
         const userId = req.user.id;
         const connectionId =
@@ -2396,10 +3108,17 @@ async function disconnectConnection(req, res) {
             connection.academy.toString() ===
                 userId;
 
+        const isScout =
+            req.user.role === "scout" &&
+            connection.scout &&
+            connection.scout.toString() ===
+                userId;
+
         if (
             !isCoach &&
             !isAthlete &&
-            !isAcademy
+            !isAcademy &&
+            !isScout
         ) {
             return res.status(403).json({
                 message:
@@ -2430,6 +3149,7 @@ async function disconnectConnection(req, res) {
             status: "cancelled",
             connection
         });
+
     } catch (error) {
         console.error(
             "Disconnect connection error:",
@@ -2450,38 +3170,81 @@ async function disconnectConnection(req, res) {
 // ======================================================
 
 module.exports = {
+
+    // ------------------------------------------
     // Coach ↔ Athlete
+    // ------------------------------------------
+
     sendConnectionRequest,
     sendAthleteConnectionRequest,
+
     getCoachConnectionStatus,
     getAthleteConnectionStatus,
+
     getAthleteConnectionRequests,
     getCoachConnectionRequests,
+
     getCoachConnectedAthletes,
     getAthleteConnectedCoaches,
 
+
+    // ------------------------------------------
     // Academy ↔ Athlete
+    // ------------------------------------------
+
     sendAcademyConnectionRequest,
     sendAthleteAcademyConnectionRequest,
+
     getAcademyConnectionStatus,
     getAthleteAcademyConnectionStatus,
+
     getAthleteAcademyConnectionRequests,
     getAcademyConnectedAthletes,
     getAthleteConnectedAcademies,
 
+
+    // ------------------------------------------
     // Academy ↔ Coach
+    // ------------------------------------------
+
     sendAcademyCoachConnectionRequest,
     sendCoachAcademyConnectionRequest,
+
     getAcademyCoachConnectionStatus,
     getCoachAcademyConnectionStatus,
+
     getCoachAcademyConnectionRequests,
     getAcademyConnectedCoaches,
     getCoachConnectedAcademies,
 
+
+    // ------------------------------------------
     // Academy requests
+    // ------------------------------------------
+
     getAcademyConnectionRequests,
 
+
+    // ------------------------------------------
+    // Scout ↔ Athlete
+    // ------------------------------------------
+
+    sendScoutConnectionRequest,
+    getScoutConnectionStatus,
+
+    getScoutConnectionRequests,
+    getAthleteScoutConnectionRequests,
+
+    getScoutConnectedAthletes,
+    getScoutPendingRequests,
+
+    getAthleteConnectedScouts,
+
+
+    // ------------------------------------------
     // Common
+    // ------------------------------------------
+
     respondToConnectionRequest,
     disconnectConnection
 };

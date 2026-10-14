@@ -783,7 +783,8 @@ async function getAthleteById(req, res) {
        if (
     req.user.role !== "coach" &&
     req.user.role !== "athlete" &&
-    req.user.role !== "academy"
+    req.user.role !== "academy" &&
+    req.user.role !== "scout"
 ) {
             return res.status(403).json({
                 message:

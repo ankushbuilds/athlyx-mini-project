@@ -15,6 +15,7 @@ const challengeRoutes = require("./routes/challenge.route");
 const academyRoutes = require("./routes/academy.route");
 
 const opportunityRoutes = require("./routes/opportunity.route");
+const scoutRoutes = require("./routes/scout.route");
 const app = express();
 
 app.use(cors());
@@ -55,5 +56,6 @@ app.use(
   "/api/opportunities",
   opportunityRoutes
 );
+app.use("/api/scouts", scoutRoutes);
 
 module.exports = app;

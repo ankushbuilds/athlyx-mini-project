@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // ==========================================
@@ -61,256 +60,314 @@ import CreateEvent from "./pages/Academy-Pages/CreateEvent";
 import AcademyEvents from "./pages/Academy-Pages/AcademyEvents";
 
 // ==========================================
+// SCOUT PAGES
+// ==========================================
+
+import ScoutDashboard from "./pages/Scout-Pages/ScoutDashboard";
+import ScoutDiscover from "./pages/Scout-Pages/ScoutDiscover";
+import ScoutProfile from "./pages/Scout-Pages/ScoutProfile";
+import ScoutAthleteProfile from "./pages/Scout-Pages/ScoutAthleteProfile";
+import ScoutConnections from "./pages/Scout-Pages/ScoutConnections";
+import ScoutSettings from "./pages/Scout-Pages/ScoutSettings";
+
+// ==========================================
 // APP
 // ==========================================
 
 const App = () => {
-  return (
-    <BrowserRouter>
-      <Routes>
+    return (
+        <BrowserRouter>
+            <Routes>
 
-        {/* ==========================================
-            PUBLIC ROUTES
-        ========================================== */}
+                {/* ==========================================
+                    PUBLIC ROUTES
+                ========================================== */}
 
-        <Route
-          path="/"
-          element={<Landing />}
-        />
+                <Route
+                    path="/"
+                    element={<Landing />}
+                />
 
-        <Route
-          path="/home"
-          element={<Home />}
-        />
+                <Route
+                    path="/home"
+                    element={<Home />}
+                />
 
-        <Route
-          path="/auth"
-          element={<Auth />}
-        />
+                <Route
+                    path="/auth"
+                    element={<Auth />}
+                />
 
-        <Route
-          path="/about"
-          element={<About />}
-        />
+                <Route
+                    path="/about"
+                    element={<About />}
+                />
 
-        <Route
-          path="/contact"
-          element={<Contact />}
-        />
+                <Route
+                    path="/contact"
+                    element={<Contact />}
+                />
 
-        <Route
-          path="/help"
-          element={<Help />}
-        />
+                <Route
+                    path="/help"
+                    element={<Help />}
+                />
 
-        <Route
-          path="/discover"
-          element={<Discover />}
-        />
+                <Route
+                    path="/discover"
+                    element={<Discover />}
+                />
 
-        {/* ==========================================
-            ATHLETE ROUTES
-        ========================================== */}
 
-        <Route
-          path="/athlete/dashboard"
-          element={<AthleteDashboard />}
-        />
+                {/* ==========================================
+                    ATHLETE ROUTES
+                ========================================== */}
 
-        <Route
-          path="/athlete/profile"
-          element={<AthleteProfile />}
-        />
+                <Route
+                    path="/athlete/dashboard"
+                    element={<AthleteDashboard />}
+                />
 
-        <Route
-          path="/athlete/my-profile"
-          element={<AthleteProfileView />}
-        />
+                <Route
+                    path="/athlete/profile"
+                    element={<AthleteProfile />}
+                />
 
-        <Route
-          path="/coach/athletes/:athleteId"
-          element={<AthleteProfileView />}
-        />
+                <Route
+                    path="/athlete/my-profile"
+                    element={<AthleteProfileView />}
+                />
 
-        <Route
-          path="/profile/athlete/:athleteId"
-          element={<AthleteProfileView />}
-        />
+                <Route
+                    path="/coach/athletes/:athleteId"
+                    element={<AthleteProfileView />}
+                />
 
-        <Route
-          path="/athlete/settings"
-          element={<Settings />}
-        />
+                <Route
+                    path="/profile/athlete/:athleteId"
+                    element={<AthleteProfileView />}
+                />
 
-        <Route
-          path="/athlete/discover"
-          element={<AthleteDiscover />}
-        />
+                <Route
+                    path="/athlete/settings"
+                    element={<Settings />}
+                />
 
-        <Route
-          path="/athlete/opportunities"
-          element={<Opportunities />}
-        />
+                <Route
+                    path="/athlete/discover"
+                    element={<AthleteDiscover />}
+                />
 
-        <Route
-          path="/athlete/showcase"
-          element={<Showcase />}
-        />
+                <Route
+                    path="/athlete/opportunities"
+                    element={<Opportunities />}
+                />
 
-        <Route
-          path="/athlete/connections"
-          element={<AthleteConnections />}
-        />
+                <Route
+                    path="/athlete/showcase"
+                    element={<Showcase />}
+                />
 
-        <Route
-          path="/athlete/messages"
-          element={<Messages />}
-        />
+                <Route
+                    path="/athlete/connections"
+                    element={<AthleteConnections />}
+                />
 
-        <Route
-          path="/athlete/challenges"
-          element={<Challenges />}
-        />
+                <Route
+                    path="/athlete/messages"
+                    element={<Messages />}
+                />
 
-        {/* ==========================================
-            COACH ROUTES
-        ========================================== */}
+                <Route
+                    path="/athlete/challenges"
+                    element={<Challenges />}
+                />
 
-        <Route
-          path="/coach/dashboard"
-          element={<CoachDashboard />}
-        />
 
-        <Route
-          path="/coach/profile"
-          element={<CoachProfile />}
-        />
+                {/* ==========================================
+                    COACH ROUTES
+                ========================================== */}
 
-        <Route
-          path="/coach/my-profile"
-          element={<CoachProfileView />}
-        />
+                <Route
+                    path="/coach/dashboard"
+                    element={<CoachDashboard />}
+                />
 
-        <Route
-          path="/profile/coach/:coachId"
-          element={<CoachProfileView />}
-        />
+                <Route
+                    path="/coach/profile"
+                    element={<CoachProfile />}
+                />
 
-        <Route
-          path="/coach/athletes"
-          element={<CoachAthletes />}
-        />
+                <Route
+                    path="/coach/my-profile"
+                    element={<CoachProfileView />}
+                />
 
-        <Route
-          path="/coach/discover"
-          element={<CoachDiscover />}
-        />
+                <Route
+                    path="/profile/coach/:coachId"
+                    element={<CoachProfileView />}
+                />
 
-        <Route
-          path="/coach/opportunities"
-          element={<div>Opportunities</div>}
-        />
+                <Route
+                    path="/coach/athletes"
+                    element={<CoachAthletes />}
+                />
 
-        <Route
-          path="/coach/requests"
-          element={<CoachRequests />}
-        />
+                <Route
+                    path="/coach/discover"
+                    element={<CoachDiscover />}
+                />
 
-        <Route
-          path="/coach/settings"
-          element={<CoachSettings />}
-        />
+                <Route
+                    path="/coach/opportunities"
+                    element={<div>Opportunities</div>}
+                />
 
-        <Route
-          path="/coach/messages"
-          element={<Messages />}
-        />
+                <Route
+                    path="/coach/requests"
+                    element={<CoachRequests />}
+                />
 
-        {/* ==========================================
-            ACADEMY ROUTES
-        ========================================== */}
+                <Route
+                    path="/coach/settings"
+                    element={<CoachSettings />}
+                />
 
-        <Route
-          path="/academy/dashboard"
-          element={<AcademyDashboard />}
-        />
+                <Route
+                    path="/coach/messages"
+                    element={<Messages />}
+                />
 
-        <Route
-          path="/academy/create-profile"
-          element={<AcademyProfileEdit />}
-        />
 
-        <Route
-          path="/academy/my-profile"
-          element={<AcademyProfile />}
-        />
+                {/* ==========================================
+                    ACADEMY ROUTES
+                ========================================== */}
 
-        <Route
-          path="/academy/edit-profile"
-          element={<AcademyProfileEdit />}
-        />
+                <Route
+                    path="/academy/dashboard"
+                    element={<AcademyDashboard />}
+                />
 
-        <Route
-          path="/academy/athletes"
-          element={<AcademyAthletes />}
-        />
+                <Route
+                    path="/academy/create-profile"
+                    element={<AcademyProfileEdit />}
+                />
 
-        <Route
-          path="/academy/discover"
-          element={<AcademyDiscover />}
-        />
+                <Route
+                    path="/academy/my-profile"
+                    element={<AcademyProfile />}
+                />
 
-        <Route
-          path="/academy/requests"
-          element={<AcademyRequest />}
-        />
+                <Route
+                    path="/academy/edit-profile"
+                    element={<AcademyProfileEdit />}
+                />
 
-        <Route
-          path="/academy/messages"
-          element={<Messages />}
-        />
+                <Route
+                    path="/academy/athletes"
+                    element={<AcademyAthletes />}
+                />
 
-        <Route
-          path="/academy/settings"
-          element={<AcademySettings />}
-        />
+                <Route
+                    path="/academy/discover"
+                    element={<AcademyDiscover />}
+                />
 
-        <Route
-          path="/profile/academy/:academyId"
-          element={<AcademyProfile />}
-        />
+                <Route
+                    path="/academy/requests"
+                    element={<AcademyRequest />}
+                />
 
-        {/* ==========================================
-            ACADEMY EVENTS
-        ========================================== */}
+                <Route
+                    path="/academy/messages"
+                    element={<Messages />}
+                />
 
-        {/* Event List */}
-        <Route
-          path="/academy/events"
-          element={<AcademyEvents />}
-        />
+                <Route
+                    path="/academy/settings"
+                    element={<AcademySettings />}
+                />
 
-        {/* Create Event */}
-        <Route
-          path="/academy/events/create"
-          element={<CreateEvent />}
-        />
+                <Route
+                    path="/profile/academy/:academyId"
+                    element={<AcademyProfile />}
+                />
 
-        {/* Edit Event */}
-        <Route
-          path="/academy/events/:id/edit"
-          element={<AcademyEvents />}
-        />
 
-        {/* View Single Event */}
-        <Route
-          path="/academy/events/:id"
-          element={<AcademyEvents />}
-        />
+                {/* ==========================================
+                    ACADEMY EVENTS
+                ========================================== */}
 
-      </Routes>
-    </BrowserRouter>
-  );
+                <Route
+                    path="/academy/events"
+                    element={<AcademyEvents />}
+                />
+
+                <Route
+                    path="/academy/events/create"
+                    element={<CreateEvent />}
+                />
+
+                <Route
+                    path="/academy/events/:id/edit"
+                    element={<AcademyEvents />}
+                />
+
+                <Route
+                    path="/academy/events/:id"
+                    element={<AcademyEvents />}
+                />
+
+
+                {/* ==========================================
+                    SCOUT ROUTES
+                ========================================== */}
+
+                {/* Scout Dashboard */}
+                <Route
+                    path="/scout/dashboard"
+                    element={<ScoutDashboard />}
+                />
+
+                {/* Scout Profile */}
+                <Route
+                    path="/scout/my-profile"
+                    element={<ScoutProfile />}
+                />
+
+                {/* Scout Discover */}
+                <Route
+                    path="/scout/discover"
+                    element={<ScoutDiscover />}
+                />
+
+                {/* Scout Athlete Profile */}
+                <Route
+                    path="/scout/athlete/:id"
+                    element={<ScoutAthleteProfile />}
+                />
+
+                {/* Scout Connections */}
+                <Route
+                    path="/scout/connections"
+                    element={<ScoutConnections />}
+                />
+
+                {/* Scout Messages */}
+                <Route
+                    path="/scout/messages"
+                    element={<Messages />}
+                />
+
+                {/* Scout Settings */}
+                <Route
+                    path="/scout/settings"
+                    element={<ScoutSettings />}
+                />
+
+            </Routes>
+        </BrowserRouter>
+    );
 };
 
 export default App;

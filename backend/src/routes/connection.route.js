@@ -1,273 +1,312 @@
 const express = require("express");
-
 const router = express.Router();
 
-const connectionController = require("../controllers/connection.controller");
+const {
+    // Coach ↔ Athlete
+    sendConnectionRequest,
+    sendAthleteConnectionRequest,
+    getCoachConnectionStatus,
+    getAthleteConnectionStatus,
+    getAthleteConnectionRequests,
+    getCoachConnectionRequests,
+
+    // Academy ↔ Athlete
+    sendAcademyConnectionRequest,
+    sendAthleteAcademyConnectionRequest,
+    getAcademyConnectionStatus,
+    getAthleteAcademyConnectionStatus,
+    getAcademyConnectionRequests,
+    getAthleteAcademyConnectionRequests,
+
+    // Academy ↔ Coach
+    sendAcademyCoachConnectionRequest,
+    sendCoachAcademyConnectionRequest,
+    getAcademyCoachConnectionStatus,
+    getCoachAcademyConnectionStatus,
+    getCoachAcademyConnectionRequests,
+
+    // Scout ↔ Athlete
+    sendScoutConnectionRequest,
+    getScoutConnectionStatus,
+    getScoutConnectionRequests,
+    getAthleteScoutConnectionRequests,
+
+    // Connected lists
+    getCoachConnectedAthletes,
+    getAthleteConnectedCoaches,
+    getAcademyConnectedAthletes,
+    getAcademyConnectedCoaches,
+    getAthleteConnectedAcademies,
+    getCoachConnectedAcademies,
+    getScoutConnectedAthletes,
+    getAthleteConnectedScouts,
+
+    // Common
+    respondToConnectionRequest,
+    disconnectConnection
+} = require("../controllers/connection.controller");
 
 const authMiddleware = require("../middleware/auth.middleware");
 
 
-// ======================================================
-// ACADEMY → ATHLETE
-// ======================================================
-
-// IMPORTANT:
-// Specific routes MUST come before /send/:athleteId
-
-// Academy sends request to athlete
-router.post(
-    "/send/academy/:athleteId",
-    authMiddleware,
-    connectionController.sendAcademyConnectionRequest
-);
-
-// Athlete sends request to academy
-router.post(
-    "/send/athlete/academy/:academyId",
-    authMiddleware,
-    connectionController.sendAthleteAcademyConnectionRequest
-);
-
-
-// ======================================================
-// ACADEMY → COACH
-// ======================================================
-
-// Academy sends request to coach
-router.post(
-    "/send/academy/coach/:coachId",
-    authMiddleware,
-    connectionController.sendAcademyCoachConnectionRequest
-);
-
-// Coach sends request to academy
-router.post(
-    "/send/coach/academy/:academyId",
-    authMiddleware,
-    connectionController.sendCoachAcademyConnectionRequest
-);
-
-
-// ======================================================
-// ATHLETE → COACH
-// ======================================================
-
-// Athlete sends connection request to coach
-router.post(
-    "/send/coach/:coachId",
-    authMiddleware,
-    connectionController.sendAthleteConnectionRequest
-);
-
-
-// ======================================================
+// =====================================================
 // COACH → ATHLETE
-// ======================================================
+// =====================================================
 
-// IMPORTANT:
-// Keep this generic route AFTER all specific /send/... routes
-
-// Coach sends connection request to athlete
 router.post(
     "/send/:athleteId",
     authMiddleware,
-    connectionController.sendConnectionRequest
+    sendConnectionRequest
 );
 
-
-// ======================================================
-// CONNECTION STATUS
-// ======================================================
-
-// IMPORTANT:
-// Specific status routes MUST come before
-// /status/:athleteId
-
-
-// Academy → Athlete status
-router.get(
-    "/status/academy/:athleteId",
-    authMiddleware,
-    connectionController.getAcademyConnectionStatus
-);
-
-
-// Athlete → Academy status
-router.get(
-    "/status/athlete/academy/:academyId",
-    authMiddleware,
-    connectionController.getAthleteAcademyConnectionStatus
-);
-
-
-// Academy → Coach status
-router.get(
-    "/status/academy/coach/:coachId",
-    authMiddleware,
-    connectionController.getAcademyCoachConnectionStatus
-);
-
-
-// Coach → Academy status
-router.get(
-    "/status/coach/academy/:academyId",
-    authMiddleware,
-    connectionController.getCoachAcademyConnectionStatus
-);
-
-
-// Athlete → Coach status
-router.get(
-    "/status/coach/:coachId",
-    authMiddleware,
-    connectionController.getAthleteConnectionStatus
-);
-
-
-// Coach → Athlete status
 router.get(
     "/status/:athleteId",
     authMiddleware,
-    connectionController.getCoachConnectionStatus
+    getCoachConnectionStatus
 );
 
 
-// ======================================================
-// ATHLETE REQUESTS
-// ======================================================
+// =====================================================
+// ATHLETE → COACH
+// =====================================================
 
-// Get requests received by athlete
+router.post(
+    "/athlete/send/coach/:coachId",
+    authMiddleware,
+    sendAthleteConnectionRequest
+);
+
+router.get(
+    "/athlete/status/coach/:coachId",
+    authMiddleware,
+    getAthleteConnectionStatus
+);
+
+
+// =====================================================
+// ATHLETE CONNECTION REQUESTS
+// =====================================================
+
 router.get(
     "/athlete/requests",
     authMiddleware,
-    connectionController.getAthleteConnectionRequests
+    getAthleteConnectionRequests
 );
 
-// Athlete accepts/rejects request
-router.put(
-    "/athlete/respond/:connectionId",
-    authMiddleware,
-    connectionController.respondToConnectionRequest
-);
-
-
-// ======================================================
-// COACH REQUESTS
-// ======================================================
-
-// Get requests received by coach
 router.get(
     "/coach/requests",
     authMiddleware,
-    connectionController.getCoachConnectionRequests
+    getCoachConnectionRequests
 );
 
-// Coach accepts/rejects request
-router.put(
-    "/coach/respond/:connectionId",
+
+// =====================================================
+// ACADEMY → ATHLETE
+// =====================================================
+
+router.post(
+    "/academy/send/:athleteId",
     authMiddleware,
-    connectionController.respondToConnectionRequest
+    sendAcademyConnectionRequest
+);
+
+router.get(
+    "/academy/status/:athleteId",
+    authMiddleware,
+    getAcademyConnectionStatus
 );
 
 
-// ======================================================
-// ACADEMY REQUESTS
-// ======================================================
+// =====================================================
+// ATHLETE → ACADEMY
+// =====================================================
 
-// Academy receives requests from athletes/coaches
+router.post(
+    "/athlete/send/academy/:academyId",
+    authMiddleware,
+    sendAthleteAcademyConnectionRequest
+);
+
+router.get(
+    "/athlete/status/academy/:academyId",
+    authMiddleware,
+    getAthleteAcademyConnectionStatus
+);
+
+
+// =====================================================
+// ACADEMY CONNECTION REQUESTS
+// =====================================================
+
 router.get(
     "/academy/requests",
     authMiddleware,
-    connectionController.getAcademyConnectionRequests
+    getAcademyConnectionRequests
 );
 
-// Academy accepts/rejects request
-router.put(
-    "/academy/respond/:connectionId",
-    authMiddleware,
-    connectionController.respondToConnectionRequest
-);
-
-
-// ======================================================
-// ATHLETE : ACADEMY REQUESTS
-// ======================================================
-
-// Athlete receives requests from academies
 router.get(
     "/athlete/academy-requests",
     authMiddleware,
-    connectionController.getAthleteAcademyConnectionRequests
+    getAthleteAcademyConnectionRequests
 );
 
 
-// ======================================================
-// COACH : ACADEMY REQUESTS
-// ======================================================
+// =====================================================
+// ACADEMY ↔ COACH
+// =====================================================
 
-// Coach receives requests from academies
+router.post(
+    "/academy/send/coach/:coachId",
+    authMiddleware,
+    sendAcademyCoachConnectionRequest
+);
+
+router.post(
+    "/coach/send/academy/:academyId",
+    authMiddleware,
+    sendCoachAcademyConnectionRequest
+);
+
+router.get(
+    "/academy/status/coach/:coachId",
+    authMiddleware,
+    getAcademyCoachConnectionStatus
+);
+
+router.get(
+    "/coach/status/academy/:academyId",
+    authMiddleware,
+    getCoachAcademyConnectionStatus
+);
+
 router.get(
     "/coach/academy-requests",
     authMiddleware,
-    connectionController.getCoachAcademyConnectionRequests
+    getCoachAcademyConnectionRequests
 );
 
 
-// ======================================================
-// CONNECTED ATHLETES / COACHES / ACADEMIES
-// ======================================================
+// =====================================================
+// SCOUT → ATHLETE
+// =====================================================
+
+router.post(
+    "/scout/send/:athleteId",
+    authMiddleware,
+    sendScoutConnectionRequest
+);
+
+router.get(
+    "/scout/status/:athleteId",
+    authMiddleware,
+    getScoutConnectionStatus
+);
+
+
+// Scout's outgoing pending requests
+router.get(
+    "/scout/requests",
+    authMiddleware,
+    getScoutConnectionRequests
+);
+
+
+// =====================================================
+// ATHLETE ← SCOUT REQUESTS
+// =====================================================
+
+// Athlete will see Scout requests here
+router.get(
+    "/athlete/scout-requests",
+    authMiddleware,
+    getAthleteScoutConnectionRequests
+);
+
+
+// =====================================================
+// CONNECTED USERS
+// =====================================================
 
 // Coach → connected athletes
 router.get(
-    "/coach/athletes",
+    "/coach/connected-athletes",
     authMiddleware,
-    connectionController.getCoachConnectedAthletes
+    getCoachConnectedAthletes
 );
 
 // Athlete → connected coaches
 router.get(
-    "/athlete/coaches",
+    "/athlete/connected-coaches",
     authMiddleware,
-    connectionController.getAthleteConnectedCoaches
+    getAthleteConnectedCoaches
 );
+
 
 // Academy → connected athletes
 router.get(
-    "/academy/athletes",
+    "/academy/connected-athletes",
     authMiddleware,
-    connectionController.getAcademyConnectedAthletes
+    getAcademyConnectedAthletes
 );
 
 // Academy → connected coaches
 router.get(
-    "/academy/coaches",
+    "/academy/connected-coaches",
     authMiddleware,
-    connectionController.getAcademyConnectedCoaches
+    getAcademyConnectedCoaches
 );
+
 
 // Athlete → connected academies
 router.get(
-    "/athlete/academies",
+    "/athlete/connected-academies",
     authMiddleware,
-    connectionController.getAthleteConnectedAcademies
+    getAthleteConnectedAcademies
 );
 
 // Coach → connected academies
 router.get(
-    "/coach/academies",
+    "/coach/connected-academies",
     authMiddleware,
-    connectionController.getCoachConnectedAcademies
+    getCoachConnectedAcademies
 );
 
 
-// ======================================================
+// Scout → connected athletes
+router.get(
+    "/scout/connected-athletes",
+    authMiddleware,
+    getScoutConnectedAthletes
+);
+
+
+// Athlete → connected scouts
+router.get(
+    "/athlete/connected-scouts",
+    authMiddleware,
+    getAthleteConnectedScouts
+);
+
+
+// =====================================================
+// COMMON REQUEST RESPONSE
+// =====================================================
+
+router.put(
+    "/respond/:connectionId",
+    authMiddleware,
+    respondToConnectionRequest
+);
+
+
+// =====================================================
 // DISCONNECT
-// ======================================================
+// =====================================================
 
 router.delete(
-    "/disconnect/:connectionId",
+    "/:connectionId",
     authMiddleware,
-    connectionController.disconnectConnection
+    disconnectConnection
 );
 
 

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -54,6 +53,20 @@ const Opportunities = () => {
 
   const getToken = () => {
     return localStorage.getItem("token");
+  };
+
+  // ======================================================
+  // NORMALIZE SPORT
+  // ======================================================
+
+  const normalizeSport = (sport) => {
+    if (!sport) {
+      return "";
+    }
+
+    return String(sport)
+      .trim()
+      .toLowerCase();
   };
 
   // ======================================================
@@ -195,9 +208,36 @@ const Opportunities = () => {
   // ======================================================
 
   useEffect(() => {
-    fetchOpportunities();
-    fetchMyApplications();
-    fetchAthleteProfile();
+    const loadData = async () => {
+      try {
+        /*
+         * IMPORTANT:
+         * Athlete profile is fetched first.
+         * This ensures athleteProfile.sport is available
+         * before opportunity filtering happens.
+         */
+        await fetchAthleteProfile();
+
+        await Promise.all([
+          fetchOpportunities(),
+          fetchMyApplications()
+        ]);
+      } catch (err) {
+        console.error(
+          "Initial Opportunities Load Error:",
+          err
+        );
+
+        setError(
+          err.message ||
+            "Failed to load opportunities."
+        );
+
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
   // ======================================================
@@ -388,7 +428,6 @@ const Opportunities = () => {
         response.data?.message ||
           "Application submitted successfully."
       );
-
     } catch (err) {
       console.error(
         "Submit Application Error:",
@@ -427,6 +466,47 @@ const Opportunities = () => {
 
   const filteredOpportunities =
     opportunities.filter((item) => {
+      // --------------------------------------------------
+      // ATHLETE SPORT FILTER
+      // --------------------------------------------------
+
+      const athleteSport =
+        normalizeSport(
+          athleteProfile?.sport
+        );
+
+      const opportunitySport =
+        normalizeSport(
+          item.sport
+        );
+
+      /*
+       * IMPORTANT:
+       *
+       * Only show opportunities belonging to the
+       * athlete's sport.
+       *
+       * Example:
+       *
+       * athleteSport = "cricket"
+       *
+       * opportunitySport = "cricket" -> SHOW
+       * opportunitySport = "football" -> HIDE
+       *
+       * If athlete sport is missing, don't show
+       * opportunities because we cannot safely determine
+       * which opportunities belong to the athlete.
+       */
+
+      const matchesSport =
+        athleteSport !== "" &&
+        opportunitySport !== "" &&
+        athleteSport === opportunitySport;
+
+      // --------------------------------------------------
+      // SEARCH FILTER
+      // --------------------------------------------------
+
       const searchText =
         search.trim().toLowerCase();
 
@@ -445,11 +525,16 @@ const Opportunities = () => {
           ?.toLowerCase()
           .includes(searchText);
 
+      // --------------------------------------------------
+      // TYPE FILTER
+      // --------------------------------------------------
+
       const matchesType =
         type === "All" ||
         item.type === type;
 
       return (
+        matchesSport &&
         matchesSearch &&
         matchesType
       );
@@ -682,10 +767,30 @@ const Opportunities = () => {
               </span>
 
               <button
-                onClick={() => {
-                  fetchOpportunities();
-                  fetchMyApplications();
-                  fetchAthleteProfile();
+                onClick={async () => {
+                  try {
+                    setError("");
+
+                    const profile =
+                      await fetchAthleteProfile();
+
+                    if (profile) {
+                      await Promise.all([
+                        fetchOpportunities(),
+                        fetchMyApplications()
+                      ]);
+                    }
+                  } catch (err) {
+                    console.error(
+                      "Retry Error:",
+                      err
+                    );
+
+                    setError(
+                      err.message ||
+                        "Failed to reload opportunities."
+                    );
+                  }
                 }}
               >
                 Try Again
@@ -730,7 +835,9 @@ const Opportunities = () => {
               <p>
                 {search || type !== "All"
                   ? "Try changing your search or filters."
-                  : "There are no active opportunities available right now."}
+                  : athleteProfile?.sport
+                    ? `There are no active ${athleteProfile.sport} opportunities available right now.`
+                    : "Your sport is not available in your athlete profile."}
               </p>
 
             </div>

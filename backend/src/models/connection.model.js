@@ -14,6 +14,12 @@ const connectionSchema = new mongoose.Schema(
             default: undefined
         },
 
+        scout: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: undefined
+        },
+
         athlete: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
@@ -25,7 +31,8 @@ const connectionSchema = new mongoose.Schema(
             enum: [
                 "coach",
                 "academy",
-                "athlete"
+                "athlete",
+                "scout"
             ],
             required: true
         },
@@ -55,6 +62,7 @@ connectionSchema.pre("validate", function () {
     const participants = [
         this.coach,
         this.academy,
+        this.scout,
         this.athlete
     ].filter(Boolean);
 
@@ -109,6 +117,22 @@ connectionSchema.index(
         partialFilterExpression: {
             academy: { $type: "objectId" },
             coach: { $type: "objectId" }
+        }
+    }
+);
+
+
+// =========================================================
+// SCOUT ↔ ATHLETE
+// =========================================================
+
+connectionSchema.index(
+    { scout: 1, athlete: 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            scout: { $type: "objectId" },
+            athlete: { $type: "objectId" }
         }
     }
 );
