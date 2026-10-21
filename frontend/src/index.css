@@ -13013,3 +13013,294 @@ body {
   opacity: 0.65;
   cursor: wait;
 }
+
+/* ================================
+   SCOUT SETTINGS PAGE
+   Athlyx — Graphite + Copper Theme
+================================ */
+
+.settings-page {
+  min-height: 100vh;
+  margin-left: 82px;
+  padding: 28px 24px;
+  background: #111315;
+  color: #f1f1f1;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* Main content */
+.settings-main {
+  width: 100%;
+  max-width: none;
+  margin: 0 ;
+  box-sizing: border-box;
+}
+
+/* Header */
+.settings-header {
+  margin-bottom: 30px;
+}
+
+.settings-header h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.settings-header p {
+  margin: 0;
+  color: #a4a7ab;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Sections */
+.settings-section {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: #1a1c1f;
+  border: 1px solid #303236;
+  border-radius: 12px;
+}
+
+.settings-section h2 {
+  margin: 0 0 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #303236;
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+/* Individual settings rows */
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid #2c2e31;
+}
+
+.settings-item:first-of-type {
+  padding-top: 0;
+}
+
+.settings-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.settings-item-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.settings-item-left > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #c49a6c;
+  font-size: 20px;
+}
+
+.settings-item-left h3 {
+  margin: 0 0 5px;
+  color: #eeeeee;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.settings-item-left p {
+  margin: 0;
+  color: #999da3;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Form inputs */
+.settings-input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #393c40;
+  border-radius: 8px;
+  outline: none;
+  background: #121416;
+  color: #f3f3f3;
+  font: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.settings-input::placeholder {
+  color: #777b81;
+}
+
+.settings-input:focus {
+  border-color: #c49a6c;
+  box-shadow: 0 0 0 2px rgba(196, 154, 108, 0.12);
+}
+
+.settings-input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.settings-item > .settings-input {
+  max-width: 420px;
+}
+
+/* Buttons — reset browser defaults */
+.settings-page button {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.settings-primary-btn,
+.settings-secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 11px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.settings-primary-btn {
+  border: 1px solid #c49a6c;
+  background: #c49a6c;
+  color: #171717;
+}
+
+.settings-primary-btn:hover {
+  background: #d2ab80;
+  border-color: #d2ab80;
+  transform: translateY(-1px);
+}
+
+.settings-secondary-btn {
+  border: 1px solid #414348;
+  background: #242629;
+  color: #e5e5e5;
+}
+
+.settings-secondary-btn:hover {
+  background: #303236;
+  border-color: #c49a6c;
+  color: #ffffff;
+}
+
+.settings-primary-btn:disabled,
+.settings-secondary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Save / Back actions */
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Feedback messages */
+.settings-success {
+  margin-top: 14px;
+  color: #86c99a;
+  font-size: 13px;
+}
+
+.settings-error {
+  margin-top: 14px;
+  color: #f08b8b;
+  font-size: 13px;
+}
+
+/* Password / security fields */
+.settings-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-form-group label {
+  color: #d9d9d9;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .settings-page {
+    margin-left: 70px;
+    padding: 24px 18px;
+  }
+
+  .settings-item > .settings-input {
+    max-width: 320px;
+  }
+}
+
+@media (max-width: 600px) {
+  .settings-page {
+    margin-left: 0;
+    padding: 20px 14px;
+  }
+
+  .settings-header h1 {
+    font-size: 24px;
+  }
+
+  .settings-section {
+    padding: 18px;
+  }
+
+  .settings-item {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .settings-item > .settings-input {
+    max-width: none;
+  }
+
+  .settings-actions {
+    justify-content: stretch;
+  }
+
+  .settings-actions button {
+    flex: 1;
+  }
+
+  .settings-primary-btn,
+  .settings-secondary-btn {
+    white-space: normal;
+  }
+}

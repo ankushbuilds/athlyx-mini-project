@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -14,7 +14,6 @@ import {
 import ScoutSidebar from "../../components/ScoutSidebar";
 
 const API = "http://localhost:5000/api";
-const SHORTLIST_KEY = "scoutShortlist";
 
 const ScoutDiscover = () => {
   const navigate = useNavigate();
@@ -28,23 +27,39 @@ const ScoutDiscover = () => {
   const [search, setSearch] = useState("");
   const [position, setPosition] = useState("");
 
-  const [shortlistedAthletes, setShortlistedAthletes] = useState(() => {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem(SHORTLIST_KEY) || "[]"
-      );
-
-      return Array.isArray(saved) ? saved : [];
-    } catch {
-      return [];
-    }
-  });
-
+  // Shortlist entries now come from MongoDB.
+  const [shortlistedAthletes, setShortlistedAthletes] = useState([]);
   const [shortlistLoading, setShortlistLoading] = useState({});
 
   const normalizedScoutSport = String(scoutSport)
     .trim()
     .toLowerCase();
+
+  const getAuthConfig = () => ({
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`
+    },
+    timeout: 10000
+  });
+
+  // ==========================================
+  // LOAD SHORTLIST FROM BACKEND
+  // ==========================================
+
+  const fetchShortlist = useCallback(async () => {
+    const response = await axios.get(
+      `${API}/shortlist`,
+      getAuthConfig()
+    );
+
+    const entries = Array.isArray(response.data?.shortlist)
+      ? response.data.shortlist
+      : [];
+
+    setShortlistedAthletes(entries);
+
+    return entries;
+  }, []);
 
   // ==========================================
   // LOAD SCOUT PROFILE AND ATHLETES
@@ -165,6 +180,35 @@ const ScoutDiscover = () => {
           : [];
 
         setAthletes(allAthletes);
+
+        // Load shortlist independently so a shortlist error
+        // does not hide the athlete discovery page.
+        try {
+          const shortlistResponse = await axios.get(
+            `${API}/shortlist`,
+            config
+          );
+
+          if (cancelled) return;
+
+          setShortlistedAthletes(
+            Array.isArray(shortlistResponse.data?.shortlist)
+              ? shortlistResponse.data.shortlist
+              : []
+          );
+        } catch (shortlistError) {
+          console.error(
+            "Failed to load shortlist:",
+            shortlistError.response?.data || shortlistError.message
+          );
+
+          if (!cancelled) {
+            setError(
+              shortlistError.response?.data?.message ||
+              "Could not load your shortlist. Please refresh the page."
+            );
+          }
+        }
       } catch (err) {
         if (cancelled) return;
 
@@ -269,6 +313,21 @@ const ScoutDiscover = () => {
   };
 
   // ==========================================
+  // CHECK SHORTLIST STATUS
+  // ==========================================
+
+  const isShortlisted = (athleteId) => {
+    return shortlistedAthletes.some((item) => {
+      const savedAthleteId =
+        item?.athlete?._id ||
+        item?.athlete ||
+        item?.athleteId;
+
+      return String(savedAthleteId) === String(athleteId);
+    });
+  };
+
+  // ==========================================
   // ATHLETES IN THIS SCOUT'S SPORT ONLY
   // ==========================================
 
@@ -278,9 +337,7 @@ const ScoutDiscover = () => {
     }
 
     return athletes.filter((athlete) => {
-      const athleteSport = String(
-        athlete?.sport || ""
-      )
+      const athleteSport = String(athlete?.sport || "")
         .trim()
         .toLowerCase();
 
@@ -316,15 +373,11 @@ const ScoutDiscover = () => {
     return sportAthletes.filter((athlete) => {
       const name = getAthleteName(athlete).toLowerCase();
 
-      const athleteSport = String(
-        athlete?.sport || ""
-      )
+      const athleteSport = String(athlete?.sport || "")
         .trim()
         .toLowerCase();
 
-      const athletePosition = String(
-        athlete?.position || ""
-      )
+      const athletePosition = String(athlete?.position || "")
         .trim()
         .toLowerCase();
 
@@ -351,22 +404,17 @@ const ScoutDiscover = () => {
   }, [sportAthletes, search, position]);
 
   // ==========================================
-  // SHORTLIST HELPERS
+  // ADD / REMOVE SHORTLIST USING MONGODB
   // ==========================================
 
-  const isShortlisted = (athleteId) => {
-    return shortlistedAthletes.some(
-      (item) => String(item._id) === String(athleteId)
-    );
-  };
-
-  const toggleShortlist = (event, athlete) => {
-    // Do not open the athlete profile when clicking this button.
+  const toggleShortlist = async (event, athlete) => {
     event.stopPropagation();
 
     const athleteId = String(athlete._id);
 
     if (shortlistLoading[athleteId]) return;
+
+    const alreadyShortlisted = isShortlisted(athleteId);
 
     setShortlistLoading((previous) => ({
       ...previous,
@@ -374,33 +422,34 @@ const ScoutDiscover = () => {
     }));
 
     try {
-      const saved = JSON.parse(
-        localStorage.getItem(SHORTLIST_KEY) || "[]"
-      );
-
-      const currentShortlist = Array.isArray(saved) ? saved : [];
-
-      const alreadyShortlisted = currentShortlist.some(
-        (item) => String(item._id) === athleteId
-      );
-
-      const updatedShortlist = alreadyShortlisted
-        ? currentShortlist.filter(
-            (item) => String(item._id) !== athleteId
-          )
-        : [...currentShortlist, athlete];
-
-      localStorage.setItem(
-        SHORTLIST_KEY,
-        JSON.stringify(updatedShortlist)
-      );
-
-      setShortlistedAthletes(updatedShortlist);
       setError("");
+
+      if (alreadyShortlisted) {
+        // Remove this athlete from the scout's database shortlist.
+        await axios.delete(
+          `${API}/shortlist/${athleteId}`,
+          getAuthConfig()
+        );
+      } else {
+        // Add this Athlete profile ID to the database shortlist.
+        await axios.post(
+          `${API}/shortlist/${athleteId}`,
+          {},
+          getAuthConfig()
+        );
+      }
+
+      // Fetch the authoritative shortlist from MongoDB.
+      await fetchShortlist();
     } catch (err) {
-      console.error("Failed to update shortlist:", err);
+      console.error(
+        "Failed to update shortlist:",
+        err.response?.data || err.message
+      );
+
       setError(
-        "Unable to update your shortlist. Please check browser storage and try again."
+        err.response?.data?.message ||
+        "Unable to update shortlist. Please try again."
       );
     } finally {
       setShortlistLoading((previous) => ({

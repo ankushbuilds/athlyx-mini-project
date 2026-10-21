@@ -2,6 +2,8 @@ const Conversation = require("../models/conversation.model");
 const Message = require("../models/message.model");
 const Connection = require("../models/connection.model");
 const User = require("../models/user.model");
+const Shortlist = require("../models/shortlist.model");
+const Athlete = require("../models/athlete.model");
 
 // ======================================================
 // HELPER: CHECK ACCEPTED CONNECTION
@@ -112,6 +114,61 @@ async function checkAcceptedConnection(userId, otherUserId) {
                 user,
                 otherUser,
                 connection
+            };
+        }
+
+        // ==================================================
+        // SCOUT ↔ SHORTLISTED ATHLETE
+        // ==================================================
+
+        const scoutAthletePair =
+            (user.role === "scout" &&
+                otherUser.role === "athlete") ||
+            (user.role === "athlete" &&
+                otherUser.role === "scout");
+
+        if (scoutAthletePair) {
+            const scoutId =
+                user.role === "scout"
+                    ? user._id
+                    : otherUser._id;
+
+            const athleteUserId =
+                user.role === "athlete"
+                    ? user._id
+                    : otherUser._id;
+
+            // Find the Athlete profile belonging to this User.
+            const athleteProfile = await Athlete.findOne({
+                user: athleteUserId
+            }).select("_id");
+
+            if (!athleteProfile) {
+                return {
+                    allowed: false,
+                    message: "Athlete profile not found"
+                };
+            }
+
+            // The scout must have shortlisted this athlete.
+            const shortlistEntry = await Shortlist.findOne({
+                scout: scoutId,
+                athlete: athleteProfile._id
+            });
+
+            if (!shortlistEntry) {
+                return {
+                    allowed: false,
+                    message:
+                        "You can only chat with athletes in your shortlist"
+                };
+            }
+
+            return {
+                allowed: true,
+                user,
+                otherUser,
+                shortlistEntry
             };
         }
 
@@ -414,6 +471,22 @@ async function getMyConversations(req, res) {
                     "athlete"
                 );
         }
+        // ==================================================
+        // SCOUT — SHORTLISTED ATHLETES
+        // ==================================================
+
+        else if (currentUser.role === "scout") {
+            connections = await Shortlist.find({
+                scout: userId
+            }).populate({
+                path: "athlete",
+                select: "user",
+                populate: {
+                    path: "user",
+                    select: "_id"
+                }
+            });
+        }
 
         // ==================================================
         // OTHER ROLES
@@ -464,6 +537,11 @@ async function getMyConversations(req, res) {
                     )
                     .filter(Boolean);
         }
+        else if (currentUser.role === "scout") {
+    connectedUserIds = connections
+        .map(connection => connection.athlete?.user?._id)
+        .filter(Boolean);
+}
 
         // ==================================================
         // REMOVE DUPLICATES
@@ -581,52 +659,57 @@ async function getMyConversations(req, res) {
         // ==================================================
         // GET ALL CONVERSATIONS
         // ==================================================
+const allConversations = await Conversation.find({
+    participants: userId
+})
+    .populate(
+        "participants",
+        "name email role profilePic"
+    )
+    .populate(
+        "lastMessage",
+        "sender receiver text read createdAt"
+    )
+    .sort({
+        lastMessageAt: -1,
+        updatedAt: -1
+    });
 
-        const conversations =
-            await Conversation.find({
-                participants: userId
-            })
-                .populate(
-                    "participants",
-                    "name email role profilePic"
-                )
-                .populate(
-                    "lastMessage",
-                    "sender receiver text read createdAt"
-                )
-                .sort({
-                    lastMessageAt: -1,
-                    updatedAt: -1
-                });
+// Return only conversations that remain authorized.
+const authorizedConversations = [];
 
-        // ==================================================
-        // ADD UNREAD COUNT
-        // ==================================================
+for (const conversation of allConversations) {
+    const otherParticipant = conversation.participants.find(
+        participant =>
+            participant._id.toString() !== userId.toString()
+    );
 
-        const conversationsWithUnreadCount =
-            await Promise.all(
-                conversations.map(
-                    async conversation => {
+    if (!otherParticipant) continue;
 
-                        const unreadCount =
-                            await Message.countDocuments({
-                                conversation:
-                                    conversation._id,
+    const check = await checkAcceptedConnection(
+        userId,
+        otherParticipant._id
+    );
 
-                                receiver:
-                                    userId,
+    if (check.allowed) {
+        authorizedConversations.push(conversation);
+    }
+}
 
-                                read: false
-                            });
+const conversationsWithUnreadCount = await Promise.all(
+    authorizedConversations.map(async conversation => {
+        const unreadCount = await Message.countDocuments({
+            conversation: conversation._id,
+            receiver: userId,
+            read: false
+        });
 
-                        return {
-                            ...conversation.toObject(),
-
-                            unreadCount
-                        };
-                    }
-                )
-            );
+        return {
+            ...conversation.toObject(),
+            unreadCount
+        };
+    })
+);
 
         // ==================================================
         // RETURN

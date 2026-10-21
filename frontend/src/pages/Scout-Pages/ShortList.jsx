@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 import {
   FiBookmark,
@@ -13,7 +14,7 @@ import {
 
 import ScoutSidebar from "../../components/ScoutSidebar";
 
-const SHORTLIST_KEY = "scoutShortlist";
+const API = "http://localhost:5000/api";
 
 const ShortList = () => {
   const navigate = useNavigate();
@@ -25,36 +26,59 @@ const ShortList = () => {
   const [search, setSearch] = useState("");
 
   // ==========================================
-  // LOAD SHORTLIST FROM LOCAL STORAGE
+  // LOAD SHORTLIST FROM BACKEND
   // ==========================================
 
-  const fetchShortlist = () => {
+  const fetchShortlist = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
-      const saved = JSON.parse(
-        localStorage.getItem(SHORTLIST_KEY) || "[]"
-      );
+      const token = localStorage.getItem("token");
 
-      setAthletes(Array.isArray(saved) ? saved : []);
+      if (!token) {
+        setAthletes([]);
+        setError("Please log in to view your shortlist.");
+        return;
+      }
+
+      const response = await axios.get(`${API}/shortlist`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const shortlist = response.data?.shortlist;
+
+      // Each shortlist entry contains the populated athlete.
+      const savedAthletes = Array.isArray(shortlist)
+        ? shortlist
+            .map((item) => item?.athlete)
+            .filter(
+              (athlete) =>
+                athlete && typeof athlete === "object" && athlete._id
+            )
+        : [];
+
+      setAthletes(savedAthletes);
     } catch (err) {
-      console.error("Failed to read shortlist:", err);
+      console.error(
+        "Failed to load shortlist:",
+        err.response?.data || err.message
+      );
 
       setError(
-        "Unable to load your shortlist. Please try refreshing."
+        err.response?.data?.message ||
+          "Unable to load your shortlist. Please try refreshing."
       );
-
-      setAthletes([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchShortlist();
 
-    // Refresh the list when returning to this browser tab.
     const handleFocus = () => fetchShortlist();
 
     window.addEventListener("focus", handleFocus);
@@ -62,13 +86,13 @@ const ShortList = () => {
     return () => {
       window.removeEventListener("focus", handleFocus);
     };
-  }, []);
+  }, [fetchShortlist]);
 
   // ==========================================
-  // REMOVE ATHLETE FROM SHORTLIST
+  // REMOVE ATHLETE FROM BACKEND SHORTLIST
   // ==========================================
 
-  const removeAthlete = (athleteId) => {
+  const removeAthlete = async (athleteId) => {
     const confirmed = window.confirm(
       "Remove this athlete from your shortlist?"
     );
@@ -79,30 +103,28 @@ const ShortList = () => {
     setError("");
 
     try {
-      const saved = JSON.parse(
-        localStorage.getItem(SHORTLIST_KEY) || "[]"
+      const token = localStorage.getItem("token");
+
+      await axios.delete(`${API}/shortlist/${athleteId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setAthletes((current) =>
+        current.filter(
+          (athlete) => String(athlete._id) !== String(athleteId)
+        )
       );
-
-      const currentShortlist = Array.isArray(saved)
-        ? saved
-        : [];
-
-      const updated = currentShortlist.filter(
-        (athlete) =>
-          String(athlete._id) !== String(athleteId)
-      );
-
-      localStorage.setItem(
-        SHORTLIST_KEY,
-        JSON.stringify(updated)
-      );
-
-      setAthletes(updated);
     } catch (err) {
-      console.error("Failed to remove athlete:", err);
+      console.error(
+        "Failed to remove athlete:",
+        err.response?.data || err.message
+      );
 
       setError(
-        "Failed to remove athlete. Please try again."
+        err.response?.data?.message ||
+          "Failed to remove athlete. Please try again."
       );
     } finally {
       setRemovingId(null);
@@ -159,9 +181,7 @@ const ShortList = () => {
       .join(" ")
       .toLowerCase();
 
-    return searchableText.includes(
-      search.trim().toLowerCase()
-    );
+    return searchableText.includes(search.trim().toLowerCase());
   });
 
   // ==========================================
@@ -195,9 +215,7 @@ const ShortList = () => {
             disabled={loading}
           >
             <FiRefreshCw
-              className={
-                loading ? "shortlist-spinning" : ""
-              }
+              className={loading ? "shortlist-spinning" : ""}
             />
             Refresh
           </button>
@@ -239,9 +257,7 @@ const ShortList = () => {
             type="text"
             placeholder="Search by name, sport, position..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
+            onChange={(event) => setSearch(event.target.value)}
           />
         </div>
 
@@ -271,9 +287,7 @@ const ShortList = () => {
               <button
                 type="button"
                 className="shortlist-primary-btn"
-                onClick={() =>
-                  navigate("/scout/discover")
-                }
+                onClick={() => navigate("/scout/discover")}
               >
                 Discover Athletes
               </button>
@@ -364,13 +378,11 @@ const ShortList = () => {
                   {Array.isArray(athlete.skills) &&
                     athlete.skills.length > 0 && (
                       <div className="athlete-skills">
-                        {athlete.skills
-                          .slice(0, 3)
-                          .map((skill, index) => (
-                            <span key={`${skill}-${index}`}>
-                              {skill}
-                            </span>
-                          ))}
+                        {athlete.skills.slice(0, 3).map((skill, index) => (
+                          <span key={`${skill}-${index}`}>
+                            {skill}
+                          </span>
+                        ))}
                       </div>
                     )}
 
@@ -381,9 +393,7 @@ const ShortList = () => {
                       type="button"
                       className="shortlist-view-btn"
                       onClick={() =>
-                        navigate(
-                          `/scout/athlete/${athlete._id}`
-                        )
+                        navigate(`/scout/athlete/${athlete._id}`)
                       }
                     >
                       <FiEye />
@@ -394,18 +404,14 @@ const ShortList = () => {
                       type="button"
                       className="shortlist-remove-btn"
                       disabled={
-                        String(removingId) ===
-                        String(athlete._id)
+                        String(removingId) === String(athlete._id)
                       }
-                      onClick={() =>
-                        removeAthlete(athlete._id)
-                      }
+                      onClick={() => removeAthlete(athlete._id)}
                       title="Remove from shortlist"
                     >
                       <FiTrash2 />
 
-                      {String(removingId) ===
-                      String(athlete._id)
+                      {String(removingId) === String(athlete._id)
                         ? "Removing..."
                         : "Remove"}
                     </button>

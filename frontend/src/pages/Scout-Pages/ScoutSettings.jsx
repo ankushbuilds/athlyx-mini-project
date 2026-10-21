@@ -1,568 +1,850 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
-    FiSettings,
-    FiUser,
-    FiMail,
-    FiPhone,
-    FiMapPin,
+    FiTrash2,
     FiLock,
-    FiSave,
-    FiArrowLeft
+    FiUser,
+    FiLogOut,
+    FiEye,
+    FiPhone,
+    FiBell,
+    FiAward,
+    FiMail
 } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
-
 import ScoutSidebar from "../../components/ScoutSidebar";
 
 const API = "http://localhost:5000/api";
 
+const Toggle = ({ enabled, setEnabled, onChange, disabled }) => (
+    <button
+        type="button"
+        className={`settings-toggle ${enabled ? "active" : ""}`}
+        onClick={() => {
+            if (disabled) return;
+
+            const newValue = !enabled;
+            setEnabled(newValue);
+            onChange?.(newValue);
+        }}
+        aria-label="Toggle setting"
+        disabled={disabled}
+    >
+        <span></span>
+    </button>
+);
+
 const ScoutSettings = () => {
     const navigate = useNavigate();
 
-    const [profile, setProfile] = useState({
-        name: "",
-        email: "",
-        phone: "",
-        address: ""
-    });
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showEmailModal, setShowEmailModal] = useState(false);
 
-    const [passwords, setPasswords] = useState({
+    const [loading, setLoading] = useState(false);
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [emailLoading, setEmailLoading] = useState(false);
+    const [settingsLoading, setSettingsLoading] = useState(true);
+    const [settingsSaving, setSettingsSaving] = useState(false);
+
+    const [profileVisibility, setProfileVisibility] = useState("Public");
+    const [contactVisible, setContactVisible] = useState(true);
+    const [messageNotifications, setMessageNotifications] = useState(true);
+    const [opportunityNotifications, setOpportunityNotifications] = useState(true);
+    const [emailNotifications, setEmailNotifications] = useState(true);
+
+    const [passwordData, setPasswordData] = useState({
         currentPassword: "",
         newPassword: "",
         confirmPassword: ""
     });
 
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [changingPassword, setChangingPassword] =
-        useState(false);
+    const [emailData, setEmailData] = useState({
+        newEmail: "",
+        currentPassword: ""
+    });
 
-    const token = localStorage.getItem("token");
+    // ==========================================
+    // FETCH SETTINGS
+    // ==========================================
 
-    const config = {
-        headers: {
-            Authorization: `Bearer ${token}`
+    const fetchSettings = async () => {
+        try {
+            setSettingsLoading(true);
+
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                navigate("/auth");
+                return;
+            }
+
+            const response = await axios.get(
+                `${API}/auth/settings`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            const settings = response.data.settings || {};
+
+            setProfileVisibility(settings.profileVisibility || "Public");
+            setContactVisible(settings.contactVisible ?? true);
+            setMessageNotifications(settings.messageNotifications ?? true);
+            setOpportunityNotifications(settings.opportunityNotifications ?? true);
+            setEmailNotifications(settings.emailNotifications ?? true);
+        } catch (error) {
+            console.error("Fetch settings error:", error);
+
+            if (error.response?.status === 401) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                navigate("/auth");
+                return;
+            }
+
+            alert(
+                error.response?.data?.message ||
+                "Failed to load settings"
+            );
+        } finally {
+            setSettingsLoading(false);
         }
     };
-
-    // =====================================================
-    // FETCH SETTINGS
-    // =====================================================
 
     useEffect(() => {
         fetchSettings();
     }, []);
 
-    const fetchSettings = async () => {
+    // ==========================================
+    // UPDATE PRIVACY & NOTIFICATIONS
+    // ==========================================
+
+    const updateSettings = async (updatedSettings) => {
         try {
-            setLoading(true);
+            const token = localStorage.getItem("token");
 
-            const response = await axios.get(
-                `${API}/auth/me`,
-                config
-            );
-
-            const user =
-                response.data?.user ||
-                response.data;
-
-            setProfile({
-                name: user?.name || "",
-                email: user?.email || "",
-                phone: user?.phone || "",
-                address: user?.address || ""
-            });
-
-        } catch (error) {
-            console.error(
-                "Failed to fetch settings:",
-                error
-            );
-
-            // Fallback to localStorage
-            try {
-                const storedUser =
-                    JSON.parse(
-                        localStorage.getItem("user")
-                    );
-
-                if (storedUser) {
-                    setProfile({
-                        name:
-                            storedUser.name || "",
-                        email:
-                            storedUser.email || "",
-                        phone:
-                            storedUser.phone || "",
-                        address:
-                            storedUser.address || ""
-                    });
-                }
-            } catch (storageError) {
-                console.error(storageError);
+            if (!token) {
+                navigate("/auth");
+                return;
             }
 
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // =====================================================
-    // INPUT HANDLERS
-    // =====================================================
-
-    const handleProfileChange = (e) => {
-        const { name, value } = e.target;
-
-        setProfile((prev) => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handlePasswordChange = (e) => {
-        const { name, value } = e.target;
-
-        setPasswords((prev) => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    // =====================================================
-    // SAVE PROFILE
-    // =====================================================
-
-    const handleSaveProfile = async (e) => {
-        e.preventDefault();
-
-        try {
-            setSaving(true);
+            setSettingsSaving(true);
 
             const response = await axios.put(
                 `${API}/auth/settings`,
+                updatedSettings,
                 {
-                    name: profile.name,
-                    phone: profile.phone,
-                    address: profile.address
-                },
-                config
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
             );
 
-            const updatedUser =
-                response.data?.user;
+            const settings = response.data.settings || {};
 
-            if (updatedUser) {
-                localStorage.setItem(
-                    "user",
-                    JSON.stringify(updatedUser)
-                );
-            } else {
-                const storedUser =
-                    JSON.parse(
-                        localStorage.getItem("user")
-                    ) || {};
-
-                localStorage.setItem(
-                    "user",
-                    JSON.stringify({
-                        ...storedUser,
-                        name: profile.name,
-                        phone: profile.phone,
-                        address: profile.address
-                    })
-                );
-            }
-
-            alert("Settings updated successfully.");
-
+            setProfileVisibility(settings.profileVisibility || "Public");
+            setContactVisible(settings.contactVisible ?? true);
+            setMessageNotifications(settings.messageNotifications ?? true);
+            setOpportunityNotifications(settings.opportunityNotifications ?? true);
+            setEmailNotifications(settings.emailNotifications ?? true);
         } catch (error) {
-            console.error(
-                "Failed to update settings:",
-                error
-            );
+            console.error("Update settings error:", error);
+
+            if (error.response?.status === 401) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                navigate("/auth");
+                return;
+            }
 
             alert(
                 error.response?.data?.message ||
                 "Failed to update settings"
             );
+
+            // Reload saved preferences if update fails.
+            fetchSettings();
         } finally {
-            setSaving(false);
+            setSettingsSaving(false);
         }
     };
 
-    // =====================================================
+    // ==========================================
+    // DELETE ACCOUNT
+    // ==========================================
+
+    const handleDeleteAccount = async () => {
+        try {
+            setLoading(true);
+
+            const token = localStorage.getItem("token");
+
+            await axios.delete(
+                `${API}/auth/delete-account`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+
+            navigate("/auth");
+        } catch (error) {
+            console.error("Delete account error:", error);
+
+            alert(
+                error.response?.data?.message ||
+                "Failed to delete account"
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ==========================================
     // CHANGE PASSWORD
-    // =====================================================
+    // ==========================================
 
     const handleChangePassword = async (e) => {
         e.preventDefault();
 
-        if (
-            !passwords.currentPassword ||
-            !passwords.newPassword ||
-            !passwords.confirmPassword
-        ) {
-            alert("Please fill all password fields.");
+        const {
+            currentPassword,
+            newPassword,
+            confirmPassword
+        } = passwordData;
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            alert("Please fill all password fields");
             return;
         }
 
-        if (
-            passwords.newPassword !==
-            passwords.confirmPassword
-        ) {
-            alert(
-                "New password and confirm password do not match."
-            );
+        if (newPassword.length < 6) {
+            alert("New password must be at least 6 characters");
             return;
         }
 
-        if (passwords.newPassword.length < 6) {
-            alert(
-                "New password must be at least 6 characters."
-            );
+        if (newPassword !== confirmPassword) {
+            alert("New passwords do not match");
+            return;
+        }
+
+        if (currentPassword === newPassword) {
+            alert("New password must be different from your current password");
             return;
         }
 
         try {
-            setChangingPassword(true);
+            setPasswordLoading(true);
 
-            await axios.put(
+            const token = localStorage.getItem("token");
+
+            const response = await axios.put(
                 `${API}/auth/change-password`,
                 {
-                    currentPassword:
-                        passwords.currentPassword,
-
-                    newPassword:
-                        passwords.newPassword
+                    currentPassword,
+                    newPassword
                 },
-                config
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
             );
 
             alert(
-                "Password changed successfully."
+                response.data.message ||
+                "Password changed successfully"
             );
 
-            setPasswords({
+            setPasswordData({
                 currentPassword: "",
                 newPassword: "",
                 confirmPassword: ""
             });
 
+            setShowPasswordModal(false);
         } catch (error) {
-            console.error(
-                "Failed to change password:",
-                error
-            );
+            console.error("Change password error:", error);
 
             alert(
                 error.response?.data?.message ||
                 "Failed to change password"
             );
         } finally {
-            setChangingPassword(false);
+            setPasswordLoading(false);
         }
     };
 
-    // =====================================================
-    // LOADING
-    // =====================================================
+    // ==========================================
+    // CHANGE EMAIL
+    // ==========================================
 
-    if (loading) {
-        return (
-            <div className="dashboard-layout">
+    const handleChangeEmail = async (e) => {
+        e.preventDefault();
 
-                <ScoutSidebar />
+        const { newEmail, currentPassword } = emailData;
 
-                <main className="dashboard-content">
+        if (!newEmail || !currentPassword) {
+            alert("Please fill all email fields");
+            return;
+        }
 
-                    <div className="dashboard-section">
-                        <p>
-                            Loading settings...
-                        </p>
-                    </div>
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+            alert("Please enter a valid email address");
+            return;
+        }
 
-                </main>
+        try {
+            setEmailLoading(true);
 
-            </div>
-        );
-    }
+            const token = localStorage.getItem("token");
+
+            const response = await axios.put(
+                `${API}/auth/change-email`,
+                {
+                    newEmail,
+                    currentPassword
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            const user = JSON.parse(
+                localStorage.getItem("user") || "{}"
+            );
+
+            user.email = response.data.email || newEmail;
+
+            localStorage.setItem("user", JSON.stringify(user));
+
+            alert(
+                response.data.message ||
+                "Email changed successfully"
+            );
+
+            setEmailData({
+                newEmail: "",
+                currentPassword: ""
+            });
+
+            setShowEmailModal(false);
+        } catch (error) {
+            console.error("Change email error:", error);
+
+            alert(
+                error.response?.data?.message ||
+                "Failed to change email"
+            );
+        } finally {
+            setEmailLoading(false);
+        }
+    };
+
+    // ==========================================
+    // LOGOUT
+    // ==========================================
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/auth");
+    };
+
+    // ==========================================
+    // RENDER
+    // ==========================================
 
     return (
-        <div className="dashboard-layout">
-
+        <div className="settings-page">
             <ScoutSidebar />
 
-            <main className="dashboard-content">
+            <div className="settings-header">
+                <h1>Settings</h1>
+                <p>Manage your account, privacy and preferences</p>
+            </div>
 
-                {/* =================================================
-                    HEADER
-                ================================================= */}
+            {/* ACCOUNT */}
 
-                <div className="dashboard-header">
+            <div className="settings-section">
+                <h2>Account</h2>
 
-                    <div>
-                        <h1>Settings</h1>
-
-                        <p>
-                            Manage your Scout account
-                            settings.
-                        </p>
+                <div className="settings-item">
+                    <div className="settings-item-left">
+                        <FiUser />
+                        <div>
+                            <h3>Profile</h3>
+                            <p>Manage your personal and scout information</p>
+                        </div>
                     </div>
 
+                    <button
+                        type="button"
+                        onClick={() => navigate("/scout/my-profile")}
+                    >
+                        Manage
+                    </button>
                 </div>
 
-
-                {/* =================================================
-                    ACCOUNT INFORMATION
-                ================================================= */}
-
-                <div className="dashboard-section">
-
-                    <div className="section-header">
-
-                        <h2>
-                            <FiSettings />
-                            Account Information
-                        </h2>
-
+                <div className="settings-item">
+                    <div className="settings-item-left">
+                        <FiLock />
+                        <div>
+                            <h3>Change Password</h3>
+                            <p>Update your account password</p>
+                        </div>
                     </div>
 
-
-                    <form
-                        className="profile-form"
-                        onSubmit={handleSaveProfile}
+                    <button
+                        type="button"
+                        onClick={() => setShowPasswordModal(true)}
                     >
+                        Change
+                    </button>
+                </div>
 
-                        <div className="form-grid">
+                <div className="settings-item">
+                    <div className="settings-item-left">
+                        <FiMail />
+                        <div>
+                            <h3>Change Email Address</h3>
+                            <p>Update the email address linked to your account</p>
+                        </div>
+                    </div>
 
-                            <div className="form-group">
+                    <button
+                        type="button"
+                        onClick={() => setShowEmailModal(true)}
+                    >
+                        Change
+                    </button>
+                </div>
+            </div>
 
-                                <label>
-                                    <FiUser />
-                                    Name
-                                </label>
+            {/* PRIVACY */}
 
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={profile.name}
-                                    onChange={
-                                        handleProfileChange
-                                    }
-                                    placeholder="Your name"
-                                    required
-                                />
+            <div className="settings-section">
+                <h2>Privacy</h2>
 
-                            </div>
+                <div className="settings-item">
+                    <div className="settings-item-left">
+                        <FiEye />
+                        <div>
+                            <h3>Profile Visibility</h3>
+                            <p>Control who can view your scout profile</p>
+                        </div>
+                    </div>
 
+                    <select
+                        className="settings-select"
+                        value={profileVisibility}
+                        onChange={(e) => {
+                            const value = e.target.value;
 
-                            <div className="form-group">
+                            setProfileVisibility(value);
 
-                                <label>
-                                    <FiMail />
-                                    Email
-                                </label>
+                            updateSettings({
+                                profileVisibility: value,
+                                contactVisible,
+                                messageNotifications,
+                                opportunityNotifications,
+                                emailNotifications
+                            });
+                        }}
+                        disabled={settingsLoading || settingsSaving}
+                    >
+                        <option value="Public">Public</option>
+                        <option value="Private">Private</option>
+                    </select>
+                </div>
 
+                <div className="settings-item">
+                    <div className="settings-item-left">
+                        <FiPhone />
+                        <div>
+                            <h3>Contact Information</h3>
+                            <p>Show your contact information on your profile</p>
+                        </div>
+                    </div>
+
+                    <Toggle
+                        enabled={contactVisible}
+                        setEnabled={setContactVisible}
+                        onChange={(value) =>
+                            updateSettings({
+                                profileVisibility,
+                                contactVisible: value,
+                                messageNotifications,
+                                opportunityNotifications,
+                                emailNotifications
+                            })
+                        }
+                        disabled={settingsLoading || settingsSaving}
+                    />
+                </div>
+            </div>
+
+            {/* NOTIFICATIONS */}
+
+            <div className="settings-section">
+                <h2>Notifications</h2>
+
+                <div className="settings-item">
+                    <div className="settings-item-left">
+                        <FiBell />
+                        <div>
+                            <h3>Messages & Requests</h3>
+                            <p>Get notified about new messages and requests</p>
+                        </div>
+                    </div>
+
+                    <Toggle
+                        enabled={messageNotifications}
+                        setEnabled={setMessageNotifications}
+                        onChange={(value) =>
+                            updateSettings({
+                                profileVisibility,
+                                contactVisible,
+                                messageNotifications: value,
+                                opportunityNotifications,
+                                emailNotifications
+                            })
+                        }
+                        disabled={settingsLoading || settingsSaving}
+                    />
+                </div>
+
+                <div className="settings-item">
+                    <div className="settings-item-left">
+                        <FiAward />
+                        <div>
+                            <h3>Opportunity Notifications</h3>
+                            <p>Receive notifications about athlete opportunities</p>
+                        </div>
+                    </div>
+
+                    <Toggle
+                        enabled={opportunityNotifications}
+                        setEnabled={setOpportunityNotifications}
+                        onChange={(value) =>
+                            updateSettings({
+                                profileVisibility,
+                                contactVisible,
+                                messageNotifications,
+                                opportunityNotifications: value,
+                                emailNotifications
+                            })
+                        }
+                        disabled={settingsLoading || settingsSaving}
+                    />
+                </div>
+
+                <div className="settings-item">
+                    <div className="settings-item-left">
+                        <FiMail />
+                        <div>
+                            <h3>Email Notifications</h3>
+                            <p>Receive important updates through email</p>
+                        </div>
+                    </div>
+
+                    <Toggle
+                        enabled={emailNotifications}
+                        setEnabled={setEmailNotifications}
+                        onChange={(value) =>
+                            updateSettings({
+                                profileVisibility,
+                                contactVisible,
+                                messageNotifications,
+                                opportunityNotifications,
+                                emailNotifications: value
+                            })
+                        }
+                        disabled={settingsLoading || settingsSaving}
+                    />
+                </div>
+
+                {settingsLoading && (
+                    <p>Loading settings...</p>
+                )}
+            </div>
+
+            {/* DANGER ZONE */}
+
+            <div className="settings-section danger-section">
+                <h2>Danger Zone</h2>
+
+                <div className="settings-item delete-item">
+                    <div className="settings-item-left">
+                        <FiTrash2 />
+                        <div>
+                            <h3>Delete Account</h3>
+                            <p>Permanently delete your Athlyx account and profile</p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        className="delete-btn"
+                        onClick={() => setShowDeleteModal(true)}
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+
+            {/* SESSION */}
+
+            <div className="settings-section">
+                <h2>Session</h2>
+
+                <div className="settings-item">
+                    <div className="settings-item-left">
+                        <FiLogOut />
+                        <div>
+                            <h3>Logout</h3>
+                            <p>Sign out from your Athlyx account</p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => setShowLogoutModal(true)}
+                    >
+                        Logout
+                    </button>
+                </div>
+            </div>
+
+            {/* CHANGE EMAIL MODAL */}
+
+            {showEmailModal && (
+                <div className="email-modal-overlay">
+                    <div className="email-modal">
+                        <FiMail className="email-modal-icon" />
+
+                        <h2>Change Email Address</h2>
+                        <p>Enter your new email address and current password.</p>
+
+                        <form onSubmit={handleChangeEmail}>
+                            <div className="email-field">
+                                <label>New Email Address</label>
                                 <input
                                     type="email"
-                                    value={profile.email}
-                                    disabled
-                                />
-
-                            </div>
-
-
-                            <div className="form-group">
-
-                                <label>
-                                    <FiPhone />
-                                    Phone
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    value={profile.phone}
-                                    onChange={
-                                        handleProfileChange
+                                    value={emailData.newEmail}
+                                    onChange={(e) =>
+                                        setEmailData({
+                                            ...emailData,
+                                            newEmail: e.target.value
+                                        })
                                     }
-                                    placeholder="Phone number"
+                                    placeholder="Enter new email"
+                                    required
                                 />
-
                             </div>
 
-
-                            <div className="form-group full-width">
-
-                                <label>
-                                    <FiMapPin />
-                                    Address
-                                </label>
-
+                            <div className="email-field">
+                                <label>Current Password</label>
                                 <input
-                                    type="text"
-                                    name="address"
-                                    value={profile.address}
-                                    onChange={
-                                        handleProfileChange
+                                    type="password"
+                                    value={emailData.currentPassword}
+                                    onChange={(e) =>
+                                        setEmailData({
+                                            ...emailData,
+                                            currentPassword: e.target.value
+                                        })
                                     }
-                                    placeholder="Address"
+                                    placeholder="Enter current password"
+                                    required
                                 />
-
                             </div>
 
-                        </div>
+                            <div className="email-modal-actions">
+                                <button
+                                    type="button"
+                                    className="cancel-btn"
+                                    onClick={() => setShowEmailModal(false)}
+                                    disabled={emailLoading}
+                                >
+                                    Cancel
+                                </button>
 
+                                <button
+                                    type="submit"
+                                    className="confirm-email-btn"
+                                    disabled={emailLoading}
+                                >
+                                    {emailLoading ? "Updating..." : "Update Email"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
-                        <div className="form-actions">
+            {/* CHANGE PASSWORD MODAL */}
+
+            {showPasswordModal && (
+                <div className="password-modal-overlay">
+                    <div className="password-modal">
+                        <h2>Change Password</h2>
+                        <p>Update your password to keep your Athlyx account secure.</p>
+
+                        <form onSubmit={handleChangePassword}>
+                            <div className="password-field">
+                                <label>Current Password</label>
+                                <input
+                                    type="password"
+                                    value={passwordData.currentPassword}
+                                    onChange={(e) =>
+                                        setPasswordData({
+                                            ...passwordData,
+                                            currentPassword: e.target.value
+                                        })
+                                    }
+                                    placeholder="Enter current password"
+                                    autoComplete="current-password"
+                                    required
+                                />
+                            </div>
+
+                            <div className="password-field">
+                                <label>New Password</label>
+                                <input
+                                    type="password"
+                                    value={passwordData.newPassword}
+                                    onChange={(e) =>
+                                        setPasswordData({
+                                            ...passwordData,
+                                            newPassword: e.target.value
+                                        })
+                                    }
+                                    placeholder="Enter new password"
+                                    autoComplete="new-password"
+                                    minLength={6}
+                                    required
+                                />
+                            </div>
+
+                            <div className="password-field">
+                                <label>Confirm New Password</label>
+                                <input
+                                    type="password"
+                                    value={passwordData.confirmPassword}
+                                    onChange={(e) =>
+                                        setPasswordData({
+                                            ...passwordData,
+                                            confirmPassword: e.target.value
+                                        })
+                                    }
+                                    placeholder="Confirm new password"
+                                    autoComplete="new-password"
+                                    minLength={6}
+                                    required
+                                />
+                            </div>
+
+                            <div className="password-modal-actions">
+                                <button
+                                    type="button"
+                                    className="cancel-btn"
+                                    onClick={() => setShowPasswordModal(false)}
+                                    disabled={passwordLoading}
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    className="confirm-password-btn"
+                                    disabled={passwordLoading}
+                                >
+                                    {passwordLoading ? "Updating..." : "Update Password"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* DELETE ACCOUNT MODAL */}
+
+            {showDeleteModal && (
+                <div className="delete-modal-overlay">
+                    <div className="delete-modal">
+                        <FiTrash2 className="delete-modal-icon" />
+
+                        <h2>Delete Account?</h2>
+                        <p>
+                            Are you sure you want to permanently delete your account?
+                            This action cannot be undone.
+                        </p>
+
+                        <div className="delete-modal-actions">
+                            <button
+                                type="button"
+                                className="cancel-btn"
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={loading}
+                            >
+                                Cancel
+                            </button>
 
                             <button
                                 type="button"
-                                className="back-btn"
-                                onClick={() =>
-                                    navigate(
-                                        "/scout/dashboard"
-                                    )
-                                }
+                                className="confirm-delete-btn"
+                                onClick={handleDeleteAccount}
+                                disabled={loading}
                             >
-                                <FiArrowLeft />
-                                Back
+                                {loading ? "Deleting..." : "Yes, Delete Account"}
                             </button>
-
-                            <button
-                                type="submit"
-                                className="form-submit-btn"
-                                disabled={saving}
-                            >
-                                <FiSave />
-
-                                {saving
-                                    ? "Saving..."
-                                    : "Save Changes"}
-                            </button>
-
                         </div>
-
-                    </form>
-
-                </div>
-
-
-                {/* =================================================
-                    CHANGE PASSWORD
-                ================================================= */}
-
-                <div className="dashboard-section">
-
-                    <div className="section-header">
-
-                        <h2>
-                            <FiLock />
-                            Change Password
-                        </h2>
-
                     </div>
+                </div>
+            )}
 
+            {/* LOGOUT MODAL */}
 
-                    <form
-                        className="profile-form"
-                        onSubmit={
-                            handleChangePassword
-                        }
-                    >
+            {showLogoutModal && (
+                <div className="logout-modal-overlay">
+                    <div className="logout-modal">
+                        <FiLogOut className="logout-modal-icon" />
 
-                        <div className="form-grid">
+                        <h2>Logout?</h2>
+                        <p>
+                            Are you sure you want to sign out of your Athlyx account?
+                        </p>
 
-                            <div className="form-group full-width">
-
-                                <label>
-                                    Current Password
-                                </label>
-
-                                <input
-                                    type="password"
-                                    name="currentPassword"
-                                    value={
-                                        passwords.currentPassword
-                                    }
-                                    onChange={
-                                        handlePasswordChange
-                                    }
-                                    placeholder="Current password"
-                                />
-
-                            </div>
-
-
-                            <div className="form-group">
-
-                                <label>
-                                    New Password
-                                </label>
-
-                                <input
-                                    type="password"
-                                    name="newPassword"
-                                    value={
-                                        passwords.newPassword
-                                    }
-                                    onChange={
-                                        handlePasswordChange
-                                    }
-                                    placeholder="New password"
-                                />
-
-                            </div>
-
-
-                            <div className="form-group">
-
-                                <label>
-                                    Confirm Password
-                                </label>
-
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={
-                                        passwords.confirmPassword
-                                    }
-                                    onChange={
-                                        handlePasswordChange
-                                    }
-                                    placeholder="Confirm password"
-                                />
-
-                            </div>
-
-                        </div>
-
-
-                        <div className="form-actions">
-
+                        <div className="logout-modal-actions">
                             <button
-                                type="submit"
-                                className="form-submit-btn"
-                                disabled={
-                                    changingPassword
-                                }
+                                type="button"
+                                className="cancel-btn"
+                                onClick={() => setShowLogoutModal(false)}
                             >
-                                <FiLock />
-
-                                {changingPassword
-                                    ? "Changing..."
-                                    : "Change Password"}
+                                Cancel
                             </button>
 
+                            <button
+                                type="button"
+                                className="confirm-logout-btn"
+                                onClick={handleLogout}
+                            >
+                                Yes, Logout
+                            </button>
                         </div>
-
-                    </form>
-
+                    </div>
                 </div>
-
-            </main>
-
+            )}
         </div>
     );
 };
