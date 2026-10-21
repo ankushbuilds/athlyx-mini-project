@@ -414,46 +414,47 @@ async function getMyConversations(req, res) {
         // So we use TWO queries.
         // ==================================================
 
-        else if (currentUser.role === "athlete") {
+      
+else if (currentUser.role === "athlete") {
+    const coachConnections = await Connection.find({
+        athlete: userId,
+        coach: { $ne: null },
+        status: "accepted"
+    }).select("coach");
 
-            const coachConnections =
-                await Connection.find({
-                    athlete: userId,
-                    coach: {
-                        $ne: null
-                    },
-                    status: "accepted"
-                }).select(
-                    "coach"
-                );
+    const academyConnections = await Connection.find({
+        athlete: userId,
+        academy: { $ne: null },
+        status: "accepted"
+    }).select("academy");
 
-            const academyConnections =
-                await Connection.find({
-                    athlete: userId,
-                    academy: {
-                        $ne: null
-                    },
-                    status: "accepted"
-                }).select(
-                    "academy"
-                );
+    // Find the athlete profile linked to this User.
+    const athleteProfile = await Athlete.findOne({
+        user: userId
+    }).select("_id");
 
-            connections = [
-                ...coachConnections.map(
-                    connection => ({
-                        connectedUser:
-                            connection.coach
-                    })
-                ),
+    // Include scouts who have shortlisted this athlete.
+    const scoutShortlists = athleteProfile
+        ? await Shortlist.find({
+            athlete: athleteProfile._id
+        }).select("scout")
+        : [];
 
-                ...academyConnections.map(
-                    connection => ({
-                        connectedUser:
-                            connection.academy
-                    })
-                )
-            ];
-        }
+    connections = [
+        ...coachConnections.map(connection => ({
+            connectedUser: connection.coach
+        })),
+
+        ...academyConnections.map(connection => ({
+            connectedUser: connection.academy
+        })),
+
+        ...scoutShortlists.map(entry => ({
+            connectedUser: entry.scout
+        }))
+    ];
+}
+
 
         // ==================================================
         // ACADEMY

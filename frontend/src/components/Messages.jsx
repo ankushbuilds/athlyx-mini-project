@@ -257,7 +257,7 @@ const Messages = () => {
                     return (
                         participantId &&
                         participantId !==
-                            currentUserId
+                        currentUserId
                     );
                 }
             );
@@ -408,18 +408,18 @@ const Messages = () => {
             setConversations(prev =>
                 prev.map(item =>
                     item._id ===
-                    conversation._id
+                        conversation._id
                         ? {
-                              ...item,
-                              unreadCount: 0,
-                              lastMessage:
-                                  item.lastMessage
-                                      ? {
-                                            ...item.lastMessage,
-                                            read: true
-                                        }
-                                      : null
-                          }
+                            ...item,
+                            unreadCount: 0,
+                            lastMessage:
+                                item.lastMessage
+                                    ? {
+                                        ...item.lastMessage,
+                                        read: true
+                                    }
+                                    : null
+                        }
                         : item
                 )
             );
@@ -475,18 +475,18 @@ const Messages = () => {
                         prev.map(
                             conversation =>
                                 conversation._id ===
-                                conversationId
+                                    conversationId
                                     ? {
-                                          ...conversation,
-                                          unreadCount: 0,
-                                          lastMessage:
-                                              conversation.lastMessage
-                                                  ? {
-                                                        ...conversation.lastMessage,
-                                                        read: true
-                                                    }
-                                                  : null
-                                      }
+                                        ...conversation,
+                                        unreadCount: 0,
+                                        lastMessage:
+                                            conversation.lastMessage
+                                                ? {
+                                                    ...conversation.lastMessage,
+                                                    read: true
+                                                }
+                                                : null
+                                    }
                                     : conversation
                         )
                     );
@@ -499,16 +499,16 @@ const Messages = () => {
                         prev =>
                             prev
                                 ? {
-                                      ...prev,
-                                      unreadCount: 0,
-                                      lastMessage:
-                                          prev.lastMessage
-                                              ? {
-                                                    ...prev.lastMessage,
-                                                    read: true
-                                                }
-                                              : null
-                                  }
+                                    ...prev,
+                                    unreadCount: 0,
+                                    lastMessage:
+                                        prev.lastMessage
+                                            ? {
+                                                ...prev.lastMessage,
+                                                read: true
+                                            }
+                                            : null
+                                }
                                 : null
                     );
 
@@ -596,15 +596,15 @@ const Messages = () => {
                         prev.map(
                             conversation =>
                                 conversation._id ===
-                                selectedConversation._id
+                                    selectedConversation._id
                                     ? {
-                                          ...conversation,
-                                          lastMessage:
-                                              newMessage,
-                                          lastMessageAt:
-                                              newMessage.createdAt,
-                                          unreadCount: 0
-                                      }
+                                        ...conversation,
+                                        lastMessage:
+                                            newMessage,
+                                        lastMessageAt:
+                                            newMessage.createdAt,
+                                        unreadCount: 0
+                                    }
                                     : conversation
                         )
                     );
@@ -613,13 +613,13 @@ const Messages = () => {
                         prev =>
                             prev
                                 ? {
-                                      ...prev,
-                                      lastMessage:
-                                          newMessage,
-                                      lastMessageAt:
-                                          newMessage.createdAt,
-                                      unreadCount: 0
-                                  }
+                                    ...prev,
+                                    lastMessage:
+                                        newMessage,
+                                    lastMessageAt:
+                                        newMessage.createdAt,
+                                    unreadCount: 0
+                                }
                                 : null
                     );
                 }
@@ -706,21 +706,21 @@ const Messages = () => {
     // SIDEBAR
     // ======================================================
 
-   const renderSidebar = () => {
-    if (user?.role === "athlete") {
-        return <AthleteSidebar />;
-    }
+    const renderSidebar = () => {
+        if (user?.role === "athlete") {
+            return <AthleteSidebar />;
+        }
 
-    if (user?.role === "coach") {
-        return <CoachSidebar />;
-    }
+        if (user?.role === "coach") {
+            return <CoachSidebar />;
+        }
 
-    if (user?.role === "academy") {
-        return <AcademySidebar />;
-    }
+        if (user?.role === "academy") {
+            return <AcademySidebar />;
+        }
 
-    return null;
-};
+        return null;
+    };
 
 
     // ======================================================
@@ -784,13 +784,9 @@ const Messages = () => {
                                 Messages
                             </h1>
 
-                            <p>
-                                Chat with your connected{" "}
-                                {user.role ===
-                                "athlete"
-                                    ? "coaches"
-                                    : "athletes"}
-                            </p>
+                           <p>
+                            Chat with your connections..
+                           </p>
 
                         </div>
 
@@ -813,11 +809,10 @@ const Messages = () => {
                     ================================================== */}
 
                     <div
-                        className={`messages-card ${
-                            selectedConversation
+                        className={`messages-card ${selectedConversation
                                 ? "chat-selected"
                                 : ""
-                        }`}
+                            }`}
                     >
 
                         {/* ==================================================
@@ -863,7 +858,7 @@ const Messages = () => {
                                     </div>
 
                                 ) : filteredConversations.length ===
-                                  0 ? (
+                                    0 ? (
 
                                     <div className="conversation-empty">
 
@@ -876,9 +871,11 @@ const Messages = () => {
                                         <span>
                                             Connect with a{" "}
                                             {user.role ===
-                                            "athlete"
+                                                "athlete"
                                                 ? "coach"
-                                                : "athlete"}{" "}
+                                                : user.role === "coach"
+                                                    ? "athlete"
+                                                    : "academy"}{" "}
                                             to start chatting.
                                         </span>
 
@@ -918,15 +915,13 @@ const Messages = () => {
                                                     key={
                                                         conversation._id
                                                     }
-                                                    className={`conversation-item ${
-                                                        isSelected
+                                                    className={`conversation-item ${isSelected
                                                             ? "active"
                                                             : ""
-                                                    } ${
-                                                        isUnread
+                                                        } ${isUnread
                                                             ? "unread"
                                                             : ""
-                                                    }`}
+                                                        }`}
                                                     onClick={() =>
                                                         handleSelectConversation(
                                                             conversation
@@ -975,22 +970,20 @@ const Messages = () => {
                                                     <div className="conversation-info">
 
                                                         <div
-                                                            className={`conversation-name ${
-                                                                isUnread
+                                                            className={`conversation-name ${isUnread
                                                                     ? "unread-name"
                                                                     : ""
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {otherUser.name ||
                                                                 "Unknown User"}
                                                         </div>
 
                                                         <div
-                                                            className={`conversation-preview ${
-                                                                isUnread
+                                                            className={`conversation-preview ${isUnread
                                                                     ? "unread-preview"
                                                                     : ""
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {getLastMessageText(
                                                                 conversation
@@ -1008,11 +1001,10 @@ const Messages = () => {
 
                                                         {conversation.lastMessageAt && (
                                                             <div
-                                                                className={`conversation-time ${
-                                                                    isUnread
+                                                                className={`conversation-time ${isUnread
                                                                         ? "unread-time"
                                                                         : ""
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 {formatMessageTime(
                                                                     conversation.lastMessageAt
@@ -1028,7 +1020,7 @@ const Messages = () => {
                                                         {isUnread && (
                                                             <span className="unread-badge">
                                                                 {unreadCount >
-                                                                99
+                                                                    99
                                                                     ? "99+"
                                                                     : unreadCount}
                                                             </span>
@@ -1142,12 +1134,17 @@ const Messages = () => {
                                                     "Unknown User"}
                                             </h2>
 
-                                            <span>
-                                                {selectedUser?.role ===
-                                                "coach"
-                                                    ? "Coach"
-                                                    : "Athlete"}
-                                            </span>
+                                           
+<span>
+    {selectedUser?.role === "coach"
+        ? "Coach"
+        : selectedUser?.role === "scout"
+        ? "Scout"
+        : selectedUser?.role === "academy"
+        ? "Academy"
+        : "Athlete"}
+</span>
+
 
                                         </div>
 
@@ -1169,7 +1166,7 @@ const Messages = () => {
                                             </div>
 
                                         ) : messages.length ===
-                                          0 ? (
+                                            0 ? (
 
                                             <div className="chat-no-messages">
 
@@ -1211,11 +1208,10 @@ const Messages = () => {
                                                             key={
                                                                 message._id
                                                             }
-                                                            className={`message-row ${
-                                                                isMine
+                                                            className={`message-row ${isMine
                                                                     ? "mine"
                                                                     : "received"
-                                                            }`}
+                                                                }`}
                                                         >
 
                                                             <div className="message-bubble">

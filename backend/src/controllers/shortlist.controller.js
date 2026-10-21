@@ -1,6 +1,9 @@
 const mongoose = require("mongoose");
 const Shortlist = require("../models/shortlist.model");
 const Athlete = require("../models/athlete.model");
+const User = require("../models/user.model");
+const Conversation = require("../models/conversation.model");
+const Message = require("../models/message.model");
 
 // Get the logged-in user's ID
 const getUserId = (req) => {
@@ -8,6 +11,7 @@ const getUserId = (req) => {
 };
 
 // Add an athlete to the scout's shortlist
+
 exports.addToShortlist = async (req, res) => {
   try {
     const scoutId = getUserId(req);
@@ -31,14 +35,25 @@ exports.addToShortlist = async (req, res) => {
       });
     }
 
-    const athleteExists = await Athlete.findById(athleteId);
+    // Find athlete profile and its linked User account.
+    const athleteProfile = await Athlete.findById(athleteId)
+      .populate("user", "_id name role");
 
-    if (!athleteExists) {
+    if (!athleteProfile || !athleteProfile.user) {
       return res.status(404).json({
-        message: "Athlete not found",
+        message: "Athlete or athlete user account not found",
       });
     }
 
+    const athleteUserId = athleteProfile.user._id;
+
+    if (athleteProfile.user.role !== "athlete") {
+      return res.status(400).json({
+        message: "The linked user is not an athlete",
+      });
+    }
+
+    // Prevent duplicate shortlist entries.
     const existing = await Shortlist.findOne({
       scout: scoutId,
       athlete: athleteId,
@@ -50,15 +65,90 @@ exports.addToShortlist = async (req, res) => {
       });
     }
 
+    // Save shortlist first.
     const shortlist = await Shortlist.create({
       scout: scoutId,
       athlete: athleteId,
     });
 
+    try {
+      // Use the same deterministic key as the chat controller.
+      const participantIds = [
+        scoutId.toString(),
+        athleteUserId.toString(),
+      ].sort();
+
+      const participantKey = participantIds.join("_");
+
+      // Find or create the existing chat conversation.
+      let conversation = await Conversation.findOne({
+        participantKey,
+      });
+
+      if (!conversation) {
+        try {
+          conversation = await Conversation.create({
+            participants: participantIds,
+            participantKey,
+          });
+        } catch (createError) {
+          // Handle simultaneous conversation creation.
+          if (createError.code !== 11000) {
+            throw createError;
+          }
+
+          conversation = await Conversation.findOne({
+            participantKey,
+          });
+        }
+      }
+
+      if (!conversation) {
+        throw new Error("Unable to create chat conversation");
+      }
+
+      const notificationText =
+        "🎉 Congratulations! You've been shortlisted! " +
+        "A scout has shortlisted your profile on Athlyx. " +
+        "Your talent has caught their attention. " +
+        "Keep your profile updated and stay ready for exciting opportunities!";
+
+      // Send an automatic message from the scout to the athlete.
+      const message = await Message.create({
+        conversation: conversation._id,
+        sender: scoutId,
+        receiver: athleteUserId,
+        text: notificationText,
+        read: false,
+      });
+
+      // Update the conversation preview and sorting time.
+      conversation.lastMessage = message._id;
+      conversation.lastMessageAt = message.createdAt;
+
+      await conversation.save();
+
+    } catch (notificationError) {
+      // Avoid leaving a shortlist entry that failed to notify.
+      await Shortlist.findByIdAndDelete(shortlist._id);
+
+      console.error(
+        "Shortlist notification error:",
+        notificationError
+      );
+
+      return res.status(500).json({
+        message:
+          "Could not send the shortlist notification. Please try again.",
+      });
+    }
+
     return res.status(201).json({
-      message: "Athlete added to shortlist",
+      success: true,
+      message: "Athlete shortlisted and notification sent",
       shortlist,
     });
+
   } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({
@@ -73,6 +163,7 @@ exports.addToShortlist = async (req, res) => {
     });
   }
 };
+
 
 // Get the logged-in scout's shortlist
 exports.getShortlist = async (req, res) => {
