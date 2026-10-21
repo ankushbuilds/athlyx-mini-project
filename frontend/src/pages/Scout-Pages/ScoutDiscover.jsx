@@ -14,89 +14,193 @@ import {
 import ScoutSidebar from "../../components/ScoutSidebar";
 
 const API = "http://localhost:5000/api";
+const SHORTLIST_KEY = "scoutShortlist";
 
 const ScoutDiscover = () => {
   const navigate = useNavigate();
 
   const [athletes, setAthletes] = useState([]);
+  const [scoutSport, setScoutSport] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [profileError, setProfileError] = useState("");
 
   const [search, setSearch] = useState("");
-  const [sport, setSport] = useState("");
   const [position, setPosition] = useState("");
 
+  const [shortlistedAthletes, setShortlistedAthletes] = useState(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(SHORTLIST_KEY) || "[]"
+      );
+
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [shortlistLoading, setShortlistLoading] = useState({});
+
+  const normalizedScoutSport = String(scoutSport)
+    .trim()
+    .toLowerCase();
+
   // ==========================================
-  // LOAD ALL ATHLETES
+  // LOAD SCOUT PROFILE AND ATHLETES
   // ==========================================
 
   useEffect(() => {
-    loadAthletes();
-  }, []);
+    let cancelled = false;
 
-  const loadAthletes = async () => {
-    const token = localStorage.getItem("token");
+    const loadData = async () => {
+      const token = localStorage.getItem("token");
 
-    if (!token) {
-      navigate("/auth", {
-        replace: true
-      });
-
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError("");
-
-      // IMPORTANT:
-      // Scout gets ALL athletes.
-      // No sport matching here.
-
-      const response = await axios.get(
-        `${API}/athletes/get-all`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      const allAthletes = Array.isArray(
-        response.data?.athletes
-      )
-        ? response.data.athletes
-        : [];
-
-      setAthletes(allAthletes);
-    } catch (error) {
-      console.error(
-        "Failed to load athletes:",
-        error
-      );
-
-      if (
-        error.response?.status === 401 ||
-        error.response?.status === 403
-      ) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-
-        navigate("/auth", {
-          replace: true
-        });
-
+      if (!token) {
+        navigate("/auth", { replace: true });
         return;
       }
 
-      setError(
-        error.response?.data?.message ||
-        "Failed to load athletes."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      };
+
+      try {
+        setLoading(true);
+        setError("");
+        setProfileError("");
+
+        let scout;
+
+        try {
+          const profileResponse = await axios.get(
+            `${API}/scouts/profile`,
+            config
+          );
+
+          scout = profileResponse.data?.scout;
+
+          if (!scout) {
+            throw new Error(
+              "Scout profile was not returned by the server."
+            );
+          }
+        } catch (err) {
+          if (
+            err.response?.status === 401 ||
+            err.response?.status === 403
+          ) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+
+            navigate("/auth", { replace: true });
+            return;
+          }
+
+          if (err.response?.status === 404) {
+            if (!cancelled) {
+              setScoutSport("");
+              setProfileError(
+                "Scout profile not found. Please complete your scout profile first."
+              );
+            }
+            return;
+          }
+
+          throw err;
+        }
+
+        if (cancelled) return;
+
+        const sport = String(scout.sport || "")
+          .trim()
+          .toLowerCase();
+
+        setScoutSport(sport);
+
+        // Synchronize scout information with local user data.
+        try {
+          const storedUser = JSON.parse(
+            localStorage.getItem("user") || "{}"
+          );
+
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              ...storedUser,
+              sport,
+              specialization: scout.specialization || "",
+              organization: scout.organization || "",
+              experience: scout.experience ?? 0,
+              scoutProfile: scout
+            })
+          );
+        } catch (storageError) {
+          console.error(
+            "Could not synchronize scout profile:",
+            storageError
+          );
+        }
+
+        if (!sport) {
+          setProfileError(
+            "Your sport is not configured in your scout profile. Please update your profile."
+          );
+          return;
+        }
+
+        const athletesResponse = await axios.get(
+          `${API}/athletes/get-all`,
+          config
+        );
+
+        if (cancelled) return;
+
+        const allAthletes = Array.isArray(
+          athletesResponse.data?.athletes
+        )
+          ? athletesResponse.data.athletes
+          : [];
+
+        setAthletes(allAthletes);
+      } catch (err) {
+        if (cancelled) return;
+
+        console.error(
+          "Failed to load scout discovery data:",
+          err
+        );
+
+        if (
+          err.response?.status === 401 ||
+          err.response?.status === 403
+        ) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+
+          navigate("/auth", { replace: true });
+          return;
+        }
+
+        setError(
+          err.response?.data?.message ||
+          "Failed to load athletes. Please try again."
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   // ==========================================
   // ATHLETE NAME
@@ -111,7 +215,7 @@ const ScoutDiscover = () => {
   };
 
   // ==========================================
-  // PROFILE PIC
+  // PROFILE PICTURE
   // ==========================================
 
   const getProfilePic = (athlete) => {
@@ -127,28 +231,17 @@ const ScoutDiscover = () => {
   // ==========================================
 
   const getLocation = (athlete) => {
-    if (
-      typeof athlete?.address === "string"
-    ) {
+    if (typeof athlete?.address === "string") {
       return athlete.address;
     }
 
-    const city =
-      athlete?.address?.city || "";
+    const city = athlete?.address?.city || "";
+    const state = athlete?.address?.state || "";
+    const country = athlete?.address?.country || "";
 
-    const state =
-      athlete?.address?.state || "";
+    const parts = [city, state, country].filter(Boolean);
 
-    const country =
-      athlete?.address?.country || "";
-
-    const parts = [
-      city,
-      state,
-      country
-    ].filter(Boolean);
-
-    return parts.length > 0
+    return parts.length
       ? parts.join(", ")
       : "Location not available";
   };
@@ -176,18 +269,24 @@ const ScoutDiscover = () => {
   };
 
   // ==========================================
-  // AVAILABLE SPORTS
+  // ATHLETES IN THIS SCOUT'S SPORT ONLY
   // ==========================================
 
-  const sports = useMemo(() => {
-    return [
-      ...new Set(
-        athletes
-          .map((athlete) => athlete?.sport)
-          .filter(Boolean)
+  const sportAthletes = useMemo(() => {
+    if (!normalizedScoutSport) {
+      return [];
+    }
+
+    return athletes.filter((athlete) => {
+      const athleteSport = String(
+        athlete?.sport || ""
       )
-    ];
-  }, [athletes]);
+        .trim()
+        .toLowerCase();
+
+      return athleteSport === normalizedScoutSport;
+    });
+  }, [athletes, normalizedScoutSport]);
 
   // ==========================================
   // AVAILABLE POSITIONS
@@ -196,44 +295,45 @@ const ScoutDiscover = () => {
   const positions = useMemo(() => {
     return [
       ...new Set(
-        athletes
-          .map((athlete) => athlete?.position)
+        sportAthletes
+          .map((athlete) =>
+            typeof athlete?.position === "string"
+              ? athlete.position.trim()
+              : ""
+          )
           .filter(Boolean)
       )
     ];
-  }, [athletes]);
+  }, [sportAthletes]);
 
   // ==========================================
   // FILTER ATHLETES
   // ==========================================
 
   const filteredAthletes = useMemo(() => {
-    const searchValue =
-      search.trim().toLowerCase();
+    const searchValue = search.trim().toLowerCase();
 
-    return athletes.filter((athlete) => {
-      const name =
-        getAthleteName(athlete)
-          .toLowerCase();
+    return sportAthletes.filter((athlete) => {
+      const name = getAthleteName(athlete).toLowerCase();
 
-      const athleteSport =
-        athlete?.sport
-          ?.toLowerCase() || "";
+      const athleteSport = String(
+        athlete?.sport || ""
+      )
+        .trim()
+        .toLowerCase();
 
-      const athletePosition =
-        athlete?.position
-          ?.toLowerCase() || "";
+      const athletePosition = String(
+        athlete?.position || ""
+      )
+        .trim()
+        .toLowerCase();
 
-      const location =
-        getLocation(athlete)
-          .toLowerCase();
+      const location = getLocation(athlete).toLowerCase();
 
-      const skills =
-        getSkills(athlete)
-          .join(" ")
-          .toLowerCase();
+      const skills = getSkills(athlete)
+        .join(" ")
+        .toLowerCase();
 
-      // Search
       const matchesSearch =
         !searchValue ||
         name.includes(searchValue) ||
@@ -242,30 +342,73 @@ const ScoutDiscover = () => {
         location.includes(searchValue) ||
         skills.includes(searchValue);
 
-      // Sport filter
-      const matchesSport =
-        !sport ||
-        athleteSport ===
-          sport.toLowerCase();
-
-      // Position filter
       const matchesPosition =
         !position ||
-        athletePosition ===
-          position.toLowerCase();
+        athletePosition === position.trim().toLowerCase();
 
-      return (
-        matchesSearch &&
-        matchesSport &&
-        matchesPosition
-      );
+      return matchesSearch && matchesPosition;
     });
-  }, [
-    athletes,
-    search,
-    sport,
-    position
-  ]);
+  }, [sportAthletes, search, position]);
+
+  // ==========================================
+  // SHORTLIST HELPERS
+  // ==========================================
+
+  const isShortlisted = (athleteId) => {
+    return shortlistedAthletes.some(
+      (item) => String(item._id) === String(athleteId)
+    );
+  };
+
+  const toggleShortlist = (event, athlete) => {
+    // Do not open the athlete profile when clicking this button.
+    event.stopPropagation();
+
+    const athleteId = String(athlete._id);
+
+    if (shortlistLoading[athleteId]) return;
+
+    setShortlistLoading((previous) => ({
+      ...previous,
+      [athleteId]: true
+    }));
+
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(SHORTLIST_KEY) || "[]"
+      );
+
+      const currentShortlist = Array.isArray(saved) ? saved : [];
+
+      const alreadyShortlisted = currentShortlist.some(
+        (item) => String(item._id) === athleteId
+      );
+
+      const updatedShortlist = alreadyShortlisted
+        ? currentShortlist.filter(
+            (item) => String(item._id) !== athleteId
+          )
+        : [...currentShortlist, athlete];
+
+      localStorage.setItem(
+        SHORTLIST_KEY,
+        JSON.stringify(updatedShortlist)
+      );
+
+      setShortlistedAthletes(updatedShortlist);
+      setError("");
+    } catch (err) {
+      console.error("Failed to update shortlist:", err);
+      setError(
+        "Unable to update your shortlist. Please check browser storage and try again."
+      );
+    } finally {
+      setShortlistLoading((previous) => ({
+        ...previous,
+        [athleteId]: false
+      }));
+    }
+  };
 
   // ==========================================
   // CLEAR FILTERS
@@ -273,14 +416,10 @@ const ScoutDiscover = () => {
 
   const clearFilters = () => {
     setSearch("");
-    setSport("");
     setPosition("");
   };
 
-  const hasFilters =
-    search ||
-    sport ||
-    position;
+  const hasFilters = Boolean(search || position);
 
   // ==========================================
   // RENDER
@@ -288,497 +427,326 @@ const ScoutDiscover = () => {
 
   return (
     <div className="coach-athletes-page">
-
       <ScoutSidebar />
 
       <main className="coach-athletes-content">
-
         <div className="coach-athletes-container">
 
-          {/* ======================================
-              HEADER
-          ====================================== */}
+          {/* HEADER */}
 
           <div className="coach-athletes-header">
-
             <div>
-
               <span className="coach-athletes-eyebrow">
                 ATHLETE DISCOVERY
               </span>
 
-              <h1>
-                Discover Athletes
-              </h1>
+              <h1>Discover Athletes</h1>
 
               <p>
-                Explore athletes across
-                different sports and
-                discover new talent.
+                Explore athletes in your registered sport
+                and discover new talent.
               </p>
 
+              {normalizedScoutSport && (
+                <p>
+                  Your sport:{" "}
+                  <strong>
+                    {scoutSport.charAt(0).toUpperCase() +
+                      scoutSport.slice(1)}
+                  </strong>
+                </p>
+              )}
             </div>
 
-            {!loading &&
-              !error && (
-                <div className="coach-athletes-count">
+            {!loading && !error && !profileError && (
+              <div className="coach-athletes-count">
+                <span>{filteredAthletes.length}</span>
 
-                  <span>
-                    {
-                      filteredAthletes.length
-                    }
-                  </span>
-
-                  <small>
-                    {
-                      filteredAthletes.length === 1
-                        ? "Athlete"
-                        : "Athletes"
-                    }
-                  </small>
-
-                </div>
-              )}
-
+                <small>
+                  {filteredAthletes.length === 1
+                    ? "Athlete"
+                    : "Athletes"}
+                </small>
+              </div>
+            )}
           </div>
 
-
-          {/* ======================================
-              ERROR
-          ====================================== */}
+          {/* ERROR */}
 
           {error && (
             <div className="coach-athletes-error">
               {error}
+
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="back-btn"
+              >
+                Retry
+              </button>
             </div>
           )}
 
-
-          {/* ======================================
-              LOADING
-          ====================================== */}
+          {/* LOADING */}
 
           {loading && (
             <div className="coach-athletes-loading">
-
               <div className="loading-spinner"></div>
 
-              <h2>
-                Discovering Athletes
-              </h2>
+              <h2>Discovering Athletes</h2>
 
               <p>
-                Loading athletes from
-                Athlyx.
+                Loading your profile and matching athletes.
               </p>
-
             </div>
           )}
 
+          {/* CONTENT */}
 
-          {/* ======================================
-              CONTENT
-          ====================================== */}
+          {!loading && !error && (
+            <>
+              {profileError ? (
+                <div className="coach-athletes-error">
+                  {profileError}
 
-          {!loading &&
-            !error && (
-              <>
-
-                {/* ======================================
-                    TOOLBAR
-                ====================================== */}
-
-                <div className="coach-athletes-toolbar">
-
-                  <div className="coach-athletes-sport">
-
-                    <span>
-                      ATHLETES AVAILABLE
-                    </span>
-
-                    <strong>
-                      {athletes.length}
-                    </strong>
-
-                  </div>
-
-
-                  <div className="coach-athletes-search">
-
-                    <FiSearch size={18} />
-
-                    <input
-                      type="text"
-                      value={search}
-                      onChange={(e) =>
-                        setSearch(
-                          e.target.value
-                        )
-                      }
-                      placeholder="Search athletes..."
-                    />
-
-                    {search && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSearch("")
-                        }
-                        className="clear-search"
-                      >
-                        ×
-                      </button>
-                    )}
-
-                  </div>
-
+                  <button
+                    type="button"
+                    className="back-btn"
+                    onClick={() => navigate("/scout/profile")}
+                  >
+                    Complete Scout Profile
+                  </button>
                 </div>
+              ) : !normalizedScoutSport ? (
+                <div className="coach-athletes-error">
+                  Your sport is not configured in your
+                  scout profile. Please update your profile.
+                </div>
+              ) : (
+                <>
+                  {/* TOOLBAR */}
 
-
-                {/* ======================================
-                    FILTERS
-                ====================================== */}
-
-                <div className="dashboard-section">
-
-                  <div className="form-grid">
-
-                    {/* SPORT */}
-
-                    <div className="form-group">
-
-                      <label>
-                        Sport
-                      </label>
-
-                      <select
-                        value={sport}
-                        onChange={(e) =>
-                          setSport(
-                            e.target.value
-                          )
-                        }
-                      >
-
-                        <option value="">
-                          All Sports
-                        </option>
-
-                        {sports.map(
-                          (item) => (
-                            <option
-                              key={item}
-                              value={item}
-                            >
-                              {item}
-                            </option>
-                          )
-                        )}
-
-                      </select>
-
+                  <div className="coach-athletes-toolbar">
+                    <div className="coach-athletes-sport">
+                      <span>ATHLETES IN YOUR SPORT</span>
+                      <strong>{sportAthletes.length}</strong>
                     </div>
 
+                    <div className="coach-athletes-search">
+                      <FiSearch size={18} />
 
-                    {/* POSITION */}
+                      <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search athletes..."
+                      />
 
-                    <div className="form-group">
-
-                      <label>
-                        Position
-                      </label>
-
-                      <select
-                        value={position}
-                        onChange={(e) =>
-                          setPosition(
-                            e.target.value
-                          )
-                        }
-                      >
-
-                        <option value="">
-                          All Positions
-                        </option>
-
-                        {positions.map(
-                          (item) => (
-                            <option
-                              key={item}
-                              value={item}
-                            >
-                              {item}
-                            </option>
-                          )
-                        )}
-
-                      </select>
-
+                      {search && (
+                        <button
+                          type="button"
+                          onClick={() => setSearch("")}
+                          className="clear-search"
+                          aria-label="Clear search"
+                        >
+                          <FiX size={16} />
+                        </button>
+                      )}
                     </div>
+                  </div>
 
+                  {/* FILTERS */}
 
-                    {/* CLEAR */}
+                  <div className="dashboard-section">
+                    <div className="form-grid">
 
-                    <div className="form-group">
+                      <div className="form-group">
+                        <label>Sport</label>
 
-                      <label>
-                        Results
-                      </label>
-
-                      <div>
-                        {filteredAthletes.length}{" "}
-                        athletes found
+                        <input
+                          type="text"
+                          value={
+                            scoutSport.charAt(0).toUpperCase() +
+                            scoutSport.slice(1)
+                          }
+                          readOnly
+                        />
                       </div>
 
+                      <div className="form-group">
+                        <label>Position</label>
+
+                        <select
+                          value={position}
+                          onChange={(e) => setPosition(e.target.value)}
+                        >
+                          <option value="">All Positions</option>
+
+                          {positions.map((item) => (
+                            <option key={item} value={item}>
+                              {item}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Results</label>
+
+                        <div>
+                          {filteredAthletes.length} athletes found
+                        </div>
+                      </div>
                     </div>
-
-                  </div>
-
-
-                  {hasFilters && (
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className="back-btn"
-                    >
-                      <FiX size={16} />
-                      Clear Filters
-                    </button>
-                  )}
-
-                </div>
-
-
-                {/* ======================================
-                    EMPTY
-                ====================================== */}
-
-                {filteredAthletes.length ===
-                  0 && (
-                  <div className="coach-athletes-empty">
-
-                    <div className="empty-icon">
-                      <FiUser size={30} />
-                    </div>
-
-                    <h2>
-                      No Athletes Found
-                    </h2>
-
-                    <p>
-                      {hasFilters
-                        ? "Try changing your search or filters."
-                        : "No athletes are available yet."}
-                    </p>
 
                     {hasFilters && (
                       <button
                         type="button"
                         onClick={clearFilters}
+                        className="back-btn"
                       >
+                        <FiX size={16} />
                         Clear Filters
                       </button>
                     )}
-
                   </div>
-                )}
 
+                  {/* EMPTY STATE */}
 
-                {/* ======================================
-                    ATHLETE GRID
-                ====================================== */}
+                  {filteredAthletes.length === 0 && (
+                    <div className="coach-athletes-empty">
+                      <div className="empty-icon">
+                        <FiUser size={30} />
+                      </div>
 
-                {filteredAthletes.length >
-                  0 && (
-                  <div className="coach-athletes-grid">
+                      <h2>No Athletes Found</h2>
 
-                    {filteredAthletes.map(
-                      (athlete) => {
+                      <p>
+                        {hasFilters
+                          ? "Try changing your search or position filter."
+                          : `No ${scoutSport} athletes are available yet.`}
+                      </p>
 
-                        const profilePic =
-                          getProfilePic(
-                            athlete
-                          );
+                      {hasFilters && (
+                        <button
+                          type="button"
+                          onClick={clearFilters}
+                        >
+                          Clear Filters
+                        </button>
+                      )}
+                    </div>
+                  )}
 
-                        const skills =
-                          getSkills(
-                            athlete
-                          );
+                  {/* ATHLETE GRID */}
+
+                  {filteredAthletes.length > 0 && (
+                    <div className="coach-athletes-grid">
+                      {filteredAthletes.map((athlete) => {
+                        const profilePic = getProfilePic(athlete);
+                        const skills = getSkills(athlete);
+                        const shortlisted = isShortlisted(athlete._id);
+                        const updating = Boolean(
+                          shortlistLoading[String(athlete._id)]
+                        );
 
                         return (
                           <div
-                            key={
-                              athlete._id
-                            }
+                            key={athlete._id}
                             className="coach-athlete-card"
                             onClick={() =>
-                              navigate(
-                                `/scout/athlete/${athlete._id}`
-                              )
+                              navigate(`/scout/athlete/${athlete._id}`)
                             }
                           >
-
-                            {/* ==================================
-                                CARD TOP
-                            ================================== */}
-
                             <div className="athlete-card-top">
-
                               <div className="athlete-avatar">
-
                                 {profilePic ? (
                                   <img
-                                    src={
-                                      profilePic
-                                    }
-                                    alt={getAthleteName(
-                                      athlete
-                                    )}
+                                    src={profilePic}
+                                    alt={getAthleteName(athlete)}
                                   />
                                 ) : (
-                                  <FiUser
-                                    size={25}
-                                  />
+                                  <FiUser size={25} />
                                 )}
-
                               </div>
-
                             </div>
-
-
-                            {/* ==================================
-                                ATHLETE INFO
-                            ================================== */}
 
                             <div className="athlete-card-info">
-
-                              <h3>
-                                {getAthleteName(
-                                  athlete
-                                )}
-                              </h3>
+                              <h3>{getAthleteName(athlete)}</h3>
 
                               <p className="athlete-position">
-                                {
-                                  athlete.position ||
-                                  "Athlete"
-                                }
+                                {athlete.position || "Athlete"}
                               </p>
-
                             </div>
-
-
-                            {/* ==================================
-                                DETAILS
-                            ================================== */}
 
                             <div className="athlete-card-details">
-
                               <div className="athlete-detail">
-
-                                <FiAward
-                                  size={16}
-                                />
+                                <FiAward size={16} />
 
                                 <span>
-                                  {
-                                    athlete.sport ||
-                                    "Sport not available"
-                                  }
+                                  {athlete.sport ||
+                                    "Sport not available"}
                                 </span>
-
                               </div>
-
 
                               <div className="athlete-detail">
+                                <FiMapPin size={16} />
 
-                                <FiMapPin
-                                  size={16}
-                                />
-
-                                <span>
-                                  {getLocation(
-                                    athlete
-                                  )}
-                                </span>
-
+                                <span>{getLocation(athlete)}</span>
                               </div>
-
                             </div>
 
-
-                            {/* ==================================
-                                SKILLS
-                            ================================== */}
-
-                            {skills.length >
-                              0 && (
+                            {skills.length > 0 && (
                               <div className="athlete-skills">
-
-                                {skills
-                                  .slice(
-                                    0,
-                                    3
+                                {skills.slice(0, 3).map(
+                                  (skill, index) => (
+                                    <span key={`${skill}-${index}`}>
+                                      {skill}
+                                    </span>
                                   )
-                                  .map(
-                                    (
-                                      skill,
-                                      index
-                                    ) => (
-                                      <span
-                                        key={`${skill}-${index}`}
-                                      >
-                                        {skill}
-                                      </span>
-                                    )
-                                  )}
-
-                                {skills.length >
-                                  3 && (
-                                  <span>
-                                    +
-                                    {
-                                      skills.length -
-                                      3
-                                    }
-                                  </span>
                                 )}
 
+                                {skills.length > 3 && (
+                                  <span>+{skills.length - 3}</span>
+                                )}
                               </div>
                             )}
 
-
-                            {/* ==================================
-                                FOOTER
-                            ================================== */}
-
                             <div className="athlete-card-footer">
-
-                              <span>
-                                View Profile
-                              </span>
-
-                              <span className="arrow">
-                                →
-                              </span>
-
+                              <span>View Profile</span>
+                              <span className="arrow">→</span>
                             </div>
 
+                            {/* SHORTLIST BUTTON */}
+
+                            <button
+                              type="button"
+                              className={`shortlist-btn ${
+                                shortlisted ? "shortlisted" : ""
+                              }`}
+                              disabled={updating}
+                              aria-pressed={shortlisted}
+                              onClick={(event) =>
+                                toggleShortlist(event, athlete)
+                              }
+                            >
+                              {updating
+                                ? "Updating..."
+                                : shortlisted
+                                  ? "✓ Shortlisted"
+                                  : "+ Shortlist"}
+                            </button>
                           </div>
                         );
-                      }
-                    )}
-
-                  </div>
-                )}
-
-              </>
-            )}
-
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
         </div>
-
       </main>
-
     </div>
   );
 };

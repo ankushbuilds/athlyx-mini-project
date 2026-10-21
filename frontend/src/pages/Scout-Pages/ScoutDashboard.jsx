@@ -261,7 +261,7 @@ const ScoutDashboard = () => {
 
                   <button
                     onClick={() =>
-                      navigate("/scout/profile")
+                      navigate("/scout/my-profile")
                     }
                   >
                     Create Profile
@@ -316,7 +316,7 @@ const ScoutDashboard = () => {
 
                   <button
                     onClick={() =>
-                      navigate("/scout/profile")
+                      navigate("/scout/my-profile")
                     }
                   >
                     Complete Profile

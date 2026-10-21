@@ -124,7 +124,7 @@ const CoachAthletes = () => {
             setError("");
 
             const response = await axios.get(
-                `${API}/connections/coach/athletes`,
+                `${API}/connections/coach/connected-athletes`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -251,7 +251,7 @@ const CoachAthletes = () => {
             }
 
             await axios.delete(
-                `${API}/connections/disconnect/${connectionId}`,
+                `${API}/connections/${connectionId}`,
                 {
                     headers: {
                         Authorization:

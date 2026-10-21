@@ -67,8 +67,9 @@ import ScoutDashboard from "./pages/Scout-Pages/ScoutDashboard";
 import ScoutDiscover from "./pages/Scout-Pages/ScoutDiscover";
 import ScoutProfile from "./pages/Scout-Pages/ScoutProfile";
 import ScoutAthleteProfile from "./pages/Scout-Pages/ScoutAthleteProfile";
-import ScoutConnections from "./pages/Scout-Pages/ScoutConnections";
+
 import ScoutSettings from "./pages/Scout-Pages/ScoutSettings";
+import ScoutShortlisted from "./pages/Scout-Pages/ShortList";
 
 // ==========================================
 // APP
@@ -346,12 +347,13 @@ const App = () => {
                     path="/scout/athlete/:id"
                     element={<ScoutAthleteProfile />}
                 />
-
-                {/* Scout Connections */}
+                {/* Scout Shortlist */}
                 <Route
-                    path="/scout/connections"
-                    element={<ScoutConnections />}
+                    path="/scout/shortlisted"
+                    element={<ScoutShortlisted />}
                 />
+
+           
 
                 {/* Scout Messages */}
                 <Route

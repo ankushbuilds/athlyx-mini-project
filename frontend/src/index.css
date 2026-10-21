@@ -12459,3 +12459,557 @@ body {
     width: 100%;
   }
 }
+
+/* Shortlist by scout */
+
+/* =========================================================
+   ATHLYX SHORTLIST
+   GRAPHITE + COPPER
+   ISOLATED PAGE CLASSES
+   ========================================================= */
+
+.shortlist-page {
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+  margin-left: 76px;
+  padding: 32px;
+  background: #111111;
+  color: #f1eee9;
+  box-sizing: border-box;
+}
+
+.shortlist-page *,
+.shortlist-page *::before,
+.shortlist-page *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.shortlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.shortlist-eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #c49a6c;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.shortlist-header h1 {
+  margin: 0;
+  color: #f2eee9;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.shortlist-header h1 span {
+  color: #c49a6c;
+}
+
+.shortlist-header p {
+  margin: 10px 0 0;
+  color: #96918b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.shortlist-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid #35322f;
+  border-radius: 7px;
+  background: #181817;
+  color: #d7d2cc;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.shortlist-refresh:hover {
+  border-color: #c49a6c;
+  background: #211d19;
+}
+
+.shortlist-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shortlist-refresh svg {
+  font-size: 16px;
+}
+
+/* =========================================================
+   ERROR MESSAGE
+   ========================================================= */
+
+.shortlist-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding: 13px 15px;
+  border: 1px solid #65483a;
+  border-radius: 7px;
+  background: #211a17;
+  color: #d9aa91;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.shortlist-error button {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: #d9aa91;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* =========================================================
+   SUMMARY
+   ========================================================= */
+
+.shortlist-summary {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: fit-content;
+  min-width: 235px;
+  margin-bottom: 25px;
+  padding: 18px 20px;
+  border: 1px solid #35322f;
+  border-radius: 9px;
+  background: #181817;
+}
+
+.shortlist-summary-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border: 1px solid #4b3d2f;
+  border-radius: 8px;
+  background: #241e18;
+  color: #c49a6c;
+  font-size: 20px;
+}
+
+.shortlist-summary span {
+  display: block;
+  margin-bottom: 5px;
+  color: #96918b;
+  font-size: 12px;
+}
+
+.shortlist-summary h2 {
+  margin: 0;
+  color: #f2eee9;
+  font-size: 27px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+
+.shortlist-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 520px;
+  height: 46px;
+  margin-bottom: 26px;
+  padding: 0 14px;
+  border: 1px solid #35322f;
+  border-radius: 7px;
+  background: #181817;
+  color: #77736e;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.shortlist-toolbar:focus-within {
+  border-color: #c49a6c;
+  background: #1a1917;
+}
+
+.shortlist-toolbar > svg {
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.shortlist-toolbar input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #eeeae5;
+  font-size: 14px;
+}
+
+.shortlist-toolbar input::placeholder {
+  color: #77736e;
+}
+
+/* =========================================================
+   SHORTLIST GRID
+   ========================================================= */
+
+.shortlist-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+/* =========================================================
+   ATHLETE CARD
+   ========================================================= */
+
+.shortlist-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #35322f;
+  border-radius: 9px;
+  background: #181817;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.shortlist-card:hover {
+  border-color: #62503c;
+  background: #1c1b19;
+}
+
+.shortlist-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 17px;
+  border-bottom: 1px solid #302e2b;
+}
+
+.shortlist-avatar {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  border: 1px solid #4b3d2f;
+  border-radius: 50%;
+  background: #242321;
+  object-fit: cover;
+}
+
+.shortlist-athlete-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.shortlist-athlete-info h3 {
+  overflow: hidden;
+  margin: 0 0 6px;
+  color: #f2eee9;
+  font-size: 15px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shortlist-sport {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #c49a6c;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shortlist-bookmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #c49a6c;
+  font-size: 18px;
+}
+
+/* =========================================================
+   ATHLETE DETAILS
+   ========================================================= */
+
+.shortlist-details {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 17px 0 10px;
+}
+
+.shortlist-details p {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0;
+  color: #aaa49c;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.shortlist-details p svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #c49a6c;
+  font-size: 14px;
+}
+
+.shortlist-bio {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 8px 0 18px;
+  color: #96918b;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* =========================================================
+   CARD ACTIONS
+   ========================================================= */
+
+.shortlist-card-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.shortlist-view-btn,
+.shortlist-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  min-height: 39px;
+  padding: 9px 11px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.shortlist-view-btn {
+  border: 1px solid #c49a6c;
+  background: #c49a6c;
+  color: #171411;
+}
+
+.shortlist-view-btn:hover {
+  border-color: #d5b28b;
+  background: #d0a77a;
+}
+
+.shortlist-remove-btn {
+  border: 1px solid #403a34;
+  background: #201e1b;
+  color: #c5b8a8;
+}
+
+.shortlist-remove-btn:hover {
+  border-color: #806047;
+  background: #29221d;
+  color: #dfc4a6;
+}
+
+.shortlist-remove-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.shortlist-added-date {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #302e2b;
+  color: #77736e;
+  font-size: 11px;
+}
+
+/* =========================================================
+   EMPTY AND LOADING STATES
+   ========================================================= */
+
+.shortlist-empty,
+.shortlist-status {
+  padding: 48px 22px;
+  border: 1px dashed #403a34;
+  border-radius: 9px;
+  background: #181817;
+  text-align: center;
+}
+
+.shortlist-empty > svg {
+  margin-bottom: 15px;
+  color: #c49a6c;
+}
+
+.shortlist-empty h3 {
+  margin: 0 0 10px;
+  color: #f2eee9;
+  font-size: 19px;
+  font-weight: 650;
+}
+
+.shortlist-empty p {
+  max-width: 430px;
+  margin: 0 auto 22px;
+  color: #96918b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.shortlist-primary-btn {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid #c49a6c;
+  border-radius: 6px;
+  background: #c49a6c;
+  color: #171411;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.shortlist-primary-btn:hover {
+  background: #d0a77a;
+}
+
+.shortlist-status {
+  border-style: solid;
+  color: #c49a6c;
+  font-size: 14px;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1200px) {
+  .shortlist-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shortlist-page {
+    padding: 26px;
+  }
+}
+
+@media (max-width: 768px) {
+  .shortlist-page {
+    margin-left: 76px;
+    padding: 22px 18px;
+  }
+
+  .shortlist-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shortlist-header {
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .shortlist-header h1 {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .shortlist-page {
+    padding: 20px 12px;
+  }
+
+  .shortlist-header {
+    flex-direction: column;
+  }
+
+  .shortlist-refresh {
+    align-self: flex-start;
+  }
+
+  .shortlist-card {
+    padding: 16px;
+  }
+
+  .shortlist-card-footer {
+    flex-direction: column;
+  }
+
+  .shortlist-view-btn,
+  .shortlist-remove-btn {
+    width: 100%;
+  }
+}
+
+/* Scout Athlete Shortlist Button */
+.shortlist-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid #c49a6c;
+  border-radius: 8px;
+  background: transparent;
+  color: #c49a6c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.shortlist-btn:hover:not(:disabled) {
+  background: #c49a6c;
+  color: #171717;
+}
+
+.shortlist-btn.shortlisted {
+  background: rgba(196, 154, 108, 0.12);
+  color: #c49a6c;
+}
+
+.shortlist-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}

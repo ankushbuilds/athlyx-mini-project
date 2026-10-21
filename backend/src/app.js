@@ -16,6 +16,7 @@ const academyRoutes = require("./routes/academy.route");
 
 const opportunityRoutes = require("./routes/opportunity.route");
 const scoutRoutes = require("./routes/scout.route");
+const shortlistRoutes = require("./routes/shortlist.route");
 const app = express();
 
 app.use(cors());
@@ -57,5 +58,6 @@ app.use(
   opportunityRoutes
 );
 app.use("/api/scouts", scoutRoutes);
+app.use("/api/shortlist", shortlistRoutes);
 
 module.exports = app;

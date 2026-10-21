@@ -225,24 +225,7 @@ const CoachSidebar = () => {
       </div>
 
 
-      {/* ==================================================
-          OPPORTUNITIES
-      ================================================== */}
-
-      <div
-        className={`sidebar-item ${
-          isActive("/coach/opportunities")
-            ? "active"
-            : ""
-        }`}
-        data-tooltip="Opportunities"
-        onClick={() =>
-          navigate("/coach/opportunities")
-        }
-      >
-        <FiBriefcase size={22} />
-      </div>
-
+     
 
       {/* ==================================================
           REQUESTS

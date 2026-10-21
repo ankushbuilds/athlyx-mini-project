@@ -84,12 +84,12 @@ const AcademyDashboard = () => {
         ),
 
         axios.get(
-          `${API}/connections/academy/athletes`,
+          `${API}/connections/academy/connected-athletes`,
           config
         ),
 
         axios.get(
-          `${API}/connections/academy/coaches`,
+          `${API}/connections/academy/connected-coaches`,
           config
         ),
 

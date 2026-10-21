@@ -104,7 +104,7 @@ const AcademyAthletes = () => {
       setError("");
 
       const response = await axios.get(
-        `${API}/connections/academy/athletes`,
+        `${API}/connections/academy/connected-athletes`,
         {
           headers: {
             Authorization: `Bearer ${token}`

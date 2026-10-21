@@ -144,7 +144,7 @@ const AthleteConnections = () => {
       }
 
       const response = await axios.get(
-        `${API}/connections/athlete/coaches`,
+        `${API}/connections/athlete/connected-coaches`,
         getAuthConfig()
       );
 
@@ -201,7 +201,7 @@ const AthleteConnections = () => {
       }
 
       const response = await axios.get(
-        `${API}/connections/athlete/academies`,
+        `${API}/connections/athlete/connected-academies`,
         getAuthConfig()
       );
 

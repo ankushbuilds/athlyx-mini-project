@@ -246,23 +246,7 @@ const ScoutSidebar = () => {
       </div>
 
 
-      {/* ==================================================
-          CONNECTIONS
-      ================================================== */}
-
-      <div
-        className={`sidebar-item ${
-          isActive("/scout/connections")
-            ? "active"
-            : ""
-        }`}
-        data-tooltip="Connections"
-        onClick={() =>
-          navigate("/scout/connections")
-        }
-      >
-        <FiUsers size={22} />
-      </div>
+     
 
 
       {/* ==================================================
