@@ -4,9 +4,11 @@ import {
   registerUser
 } from "../services/auth.service";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("auth");
 
   const [isLogin, setIsLogin] = useState(true);
 
@@ -67,7 +69,7 @@ const Auth = () => {
           JSON.stringify(data.user)
         );
 
-        setSuccess("Login successful!");
+        setSuccess("loginSuccessful");
 
         console.log("Login response:", data);
 
@@ -86,7 +88,7 @@ const Auth = () => {
 
         setError(
           error.response?.data?.message ||
-          "Login failed. Please try again."
+          "loginFailed"
         );
       } finally {
         setLoading(false);
@@ -100,7 +102,7 @@ const Auth = () => {
     // ==========================================
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
+      setError("passwordsMismatch");
       return;
     }
 
@@ -120,7 +122,7 @@ const Auth = () => {
 
       console.log("Register response:", data);
 
-      setSuccess("Account created successfully! You can now login.");
+      setSuccess("accountCreated");
       setIsLogin(true);
 
       setFormData({
@@ -136,7 +138,7 @@ const Auth = () => {
 
       setError(
         error.response?.data?.message ||
-        "Registration failed. Please try again."
+        "registrationFailed"
       );
     } finally {
       setLoading(false);
@@ -181,25 +183,25 @@ const Auth = () => {
 
         <div className="auth-header">
           <h1>
-            {isLogin ? "Welcome Back" : "Join Athlyx"}
+            {isLogin ? t("welcomeBack") : t("joinAthlyx")}
           </h1>
 
           <p>
             {isLogin
-              ? "Sign in to continue your athletic journey."
-              : "Create your account and discover your potential."}
+              ? t("signInDescription")
+              : t("registerDescription")}
           </p>
         </div>
 
         {error && (
           <div className="auth-message auth-error">
-            {error}
+            {t(error, { defaultValue: error })}
           </div>
         )}
 
         {success && (
           <div className="auth-message auth-success">
-            {success}
+            {t(success, { defaultValue: success })}
           </div>
         )}
 
@@ -211,14 +213,14 @@ const Auth = () => {
           {!isLogin && (
             <div className="form-group">
 
-              <label>Full Name</label>
+              <label>{t("fullName")}</label>
 
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Enter your full name"
+                placeholder={t("enterFullName")}
                 required
               />
 
@@ -227,14 +229,14 @@ const Auth = () => {
 
           <div className="form-group">
 
-            <label>Email</label>
+            <label>{t("email")}</label>
 
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your email"
+              placeholder={t("enterEmail")}
               required
             />
 
@@ -242,14 +244,14 @@ const Auth = () => {
 
           <div className="form-group">
 
-            <label>Password</label>
+            <label>{t("password")}</label>
 
             <input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter your password"
+              placeholder={t("enterPassword")}
               required
               minLength={6}
             />
@@ -259,14 +261,14 @@ const Auth = () => {
           {!isLogin && (
             <div className="form-group">
 
-              <label>Confirm Password</label>
+              <label>{t("confirmPassword")}</label>
 
               <input
                 type="password"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Confirm your password"
+                placeholder={t("confirmYourPassword")}
                 required
                 minLength={6}
               />
@@ -277,7 +279,7 @@ const Auth = () => {
           {!isLogin && (
             <div className="form-group">
 
-              <label>Register As</label>
+              <label>{t("registerAs")}</label>
 
               <select
                 name="role"
@@ -285,19 +287,19 @@ const Auth = () => {
                 onChange={handleChange}
               >
                 <option value="athlete">
-                  Athlete
+                  {t("roles.athlete")}
                 </option>
 
                 <option value="coach">
-                  Coach
+                  {t("roles.coach")}
                 </option>
 
                 <option value="scout">
-                  Scout
+                  {t("roles.scout")}
                 </option>
 
                 <option value="academy">
-                  Academy
+                  {t("roles.academy")}
                 </option>
               </select>
 
@@ -308,7 +310,7 @@ const Auth = () => {
             <div className="forgot-password">
 
               <button type="button">
-                Forgot Password?
+                {t("forgotPassword")}
               </button>
 
             </div>
@@ -320,10 +322,10 @@ const Auth = () => {
             disabled={loading}
           >
             {loading
-              ? "Please wait..."
+              ? t("pleaseWait")
               : isLogin
-                ? "Login"
-                : "Create Account"}
+                ? t("login")
+                : t("createAccount")}
 
             {!loading && <span>→</span>}
           </button>
@@ -334,15 +336,15 @@ const Auth = () => {
 
           <span>
             {isLogin
-              ? "Don't have an account?"
-              : "Already have an account?"}
+              ? t("noAccount")
+              : t("alreadyAccount")}
           </span>
 
           <button
             type="button"
             onClick={toggleAuth}
           >
-            {isLogin ? "Register" : "Login"}
+            {isLogin ? t("register") : t("login")}
           </button>
 
         </div>

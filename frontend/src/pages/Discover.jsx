@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../components/Navbar";
+import { useTranslation } from "react-i18next";
 
 import {
     FiSearch,
@@ -15,6 +16,7 @@ const API = "http://localhost:5000/api";
 
 const Discover = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation("public");
     const [searchParams, setSearchParams] =
         useSearchParams();
 
@@ -161,7 +163,7 @@ const Discover = () => {
 
             setError(
                 error.response?.data?.message ||
-                "Unable to load athletes."
+                "discover.loadError"
             );
         } finally {
             setLoading(false);
@@ -284,7 +286,7 @@ const Discover = () => {
     const getAthleteName = (athlete) => {
         return (
             athlete.user?.name ||
-            "Unknown Athlete"
+            t("discover.unknownAthlete")
         );
     };
 
@@ -319,7 +321,7 @@ const Discover = () => {
         return (
             city ||
             state ||
-            "Location not added"
+            t("discover.locationNotAdded")
         );
     };
 
@@ -332,10 +334,12 @@ const Discover = () => {
         const experience =
             athlete.experience ?? 0;
 
-        return `${experience} ${Number(experience) === 1
-                ? "year"
-                : "years"
-            }`;
+        return t(
+            Number(experience) === 1
+                ? "discover.experienceOne"
+                : "discover.experience",
+            { count: experience }
+        );
     };
 
 
@@ -368,18 +372,16 @@ const Discover = () => {
                     <div className="discover-header-content">
 
                         <span className="page-eyebrow">
-                            DISCOVER ATHLETES
+                            {t("discover.eyebrow")}
                         </span>
 
                         <h1>
-                            Find Available
-                            <span> Players.</span>
+                            {t("discover.title")}
+                            <span>{t("discover.titleSecondLine")}</span>
                         </h1>
 
                         <p>
-                            Search and explore athletes
-                            who are currently available
-                            for new opportunities.
+                            {t("discover.intro")}
                         </p>
 
                     </div>
@@ -412,7 +414,7 @@ const Discover = () => {
                                         event.target.value
                                     )
                                 }
-                                placeholder="Search athlete, sport or position..."
+                                placeholder={t("discover.searchAthlete")}
                             />
 
                         </div>
@@ -432,7 +434,7 @@ const Discover = () => {
                             >
 
                                 <option value="">
-                                    All Sports
+                                    {t("discover.allSports")}
                                 </option>
 
                                 <option value="Cricket">
@@ -474,7 +476,7 @@ const Discover = () => {
                                         event.target.value
                                     )
                                 }
-                                placeholder="Search city or state..."
+                                placeholder={t("discover.searchLocation")}
                             />
 
                         </div>
@@ -487,7 +489,7 @@ const Discover = () => {
                             className="primary-btn discover-search-btn"
                         >
                             <FiSearch />
-                            Search
+                            {t("discover.search")}
                         </button>
 
 
@@ -503,7 +505,7 @@ const Discover = () => {
                                     onClick={
                                         handleClear
                                     }
-                                    aria-label="Clear filters"
+                                    aria-label={t("discover.clearFilters")}
                                 >
                                     <FiX />
                                 </button>
@@ -526,11 +528,11 @@ const Discover = () => {
                         <div>
 
                             <span className="page-eyebrow">
-                                AVAILABLE PLAYERS
+                                {t("discover.availablePlayers")}
                             </span>
 
                             <h2>
-                                Athletes
+                                {t("discover.athletes")}
                             </h2>
 
                         </div>
@@ -543,8 +545,8 @@ const Discover = () => {
                                 {athletes.length}{" "}
 
                                 {athletes.length === 1
-                                    ? "Player"
-                                    : "Players"}
+                                    ? t("discover.player")
+                                    : t("discover.players")}
 
                             </span>
 
@@ -558,7 +560,7 @@ const Discover = () => {
                     {error && (
 
                         <div className="discover-error">
-                            {error}
+                            {t(error, { defaultValue: error })}
                         </div>
 
                     )}
@@ -575,12 +577,11 @@ const Discover = () => {
                             </div>
 
                             <h3>
-                                Finding available players
+                                {t("discover.loadingTitle")}
                             </h3>
 
                             <p>
-                                Please wait while we
-                                load athletes from Athlyx.
+                                {t("discover.loadingDescription")}
                             </p>
 
                         </div>
@@ -596,12 +597,11 @@ const Discover = () => {
                             </div>
 
                             <h3>
-                                No available players found
+                                {t("discover.emptyTitle")}
                             </h3>
 
                             <p>
-                                Try another athlete name,
-                                sport or location.
+                                {t("discover.emptyDescription")}
                             </p>
 
                             {(search ||
@@ -615,7 +615,7 @@ const Discover = () => {
                                             handleClear
                                         }
                                     >
-                                        Clear Filters
+                                        {t("discover.clearFiltersButton")}
                                     </button>
 
                                 )}
@@ -661,7 +661,7 @@ const Discover = () => {
 
 
                                             <span className="discover-available-badge">
-                                                Available
+                                                {t("discover.available")}
                                             </span>
 
                                         </div>
@@ -771,12 +771,11 @@ const Discover = () => {
                 </div>
 
                 <p>
-                    Discover Local Talent.
-                    Create Opportunities.
+                    {t("discover.footerTagline")}
                 </p>
 
                 <p>
-                    © 2026 Athlyx. All rights reserved.
+                    {t("discover.copyright")}
                 </p>
 
             </footer>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import SpecularButton from '../components/SpecularButton';
 
 const useTypewriter = (text, speed = 80, delay = 200) => {
@@ -33,9 +34,10 @@ const useTypewriter = (text, speed = 80, delay = 200) => {
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("public");
 
   const { displayText: animatedTitle, isComplete } = useTypewriter(
-    'Welcome to Athlyx',
+    t("landing.title"),
     80,
     200
   );
@@ -59,9 +61,9 @@ const Landing = () => {
         </div>
 
         <p>
-          Discover talent. Connect with coaches.
+          {t("landing.tagline")}
           <br />
-          Build your path to success.
+          {t("landing.taglineSecondLine")}
         </p>
 
         <SpecularButton
@@ -79,7 +81,7 @@ const Landing = () => {
           followMouse={true}
           onClick={() => navigate('/home')}
         >
-          Get Started
+          {t("landing.getStarted")}
         </SpecularButton>
       </div>
     </div>

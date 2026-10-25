@@ -13304,3 +13304,37 @@ body {
     white-space: normal;
   }
 }
+
+.language-switcher {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 1200;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #c49a6c;
+  border-radius: 8px;
+  background: #121416;
+  color: #f4efe9;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.language-switcher--inline {
+  position: relative;
+  top: auto;
+  right: auto;
+  z-index: auto;
+}
+
+.language-switcher__arrow {
+  color: #c49a6c;
+  font-size: 11px;
+}

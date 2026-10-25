@@ -1,8 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation("common");
 
   const isActive = (path) => location.pathname === path;
 
@@ -18,37 +21,39 @@ const Navbar = () => {
           className={isActive("/home") ? "active" : ""}
           onClick={() => navigate("/home")}
         >
-          Home
+          {t("nav.home")}
         </button>
 
         <button
           className={isActive("/discover") ? "active" : ""}
           onClick={() => navigate("/discover")}
         >
-          Discover
+          {t("nav.discover")}
         </button>
 
         <button
           className={isActive("/about") ? "active" : ""}
           onClick={() => navigate("/about")}
         >
-          About
+          {t("nav.about")}
         </button>
 
         <button
           className={isActive("/contact") ? "active" : ""}
           onClick={() => navigate("/contact")}
         >
-          Contact
+          {t("nav.contact")}
         </button>
 
         <button
           className={isActive("/help") ? "active" : ""}
           onClick={() => navigate("/help")}
         >
-          Help
+          {t("nav.help")}
         </button>
       </nav>
+
+      <LanguageSwitcher inline />
     </header>
   );
 };

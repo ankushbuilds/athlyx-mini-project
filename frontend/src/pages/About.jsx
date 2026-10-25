@@ -1,4 +1,5 @@
 import Navbar from "../components/Navbar";
+import { useTranslation } from "react-i18next";
 import {
   FiTarget,
   FiUsers,
@@ -9,6 +10,8 @@ import {
 } from "react-icons/fi";
 
 const About = () => {
+  const { t } = useTranslation("public");
+
   return (
     <div className="info-page">
       <Navbar />
@@ -18,18 +21,16 @@ const About = () => {
 
           <div className="about-hero">
             <div className="info-card-header about-header">
-              <span className="info-label">ABOUT ATHLYX</span>
+              <span className="info-label">{t("about.label")}</span>
 
               <h1>
-                Discover Talent.
+                {t("about.headline")}
                 <br />
-                <span>Create Opportunities.</span>
+                <span>{t("about.headlineSecondLine")}</span>
               </h1>
 
               <p>
-                Athlyx is a digital platform built to connect athletes with
-                coaches, scouts and academies through a simple and professional
-                talent discovery experience.
+                {t("about.intro")}
               </p>
             </div>
 
@@ -37,7 +38,7 @@ const About = () => {
               <div className="about-logo-glow"></div>
               <img src="/logo.png" alt="Athlyx Logo" />
               <span>ATHLYX</span>
-              <small>SPORTS TALENT PLATFORM</small>
+              <small>{t("about.sportsPlatform")}</small>
             </div>
           </div>
 
@@ -47,13 +48,10 @@ const About = () => {
             </div>
 
             <div>
-              <h2>What is Athlyx?</h2>
+              <h2>{t("about.whatIs")}</h2>
 
               <p>
-                Athlyx provides athletes with a dedicated space to showcase
-                their sporting profile, skills, achievements and experience.
-                At the same time, coaches, scouts and academies can discover
-                promising talent and explore new opportunities.
+                {t("about.whatIsDescription")}
               </p>
             </div>
           </div>
@@ -62,13 +60,12 @@ const About = () => {
 
           <div className="about-section">
             <div className="section-heading">
-              <span className="info-label">OUR PURPOSE</span>
+              <span className="info-label">{t("about.purpose")}</span>
 
-              <h2>What We Do</h2>
+              <h2>{t("about.whatWeDo")}</h2>
 
               <p>
-                We bring athletes and sports professionals together on one
-                centralized platform.
+                {t("about.whatWeDoDescription")}
               </p>
             </div>
 
@@ -79,11 +76,10 @@ const About = () => {
                   <FiUsers />
                 </div>
 
-                <h3>Connect Athletes</h3>
+                <h3>{t("about.connectAthletes")}</h3>
 
                 <p>
-                  Help athletes create professional profiles and connect
-                  with coaches, scouts and academies.
+                  {t("about.connectAthletesDescription")}
                 </p>
               </div>
 
@@ -92,11 +88,10 @@ const About = () => {
                   <FiAward />
                 </div>
 
-                <h3>Showcase Talent</h3>
+                <h3>{t("about.showcaseTalent")}</h3>
 
                 <p>
-                  Give athletes a platform to highlight their skills,
-                  achievements, experience and sporting journey.
+                  {t("about.showcaseTalentDescription")}
                 </p>
               </div>
 
@@ -105,11 +100,10 @@ const About = () => {
                   <FiTrendingUp />
                 </div>
 
-                <h3>Create Opportunities</h3>
+                <h3>{t("about.createOpportunities")}</h3>
 
                 <p>
-                  Make it easier for sports professionals to discover
-                  talented athletes and potential opportunities.
+                  {t("about.createOpportunitiesDescription")}
                 </p>
               </div>
 
@@ -120,17 +114,15 @@ const About = () => {
 
           <div className="about-mission">
             <div>
-              <span className="info-label">OUR VISION</span>
+              <span className="info-label">{t("about.vision")}</span>
 
               <h2>
-                Making sports talent easier to discover.
+                {t("about.visionHeadline")}
               </h2>
             </div>
 
             <p>
-              Our vision is to build a centralized sports ecosystem where
-              talent can be discovered based on skills, achievements and
-              potential rather than simply who they know.
+              {t("about.visionDescription")}
             </p>
           </div>
 
@@ -138,13 +130,12 @@ const About = () => {
 
           <div className="about-values">
             <div className="section-heading">
-              <span className="info-label">WHY ATHLYX</span>
+              <span className="info-label">{t("about.whyAthlyx")}</span>
 
-              <h2>Built Around Talent</h2>
+              <h2>{t("about.builtAroundTalent")}</h2>
 
               <p>
-                Athlyx focuses on creating a professional and accessible
-                environment for the entire sports community.
+                {t("about.builtAroundTalentDescription")}
               </p>
             </div>
 
@@ -153,9 +144,9 @@ const About = () => {
               <div className="value-item">
                 <FiShield />
                 <div>
-                  <h3>Professional Profiles</h3>
+                  <h3>{t("about.professionalProfiles")}</h3>
                   <p>
-                    Present sporting information in one organized profile.
+                    {t("about.professionalProfilesDescription")}
                   </p>
                 </div>
               </div>
@@ -163,9 +154,9 @@ const About = () => {
               <div className="value-item">
                 <FiZap />
                 <div>
-                  <h3>Talent Discovery</h3>
+                  <h3>{t("about.talentDiscovery")}</h3>
                   <p>
-                    Make discovering promising athletes simpler and faster.
+                    {t("about.talentDiscoveryDescription")}
                   </p>
                 </div>
               </div>
@@ -176,21 +167,20 @@ const About = () => {
           <div className="about-roles">
 
             <div className="section-heading">
-              <span className="info-label">COMMUNITY</span>
+              <span className="info-label">{t("about.community")}</span>
 
-              <h2>Built For The Sports Community</h2>
+              <h2>{t("about.sportsCommunity")}</h2>
 
               <p>
-                Athlyx is designed to support different members of the
-                sporting ecosystem.
+                {t("about.sportsCommunityDescription")}
               </p>
             </div>
 
             <div className="role-list">
-              <span>Athletes</span>
-              <span>Coaches</span>
-              <span>Scouts</span>
-              <span>Academies</span>
+              <span>{t("about.athletes")}</span>
+              <span>{t("about.coaches")}</span>
+              <span>{t("about.scouts")}</span>
+              <span>{t("about.academies")}</span>
             </div>
 
           </div>

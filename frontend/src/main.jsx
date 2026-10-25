@@ -4,6 +4,7 @@ import { Buffer } from "buffer";
 
 
 import './index.css'
+import './i18n.js'
 import App from './App.jsx'
 
 window.Buffer = Buffer;

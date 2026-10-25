@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "./components/LanguageSwitcher";
 
 // ==========================================
 // PUBLIC PAGES
@@ -76,8 +78,11 @@ import ScoutShortlisted from "./pages/Scout-Pages/ShortList";
 // ==========================================
 
 const App = () => {
+    const { t } = useTranslation("common");
+
     return (
         <BrowserRouter>
+            <LanguageSwitcher />
             <Routes>
 
                 {/* ==========================================
@@ -221,7 +226,7 @@ const App = () => {
 
                 <Route
                     path="/coach/opportunities"
-                    element={<div>Opportunities</div>}
+                    element={<div>{t("sidebar.opportunities")}</div>}
                 />
 
                 <Route

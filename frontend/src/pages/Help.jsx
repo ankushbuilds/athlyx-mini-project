@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 import {
   FiUser,
@@ -10,6 +11,7 @@ import {
 
 const Help = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("public");
 
   return (
     <div className="info-page">
@@ -17,18 +19,17 @@ const Help = () => {
 
       <main className="help-content">
         <section className="help-hero">
-          <span className="help-badge">ATHLYX SUPPORT</span>
+          <span className="help-badge">{t("help.support")}</span>
 
-          <h1>How can we help?</h1>
+          <h1>{t("help.howCanWeHelp")}</h1>
 
           <p>
-            Find helpful information about your Athlyx account,
-            athlete profile and discovering sports opportunities.
+            {t("help.intro")}
           </p>
         </section>
 
         <section className="help-quick-section">
-          <h2>Quick Help</h2>
+          <h2>{t("help.quickHelp")}</h2>
 
           <div className="help-quick-grid">
             <div className="help-quick-card">
@@ -37,10 +38,9 @@ const Help = () => {
               </div>
 
               <div>
-                <h3>Profile</h3>
+                <h3>{t("help.profile")}</h3>
                 <p>
-                  Create and manage your athlete profile,
-                  skills and achievements.
+                  {t("help.profileDescription")}
                 </p>
               </div>
             </div>
@@ -51,10 +51,9 @@ const Help = () => {
               </div>
 
               <div>
-                <h3>Discover</h3>
+                <h3>{t("help.discover")}</h3>
                 <p>
-                  Learn how coaches, scouts and academies
-                  can discover athletes.
+                  {t("help.discoverDescription")}
                 </p>
               </div>
             </div>
@@ -65,10 +64,9 @@ const Help = () => {
               </div>
 
               <div>
-                <h3>Account & Security</h3>
+                <h3>{t("help.accountSecurity")}</h3>
                 <p>
-                  Manage your password, email and account
-                  security settings.
+                  {t("help.accountSecurityDescription")}
                 </p>
               </div>
             </div>
@@ -77,77 +75,65 @@ const Help = () => {
 
         <section className="help-faq-section">
           <div className="help-section-heading">
-            <h2>Frequently Asked Questions</h2>
+            <h2>{t("help.faq")}</h2>
             <p>
-              Find answers to some of the most common questions
-              about Athlyx.
+              {t("help.faqIntro")}
             </p>
           </div>
 
           <div className="help-faq-list">
             <details className="help-faq">
               <summary>
-                <span>How do I create my athlete profile?</span>
+                <span>{t("help.createProfileQuestion")}</span>
                 <FiChevronDown />
               </summary>
 
               <p>
-                Open your profile section from the dashboard and
-                add your personal details, sport, skills,
-                achievements and other relevant information.
+                {t("help.createProfileAnswer")}
               </p>
             </details>
 
             <details className="help-faq">
               <summary>
-                <span>How can coaches and scouts discover me?</span>
+                <span>{t("help.discoverQuestion")}</span>
                 <FiChevronDown />
               </summary>
 
               <p>
-                Complete your athlete profile with accurate
-                information. A complete profile makes it easier
-                for coaches, scouts and academies to discover
-                your talent.
+                {t("help.discoverAnswer")}
               </p>
             </details>
 
             <details className="help-faq">
               <summary>
-                <span>How can I change my password?</span>
+                <span>{t("help.changePasswordQuestion")}</span>
                 <FiChevronDown />
               </summary>
 
               <p>
-                Go to Settings from your athlete dashboard and
-                select the Change Password option. Enter your
-                current password and create a new password.
+                {t("help.changePasswordAnswer")}
               </p>
             </details>
 
             <details className="help-faq">
               <summary>
-                <span>How can I change my email address?</span>
+                <span>{t("help.changeEmailQuestion")}</span>
                 <FiChevronDown />
               </summary>
 
               <p>
-                Open Settings and select Change Email Address.
-                You will need to provide your new email address
-                and current password.
+                {t("help.changeEmailAnswer")}
               </p>
             </details>
 
             <details className="help-faq">
               <summary>
-                <span>Can I update my profile information later?</span>
+                <span>{t("help.updateProfileQuestion")}</span>
                 <FiChevronDown />
               </summary>
 
               <p>
-                Yes. You can edit your athlete profile whenever
-                you need to update your personal details, skills,
-                achievements or other information.
+                {t("help.updateProfileAnswer")}
               </p>
             </details>
           </div>
@@ -159,16 +145,15 @@ const Help = () => {
           </div>
 
           <div className="help-support-content">
-            <h2>Still need help?</h2>
+            <h2>{t("help.stillNeedHelp")}</h2>
 
             <p>
-              If you couldn't find the answer you're looking for,
-              our support team is here to help.
+              {t("help.supportTeam")}
             </p>
           </div>
 
           <button onClick={() => navigate("/contact")}>
-            Contact Support
+            {t("help.contactSupport")}
           </button>
         </section>
       </main>

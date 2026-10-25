@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 import {
   FiGrid,
@@ -19,6 +20,7 @@ const UNREAD_COUNT_KEY = "scoutUnreadMessageCount";
 const ScoutSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation("common");
 
   // ======================================================
   // UNREAD MESSAGE COUNT
@@ -180,7 +182,7 @@ const ScoutSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Dashboard"
+        data-tooltip={t("sidebar.dashboard")}
         onClick={() =>
           navigate("/scout/dashboard")
         }
@@ -199,7 +201,7 @@ const ScoutSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="My Profile"
+        data-tooltip={t("sidebar.myProfile")}
         onClick={() =>
           navigate("/scout/my-profile")
         }
@@ -218,7 +220,7 @@ const ScoutSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Discover Athletes"
+        data-tooltip={t("sidebar.discoverAthletes")}
         onClick={() =>
           navigate("/scout/discover")
         }
@@ -237,7 +239,7 @@ const ScoutSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Shortlisted"
+        data-tooltip={t("sidebar.shortlisted")}
         onClick={() =>
           navigate("/scout/shortlisted")
         }
@@ -259,7 +261,7 @@ const ScoutSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Messages"
+        data-tooltip={t("sidebar.messages")}
         onClick={() =>
           navigate("/scout/messages")
         }
@@ -294,7 +296,7 @@ const ScoutSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Settings"
+        data-tooltip={t("sidebar.settings")}
         onClick={() =>
           navigate("/scout/settings")
         }

@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 import { FiMail, FiPhone, FiMapPin, FiClock, FiInstagram, FiLinkedin, FiSend } from "react-icons/fi";
 
 const Contact = () => {
+  const { t } = useTranslation("public");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -22,7 +24,7 @@ const Contact = () => {
 
     console.log("Contact Form:", formData);
 
-    alert("Your message has been submitted successfully.");
+    alert(t("contact.messageSubmitted"));
 
     setFormData({
       name: "",
@@ -41,14 +43,12 @@ const Contact = () => {
         <div className="info-card contact-card">
 
           <div className="info-card-header">
-            <span className="info-label">GET IN TOUCH</span>
+            <span className="info-label">{t("contact.getInTouch")}</span>
 
-            <h1>Contact Us</h1>
+            <h1>{t("contact.contactUs")}</h1>
 
             <p>
-              Have a question, feedback, or need assistance?
-              Get in touch with the Athlyx team and we'll be happy
-              to help you.
+              {t("contact.intro")}
             </p>
           </div>
 
@@ -60,9 +60,9 @@ const Contact = () => {
               </div>
 
               <div>
-                <h3>Email Support</h3>
+                <h3>{t("contact.emailSupport")}</h3>
                 <p>support@athlyx.com</p>
-                <span>For general queries and support</span>
+                <span>{t("contact.generalQueries")}</span>
               </div>
             </div>
 
@@ -72,9 +72,9 @@ const Contact = () => {
               </div>
 
               <div>
-                <h3>Phone Support</h3>
+                <h3>{t("contact.phoneSupport")}</h3>
                 <p>+91 6398462796</p>
-                <span>Available during support hours</span>
+                <span>{t("contact.supportHoursAvailability")}</span>
               </div>
             </div>
 
@@ -84,9 +84,9 @@ const Contact = () => {
               </div>
 
               <div>
-                <h3>Location</h3>
+                <h3>{t("contact.location")}</h3>
                 <p>India</p>
-                <span>Serving athletes across India</span>
+                <span>{t("contact.servingIndia")}</span>
               </div>
             </div>
 
@@ -96,8 +96,8 @@ const Contact = () => {
               </div>
 
               <div>
-                <h3>Support Hours</h3>
-                <p>Mon - Sat</p>
+                <h3>{t("contact.supportHours")}</h3>
+                <p>{t("contact.days")}</p>
                 <span>10:00 AM - 6:00 PM</span>
               </div>
             </div>
@@ -111,10 +111,9 @@ const Contact = () => {
             <div className="social-section">
 
               <div className="section-heading">
-                <h2>Connect With Us</h2>
+                <h2>{t("contact.connectWithUs")}</h2>
                 <p>
-                  Follow Athlyx for updates, opportunities and
-                  sports-related content.
+                  {t("contact.followUpdates")}
                 </p>
               </div>
 
@@ -153,9 +152,9 @@ const Contact = () => {
             <div className="contact-form-section">
 
               <div className="section-heading">
-                <h2>Send Us a Message</h2>
+                <h2>{t("contact.sendUsMessage")}</h2>
                 <p>
-                  Fill out the form and our team will get back to you.
+                  {t("contact.formIntro")}
                 </p>
               </div>
 
@@ -164,27 +163,27 @@ const Contact = () => {
                 <div className="form-row">
 
                   <div className="contact-field">
-                    <label>Your Name</label>
+                    <label>{t("contact.yourName")}</label>
 
                     <input
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      placeholder="Enter your name"
+                      placeholder={t("contact.enterName")}
                       required
                     />
                   </div>
 
                   <div className="contact-field">
-                    <label>Email Address</label>
+                    <label>{t("contact.emailAddress")}</label>
 
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="Enter your email"
+                      placeholder={t("contact.enterEmail")}
                       required
                     />
                   </div>
@@ -192,26 +191,26 @@ const Contact = () => {
                 </div>
 
                 <div className="contact-field">
-                  <label>Subject</label>
+                  <label>{t("contact.subject")}</label>
 
                   <input
                     type="text"
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
-                    placeholder="What can we help you with?"
+                    placeholder={t("contact.subjectPlaceholder")}
                     required
                   />
                 </div>
 
                 <div className="contact-field">
-                  <label>Message</label>
+                  <label>{t("contact.message")}</label>
 
                   <textarea
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
-                    placeholder="Write your message..."
+                    placeholder={t("contact.messagePlaceholder")}
                     rows="5"
                     required
                   ></textarea>
@@ -219,7 +218,7 @@ const Contact = () => {
 
                 <button type="submit" className="send-message-btn">
                   <FiSend />
-                  Send Message
+                  {t("contact.sendMessage")}
                 </button>
 
               </form>
@@ -229,9 +228,9 @@ const Contact = () => {
           </div>
 
           <div className="contact-footer-note">
-            <strong>Need immediate help?</strong>
+            <strong>{t("contact.immediateHelp")}</strong>
             <span>
-              Check our Help & Support section for answers to common questions.
+              {t("contact.helpLink")}
             </span>
           </div>
 

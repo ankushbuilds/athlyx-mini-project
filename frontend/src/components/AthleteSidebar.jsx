@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 import {
   FiGrid,
@@ -21,6 +22,7 @@ const UNREAD_COUNT_KEY = "athleteUnreadMessageCount";
 const AthleteSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation("common");
 
   // ======================================================
   // UNREAD MESSAGE COUNT
@@ -306,7 +308,7 @@ const AthleteSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Dashboard"
+        data-tooltip={t("sidebar.dashboard")}
         onClick={() =>
           navigate("/athlete/dashboard")
         }
@@ -324,7 +326,7 @@ const AthleteSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="My Profile"
+        data-tooltip={t("sidebar.myProfile")}
         onClick={() =>
           navigate("/athlete/my-profile")
         }
@@ -342,7 +344,7 @@ const AthleteSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Discover"
+        data-tooltip={t("sidebar.discover")}
         onClick={() =>
           navigate("/athlete/discover")
         }
@@ -360,7 +362,7 @@ const AthleteSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Opportunities"
+        data-tooltip={t("sidebar.opportunities")}
         onClick={() =>
           navigate("/athlete/opportunities")
         }
@@ -378,7 +380,7 @@ const AthleteSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Showcase"
+        data-tooltip={t("sidebar.showcase")}
         onClick={() =>
           navigate("/athlete/showcase")
         }
@@ -396,7 +398,7 @@ const AthleteSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Challenges"
+        data-tooltip={t("sidebar.challenges")}
         onClick={() =>
           navigate("/athlete/challenges")
         }
@@ -414,7 +416,7 @@ const AthleteSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Connections"
+        data-tooltip={t("sidebar.connections")}
         onClick={() =>
           navigate("/athlete/connections")
         }
@@ -448,7 +450,7 @@ const AthleteSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Messages"
+        data-tooltip={t("sidebar.messages")}
         onClick={() =>
           navigate("/athlete/messages")
         }
@@ -482,7 +484,7 @@ const AthleteSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Settings"
+        data-tooltip={t("sidebar.settings")}
         onClick={() =>
           navigate("/athlete/settings")
         }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 import {
   FiGrid,
@@ -20,6 +21,7 @@ const UNREAD_COUNT_KEY = "athleteUnreadMessageCount";
 const CoachSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation("common");
 
   // ======================================================
   // UNREAD MESSAGE COUNT
@@ -159,7 +161,7 @@ const CoachSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Dashboard"
+        data-tooltip={t("sidebar.dashboard")}
         onClick={() =>
           navigate("/coach/dashboard")
         }
@@ -178,7 +180,7 @@ const CoachSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="My Profile"
+        data-tooltip={t("sidebar.myProfile")}
         onClick={() =>
           navigate("/coach/my-profile")
         }
@@ -197,7 +199,7 @@ const CoachSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="My Athletes"
+        data-tooltip={t("sidebar.myAthletes")}
         onClick={() =>
           navigate("/coach/athletes")
         }
@@ -216,7 +218,7 @@ const CoachSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Discover Athletes"
+        data-tooltip={t("sidebar.discoverAthletes")}
         onClick={() =>
           navigate("/coach/discover")
         }
@@ -237,7 +239,7 @@ const CoachSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Requests"
+        data-tooltip={t("sidebar.requests")}
         onClick={() =>
           navigate("/coach/requests")
         }
@@ -272,7 +274,7 @@ const CoachSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Messages"
+        data-tooltip={t("sidebar.messages")}
         onClick={() =>
           navigate("/coach/messages")
         }
@@ -307,7 +309,7 @@ const CoachSidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Settings"
+        data-tooltip={t("sidebar.settings")}
         onClick={() =>
           navigate("/coach/settings")
         }

@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 
 const Home = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("public");
 
   return (
     <div className="home-page">
@@ -11,32 +13,28 @@ const Home = () => {
       <main>
         <section className="home-hero">
           <div className="hero-content">
-            <p className="hero-tag">LOCAL TALENT • BIG OPPORTUNITIES</p>
+            <p className="hero-tag">{t("home.heroTag")}</p>
 
             <h1>
-              Discover
-              <span> Local Talent.</span>
+              {t("home.discover")}
+              <span>{t("home.localTalent")}</span>
             </h1>
 
-            <p>
-              Athlyx connects athletes, coaches and scouts on one platform.
-              Discover promising talent from your local sports community and
-              create new opportunities.
-            </p>
+            <p>{t("home.heroDescription")}</p>
 
             <div className="hero-buttons">
               <button
                 className="primary-btn"
                 onClick={() => navigate("/auth")}
               >
-              Join Athlyx
+                {t("home.joinAthlyx")}
               </button>
 
               <button
                 className="secondary-btn"
                 onClick={() => navigate("/discover")}
               >
-                Explore Athletes
+                {t("home.exploreAthletes")}
               </button>
             </div>
           </div>
@@ -44,9 +42,9 @@ const Home = () => {
 
         <section className="sports-section">
           <div className="section-title">
-            <p>EXPLORE</p>
-            <h2>Find Talent By Sport</h2>
-            <span>Explore athletes across different sports.</span>
+            <p>{t("home.explore")}</p>
+            <h2>{t("home.findTalentBySport")}</h2>
+            <span>{t("home.exploreSports")}</span>
           </div>
 
           <div className="sports-grid">
@@ -55,8 +53,8 @@ const Home = () => {
               onClick={() => navigate("/discover? sport=Cricket")}
             >
               <span>🏏</span>
-              <h3>Cricket</h3>
-              <p>Discover cricket talent</p>
+              <h3>{t("home.cricket")}</h3>
+              <p>{t("home.discoverCricket")}</p>
             </div>
 
             <div
@@ -64,8 +62,8 @@ const Home = () => {
               onClick={() => navigate("/discover? sport=Football")}
             >
               <span>⚽</span>
-              <h3>Football</h3>
-              <p>Discover football talent</p>
+              <h3>{t("home.football")}</h3>
+              <p>{t("home.discoverFootball")}</p>
             </div>
 
             <div
@@ -73,8 +71,8 @@ const Home = () => {
               onClick={() => navigate("/discover? sport=Athletics")}
             >
               <span>🏃</span>
-              <h3>Athletics</h3>
-              <p>Discover athletic talent</p>
+              <h3>{t("home.athletics")}</h3>
+              <p>{t("home.discoverAthletics")}</p>
             </div>
 
             <div
@@ -82,8 +80,8 @@ const Home = () => {
               onClick={() => navigate("/discover? sport=Hockey")}
             >
               <span>🏑</span>
-              <h3>Hockey</h3>
-              <p>Discover hockey talent</p>
+              <h3>{t("home.hockey")}</h3>
+              <p>{t("home.discoverHockey")}</p>
             </div>
 
             <div
@@ -91,8 +89,8 @@ const Home = () => {
               onClick={() => navigate("/discover? sport=Basketball")}
             >
               <span>🏀</span>
-              <h3>Basketball</h3>
-              <p>Discover basketball talent</p>
+              <h3>{t("home.basketball")}</h3>
+              <p>{t("home.discoverBasketball")}</p>
             </div>
 
             <div
@@ -100,72 +98,63 @@ const Home = () => {
               onClick={() => navigate("/discover")}
             >
               <span>＋</span>
-              <h3>More Sports</h3>
-              <p>Explore more categories</p>
+              <h3>{t("home.moreSports")}</h3>
+              <p>{t("home.exploreMore")}</p>
             </div>
           </div>
         </section>
 
         <section className="talent-section">
           <div className="section-title">
-            <p>WHO IS ATHLYX FOR?</p>
-            <h2>One Platform For Everyone</h2>
+            <p>{t("home.whoIsAthlyxFor")}</p>
+            <h2>{t("home.onePlatform")}</h2>
             <span>
-              Athlyx brings athletes, coaches and scouts together.
+              {t("home.everyoneDescription")}
             </span>
           </div>
 
           <div className="talent-grid">
             <div className="athlete-card">
               <div className="athlete-image">
-                <span>ATHLETE</span>
+                <span>{t("home.athlete")}</span>
               </div>
 
               <div className="athlete-info">
-                <h3>For Athletes</h3>
-                <p>
-                  Create your profile, showcase your skills and get discovered
-                  by coaches and scouts.
-                </p>
+                <h3>{t("home.forAthletes")}</h3>
+                <p>{t("home.athletesDescription")}</p>
 
                 <button onClick={() => navigate("/auth")}>
-                  Create Profile →
+                  {t("home.createProfile")}
                 </button>
               </div>
             </div>
 
             <div className="athlete-card">
               <div className="athlete-image">
-                <span>COACH</span>
+                <span>{t("home.coach")}</span>
               </div>
 
               <div className="athlete-info">
-                <h3>For Coaches</h3>
-                <p>
-                  Discover talented athletes and connect with promising local
-                  sports talent.
-                </p>
+                <h3>{t("home.forCoaches")}</h3>
+                <p>{t("home.coachesDescription")}</p>
 
                 <button onClick={() => navigate("/auth")}>
-                  Get Started →
+                  {t("home.getStarted")}
                 </button>
               </div>
             </div>
 
             <div className="athlete-card">
               <div className="athlete-image">
-                <span>SCOUT</span>
+                <span>{t("home.scout")}</span>
               </div>
 
               <div className="athlete-info">
-                <h3>For Scouts</h3>
-                <p>
-                  Find emerging athletes, explore profiles and discover the
-                  next potential star.
-                </p>
+                <h3>{t("home.forScouts")}</h3>
+                <p>{t("home.scoutsDescription")}</p>
 
                 <button onClick={() => navigate("/auth")}>
-                  Start Discovering →
+                  {t("home.startDiscovering")}
                 </button>
               </div>
             </div>
@@ -174,53 +163,41 @@ const Home = () => {
 
         <section className="how-section">
           <div className="section-title">
-            <p>HOW IT WORKS</p>
-            <h2>Simple. Discover. Connect. Grow.</h2>
-            <span>
-              Athlyx makes it easier to discover and connect with local
-              sports talent.
-            </span>
+            <p>{t("home.howItWorks")}</p>
+            <h2>{t("home.stepsTitle")}</h2>
+            <span>{t("home.stepsDescription")}</span>
           </div>
 
           <div className="how-grid">
             <div className="how-card">
               <span>01</span>
-              <h3>Create Profile</h3>
-              <p>
-                Athletes, coaches and scouts can create their profile and
-                showcase their interests and skills.
-              </p>
+              <h3>{t("home.createProfileStep")}</h3>
+              <p>{t("home.profileStepDescription")}</p>
             </div>
 
             <div className="how-card">
               <span>02</span>
-              <h3>Discover Talent</h3>
-              <p>
-                Explore athletes by sport and find promising local talent
-                through the platform.
-              </p>
+              <h3>{t("home.discoverTalent")}</h3>
+              <p>{t("home.discoverStepDescription")}</p>
             </div>
 
             <div className="how-card">
               <span>03</span>
-              <h3>Connect</h3>
-              <p>
-                Build connections between athletes, coaches and scouts and
-                create new opportunities.
-              </p>
+              <h3>{t("home.connect")}</h3>
+              <p>{t("home.connectStepDescription")}</p>
             </div>
           </div>
         </section>
 
         <section className="home-cta">
-          <h2>Ready to discover your next opportunity?</h2>
+          <h2>{t("home.readyForOpportunity")}</h2>
 
           <p>
-            Join Athlyx and become part of the local sports talent community.
+            {t("home.joinCommunity")}
           </p>
 
           <button onClick={() => navigate("/auth")}>
-            Join Now
+            {t("home.joinNow")}
           </button>
         </section>
       </main>
@@ -231,9 +208,9 @@ const Home = () => {
           <span>Athlyx</span>
         </div>
 
-        <p>Discover Local Talent. Create Opportunities.</p>
+        <p>{t("home.footerTagline")}</p>
 
-        <p>© 2026 Athlyx. All rights reserved.</p>
+        <p>{t("home.copyright")}</p>
       </footer>
     </div>
   );

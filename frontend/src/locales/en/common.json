@@ -1,0 +1,27 @@
+{
+  "language": "Language",
+  "selectLanguage": "Select language",
+  "nav": {
+    "home": "Home",
+    "discover": "Discover",
+    "about": "About",
+    "contact": "Contact",
+    "help": "Help"
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "myProfile": "My Profile",
+    "discover": "Discover",
+    "discoverAthletes": "Discover Athletes",
+    "myAthletes": "My Athletes",
+    "opportunities": "Opportunities",
+    "showcase": "Showcase",
+    "challenges": "Challenges",
+    "connections": "Connections",
+    "events": "Events",
+    "requests": "Requests",
+    "shortlisted": "Shortlisted",
+    "messages": "Messages",
+    "settings": "Settings"
+  }
+}

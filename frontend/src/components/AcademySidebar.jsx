@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 import {
   FiGrid,
@@ -20,6 +21,7 @@ const UNREAD_COUNT_KEY = "academyUnreadMessageCount";
 const AcademySidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation("common");
 
   // ======================================================
   // UNREAD MESSAGE COUNT
@@ -159,7 +161,7 @@ const AcademySidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Dashboard"
+        data-tooltip={t("sidebar.dashboard")}
         onClick={() =>
           navigate("/academy/dashboard")
         }
@@ -178,7 +180,7 @@ const AcademySidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="My Profile"
+        data-tooltip={t("sidebar.myProfile")}
         onClick={() =>
           navigate("/academy/my-profile")
         }
@@ -197,7 +199,7 @@ const AcademySidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="My Athletes"
+        data-tooltip={t("sidebar.myAthletes")}
         onClick={() =>
           navigate("/academy/athletes")
         }
@@ -216,7 +218,7 @@ const AcademySidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Discover Athletes"
+        data-tooltip={t("sidebar.discoverAthletes")}
         onClick={() =>
           navigate("/academy/discover")
         }
@@ -235,7 +237,7 @@ const AcademySidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Events"
+        data-tooltip={t("sidebar.events")}
         onClick={() =>
           navigate("/academy/events")
         }
@@ -254,7 +256,7 @@ const AcademySidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Requests"
+        data-tooltip={t("sidebar.requests")}
         onClick={() =>
           navigate("/academy/requests")
         }
@@ -289,7 +291,7 @@ const AcademySidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Messages"
+        data-tooltip={t("sidebar.messages")}
         onClick={() =>
           navigate("/academy/messages")
         }
@@ -324,7 +326,7 @@ const AcademySidebar = () => {
             ? "active"
             : ""
         }`}
-        data-tooltip="Settings"
+        data-tooltip={t("sidebar.settings")}
         onClick={() =>
           navigate("/academy/settings")
         }
