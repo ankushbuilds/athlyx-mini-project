@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 
 const express = require("express");
@@ -13,13 +14,31 @@ const connectionRoutes = require("./routes/connection.route");
 const chatRoutes = require("./routes/chat.route");
 const challengeRoutes = require("./routes/challenge.route");
 const academyRoutes = require("./routes/academy.route");
-
 const opportunityRoutes = require("./routes/opportunity.route");
 const scoutRoutes = require("./routes/scout.route");
 const shortlistRoutes = require("./routes/shortlist.route");
+
 const app = express();
 
-app.use(cors());
+// ==========================================
+// CORS CONFIGURATION
+// ==========================================
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://YOUR-VERCEL-DOMAIN.vercel.app"
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true
+}));
 
 // ==========================================
 // MIDDLEWARE
@@ -32,31 +51,16 @@ app.use(express.json());
 // ==========================================
 
 app.use("/api/auth", authRoutes);
-
 app.use("/api/athletes", athleteRoutes);
-
 app.use("/api/users", userRoutes);
-
 app.use("/api/showcase", showcaseRoutes);
-
 app.use("/api/coaches", coachRoutes);
-
-app.use(
-    "/api/coach-athletes",
-    coachAthleteRoutes
-);
-
-app.use(
-    "/api/connections",
-    connectionRoutes
-);
+app.use("/api/coach-athletes", coachAthleteRoutes);
+app.use("/api/connections", connectionRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/academies", academyRoutes);
-app.use(
-  "/api/opportunities",
-  opportunityRoutes
-);
+app.use("/api/opportunities", opportunityRoutes);
 app.use("/api/scouts", scoutRoutes);
 app.use("/api/shortlist", shortlistRoutes);
 
