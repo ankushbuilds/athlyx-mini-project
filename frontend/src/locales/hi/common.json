@@ -2,6 +2,7 @@
 {
   "language": "भाषा",
   "selectLanguage": "अपनी भाषा चुनें",
+  "languageDescription": "Athlyx में उपयोग की जाने वाली भाषा चुनें।",
   "nav": {
     "home": "होम",
     "discover": "खोजें",

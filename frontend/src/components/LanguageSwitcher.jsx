@@ -1,23 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
 import i18n from "../i18n";
 
 
 const LanguageSwitcher = ({ inline = false }) => {
   const { t } = useTranslation("common");
-  const { pathname } = useLocation();
-
-  const hasNavbar = [
-    "/home",
-    "/discover",
-    "/about",
-    "/contact",
-    "/help"
-  ].includes(pathname);
-
-  if (hasNavbar && !inline) {
-    return null;
-  }
 
   const currentLanguage = i18n.resolvedLanguage || "en";
   const isHindi = currentLanguage.startsWith("hi");
@@ -29,7 +15,7 @@ const LanguageSwitcher = ({ inline = false }) => {
   return (
     <button
       type="button"
-      className="language-switcher"
+      className={`language-switcher${inline ? " language-switcher--inline" : ""}`}
       onClick={toggleLanguage}
       aria-label={t("selectLanguage")}
       aria-pressed={isHindi}

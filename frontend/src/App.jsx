@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "./components/LanguageSwitcher";
 
 // ==========================================
 // PUBLIC PAGES
@@ -82,7 +81,6 @@ const App = () => {
 
     return (
         <BrowserRouter>
-            <LanguageSwitcher />
             <Routes>
 
                 {/* ==========================================

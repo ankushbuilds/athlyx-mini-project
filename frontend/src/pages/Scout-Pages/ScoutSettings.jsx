@@ -13,6 +13,7 @@ import {
     FiMail
 } from "react-icons/fi";
 import ScoutSidebar from "../../components/ScoutSidebar";
+import LanguageSetting from "../../components/LanguageSetting";
 
 const API = "http://localhost:5000/api";
 
@@ -580,6 +581,8 @@ const ScoutSettings = () => {
             </div>
 
             {/* DANGER ZONE */}
+
+            <LanguageSetting />
 
             <div className="settings-section danger-section">
                 <h2>Danger Zone</h2>

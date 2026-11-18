@@ -13,6 +13,7 @@ import {
     FiMail
 } from "react-icons/fi";
 import CoachSidebar from "../../components/CoachSidebar";
+import LanguageSetting from "../../components/LanguageSetting";
 
 const Toggle = ({ enabled, setEnabled, onChange, disabled }) => (
     <button
@@ -607,6 +608,8 @@ const CoachSettings = () => {
                     />
                 </div>
             </div>
+
+            <LanguageSetting />
 
             <div className="settings-section danger-section">
                 <h2>Danger Zone</h2>

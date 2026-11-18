@@ -744,6 +744,13 @@ button {
   -webkit-backdrop-filter: blur(10px);
 }
 
+.home-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
 .home-logo,
 .logo,
 .footer-brand {
@@ -772,6 +779,8 @@ button {
   display: flex;
   align-items: center;
   gap: 28px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .home-nav button {
@@ -2275,6 +2284,17 @@ button {
   .home-nav {
     flex-wrap: wrap;
     justify-content: center;
+    white-space: normal;
+  }
+
+  .home-nav-actions {
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .home-nav {
+    width: 100%;
   }
 
   .home-hero {
@@ -13306,14 +13326,11 @@ body {
 }
 
 .language-switcher {
-  position: fixed;
-  top: 12px;
-  right: 16px;
-  z-index: 1200;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 116px;
   gap: 8px;
   padding: 8px 12px;
   border: 1px solid #c49a6c;
@@ -13323,15 +13340,9 @@ body {
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
+  white-space: nowrap;
   cursor: pointer;
   transition: border-color 0.2s ease, color 0.2s ease;
-}
-
-.language-switcher--inline {
-  position: relative;
-  top: auto;
-  right: auto;
-  z-index: auto;
 }
 
 .language-switcher__arrow {

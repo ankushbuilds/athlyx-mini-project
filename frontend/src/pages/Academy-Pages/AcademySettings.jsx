@@ -15,6 +15,7 @@ import {
 } from "react-icons/fi";
 
 import AcademySidebar from "../../components/AcademySidebar";
+import LanguageSetting from "../../components/LanguageSetting";
 
 const Toggle = ({ enabled, setEnabled, onChange, disabled }) => (
     <button
@@ -778,6 +779,8 @@ const AcademySettings = () => {
             {/* ==========================================
                 DANGER ZONE
             ========================================== */}
+
+            <LanguageSetting />
 
             <div className="settings-section danger-section">
 

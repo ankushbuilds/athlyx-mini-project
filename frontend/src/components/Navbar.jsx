@@ -16,44 +16,46 @@ const Navbar = () => {
         <span className="brand-name">Athlyx</span>
       </div>
 
-      <nav className="home-nav">
-        <button
-          className={isActive("/home") ? "active" : ""}
-          onClick={() => navigate("/home")}
-        >
-          {t("nav.home")}
-        </button>
+      <div className="home-nav-actions">
+        <nav className="home-nav">
+          <button
+            className={isActive("/home") ? "active" : ""}
+            onClick={() => navigate("/home")}
+          >
+            {t("nav.home")}
+          </button>
 
-        <button
-          className={isActive("/discover") ? "active" : ""}
-          onClick={() => navigate("/discover")}
-        >
-          {t("nav.discover")}
-        </button>
+          <button
+            className={isActive("/discover") ? "active" : ""}
+            onClick={() => navigate("/discover")}
+          >
+            {t("nav.discover")}
+          </button>
 
-        <button
-          className={isActive("/about") ? "active" : ""}
-          onClick={() => navigate("/about")}
-        >
-          {t("nav.about")}
-        </button>
+          <button
+            className={isActive("/about") ? "active" : ""}
+            onClick={() => navigate("/about")}
+          >
+            {t("nav.about")}
+          </button>
 
-        <button
-          className={isActive("/contact") ? "active" : ""}
-          onClick={() => navigate("/contact")}
-        >
-          {t("nav.contact")}
-        </button>
+          <button
+            className={isActive("/contact") ? "active" : ""}
+            onClick={() => navigate("/contact")}
+          >
+            {t("nav.contact")}
+          </button>
 
-        <button
-          className={isActive("/help") ? "active" : ""}
-          onClick={() => navigate("/help")}
-        >
-          {t("nav.help")}
-        </button>
-      </nav>
+          <button
+            className={isActive("/help") ? "active" : ""}
+            onClick={() => navigate("/help")}
+          >
+            {t("nav.help")}
+          </button>
+        </nav>
 
-      <LanguageSwitcher inline />
+        <LanguageSwitcher inline />
+      </div>
     </header>
   );
 };

@@ -1,6 +1,7 @@
 {
   "language": "Language",
   "selectLanguage": "Select language",
+  "languageDescription": "Choose the language used throughout Athlyx.",
   "nav": {
     "home": "Home",
     "discover": "Discover",

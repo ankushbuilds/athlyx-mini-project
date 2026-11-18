@@ -1,3 +1,4 @@
+
 const express = require("express");
 const router = express.Router();
 
@@ -70,6 +71,20 @@ router.get(
 // ATHLETE → COACH
 // =====================================================
 
+// Frontend-compatible routes
+router.post(
+    "/send/coach/:coachId",
+    authMiddleware,
+    sendAthleteConnectionRequest
+);
+
+router.get(
+    "/status/coach/:coachId",
+    authMiddleware,
+    getAthleteConnectionStatus
+);
+
+// Original routes preserved
 router.post(
     "/athlete/send/coach/:coachId",
     authMiddleware,
@@ -202,8 +217,6 @@ router.get(
     getScoutConnectionStatus
 );
 
-
-// Scout's outgoing pending requests
 router.get(
     "/scout/requests",
     authMiddleware,
@@ -215,7 +228,6 @@ router.get(
 // ATHLETE ← SCOUT REQUESTS
 // =====================================================
 
-// Athlete will see Scout requests here
 router.get(
     "/athlete/scout-requests",
     authMiddleware,
@@ -227,60 +239,48 @@ router.get(
 // CONNECTED USERS
 // =====================================================
 
-// Coach → connected athletes
 router.get(
     "/coach/connected-athletes",
     authMiddleware,
     getCoachConnectedAthletes
 );
 
-// Athlete → connected coaches
 router.get(
     "/athlete/connected-coaches",
     authMiddleware,
     getAthleteConnectedCoaches
 );
 
-
-// Academy → connected athletes
 router.get(
     "/academy/connected-athletes",
     authMiddleware,
     getAcademyConnectedAthletes
 );
 
-// Academy → connected coaches
 router.get(
     "/academy/connected-coaches",
     authMiddleware,
     getAcademyConnectedCoaches
 );
 
-
-// Athlete → connected academies
 router.get(
     "/athlete/connected-academies",
     authMiddleware,
     getAthleteConnectedAcademies
 );
 
-// Coach → connected academies
 router.get(
     "/coach/connected-academies",
     authMiddleware,
     getCoachConnectedAcademies
 );
 
-
-// Scout → connected athletes
 router.get(
     "/scout/connected-athletes",
     authMiddleware,
     getScoutConnectedAthletes
 );
 
-
-// Athlete → connected scouts
 router.get(
     "/athlete/connected-scouts",
     authMiddleware,
@@ -292,8 +292,16 @@ router.get(
 // COMMON REQUEST RESPONSE
 // =====================================================
 
+// Original route preserved
 router.put(
     "/respond/:connectionId",
+    authMiddleware,
+    respondToConnectionRequest
+);
+
+// Coach frontend-compatible route
+router.put(
+    "/coach/respond/:connectionId",
     authMiddleware,
     respondToConnectionRequest
 );
