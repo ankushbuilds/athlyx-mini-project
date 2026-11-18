@@ -26,14 +26,14 @@ const app = express();
 
 const allowedOrigins = [
     "http://localhost:5173",
-    "https://athlyx-mini-project.vercel.app"
+    "https://athlyx-mini-project.vercel.app",
+    "https://athlyx-mini-project-i1b58lfmd-ankushbuilds-projects.vercel.app"
 ];
 
 app.use(cors({
     origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 // ==========================================
