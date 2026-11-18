@@ -15,6 +15,8 @@ import {
 import CoachSidebar from "../../components/CoachSidebar";
 import LanguageSetting from "../../components/LanguageSetting";
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const Toggle = ({ enabled, setEnabled, onChange, disabled }) => (
     <button
         type="button"
@@ -75,7 +77,7 @@ const CoachSettings = () => {
             }
 
             const response = await axios.get(
-                "http://localhost:5000/api/auth/settings",
+                `${API}/auth/settings`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -140,7 +142,7 @@ const CoachSettings = () => {
             setSettingsSaving(true);
 
             const response = await axios.put(
-                "http://localhost:5000/api/auth/settings",
+                `${API}/auth/settings`,
                 updatedSettings,
                 {
                     headers: {
@@ -197,7 +199,7 @@ const CoachSettings = () => {
             const token = localStorage.getItem("token");
 
             await axios.delete(
-                "http://localhost:5000/api/auth/delete-account",
+                `${API}/auth/delete-account`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -255,7 +257,7 @@ const CoachSettings = () => {
             const token = localStorage.getItem("token");
 
             const response = await axios.put(
-                "http://localhost:5000/api/auth/change-password",
+                `${API}/auth/change-password`,
                 {
                     currentPassword,
                     newPassword
@@ -315,7 +317,7 @@ const CoachSettings = () => {
             const token = localStorage.getItem("token");
 
             const response = await axios.put(
-                "http://localhost:5000/api/auth/change-email",
+                `${API}/auth/change-email`,
                 {
                     newEmail,
                     currentPassword

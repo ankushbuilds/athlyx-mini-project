@@ -9,6 +9,8 @@ import {
 } from "react-icons/fi";
 import AthleteSidebar from "../../components/AthleteSidebar";
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const Discover = () => {
   const navigate = useNavigate();
 
@@ -56,12 +58,12 @@ const Discover = () => {
         const [coachResponse, academyResponse] =
           await Promise.all([
             axios.get(
-              "http://localhost:5000/api/users/coaches",
+              `${API}/users/coaches`,
               config
             ),
 
             axios.get(
-              "http://localhost:5000/api/academies/all",
+              `${API}/academies/all`,
               config
             )
           ]);

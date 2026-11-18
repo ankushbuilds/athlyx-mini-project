@@ -4,6 +4,8 @@ import axios from "axios";
 import { FiCamera, FiUser } from "react-icons/fi";
 import AthleteSidebar from "../../components/AthleteSidebar";
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const AthleteProfile = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -59,7 +61,7 @@ const AthleteProfile = () => {
       setError("");
 
       const userResponse = await axios.get(
-        "http://localhost:5000/api/auth/me",
+        `${API}/auth/me`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -83,7 +85,7 @@ const AthleteProfile = () => {
 
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/athletes/get-profile",
+          `${API}/athletes/get-profile`,
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -230,7 +232,7 @@ const AthleteProfile = () => {
       const token = localStorage.getItem("token");
 
       const response = await axios.post(
-        "http://localhost:5000/api/users/profile-pic",
+        `${API}/users/profile-pic`,
         imageData,
         {
           headers: {
@@ -355,7 +357,7 @@ const AthleteProfile = () => {
 
       if (isEditMode) {
         response = await axios.put(
-          "http://localhost:5000/api/athletes/update-profile",
+          `${API}/athletes/update-profile`,
           data,
           {
             headers: {
@@ -369,7 +371,7 @@ const AthleteProfile = () => {
         );
       } else {
         response = await axios.post(
-          "http://localhost:5000/api/athletes/create",
+          `${API}/athletes/create`,
           data,
           {
             headers: {

@@ -9,6 +9,8 @@ import {
 } from "react-icons/fi";
 import AthleteSidebar from "../../components/AthleteSidebar";
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const AthleteDashboard = () => {
   const navigate = useNavigate();
 
@@ -43,7 +45,7 @@ const AthleteDashboard = () => {
       }
 
       const response = await axios.get(
-        "http://localhost:5000/api/athletes/get-profile",
+        `${API}/athletes/get-profile`,
         {
           headers: {
             Authorization: `Bearer ${token}`

@@ -4,6 +4,8 @@ import axios from "axios";
 import { FiCamera, FiUser } from "react-icons/fi";
 import CoachSidebar from "../../components/CoachSidebar";
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const CoachProfile = () => {
   const navigate = useNavigate();
 
@@ -46,7 +48,7 @@ const CoachProfile = () => {
       setError("");
 
       const userResponse = await axios.get(
-        "http://localhost:5000/api/auth/me",
+        `${API}/auth/me`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -71,7 +73,7 @@ const CoachProfile = () => {
       }
 
       const response = await axios.get(
-        "http://localhost:5000/api/coaches/get-profile",
+        `${API}/coaches/get-profile`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -276,7 +278,7 @@ const CoachProfile = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:5000/api/users/profile-pic",
+        `${API}/users/profile-pic`,
         imageData,
         {
           headers: {
@@ -412,7 +414,7 @@ const CoachProfile = () => {
       }
 
       const response = await axios.put(
-        "http://localhost:5000/api/coaches/update-profile",
+        `${API}/coaches/update-profile`,
         data,
         {
           headers: {

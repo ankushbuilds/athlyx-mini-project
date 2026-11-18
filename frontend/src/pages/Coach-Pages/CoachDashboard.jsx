@@ -11,6 +11,8 @@ import {
 } from "react-icons/fi";
 import CoachSidebar from "../../components/CoachSidebar";
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const CoachDashboard = () => {
   const navigate = useNavigate();
 
@@ -57,7 +59,7 @@ const CoachDashboard = () => {
       }
 
       const response = await axios.get(
-        "http://localhost:5000/api/coaches/get-profile",
+        `${API}/coaches/get-profile`,
         {
           headers: {
             Authorization: `Bearer ${token}`
