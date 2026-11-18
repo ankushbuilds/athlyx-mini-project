@@ -1,4 +1,4 @@
-const ImageKit = require("imagekit");
+const ImageKit = require("imageKit");
 require("dotenv").config();
 
 const imagekit = new ImageKit({
