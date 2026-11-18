@@ -13,7 +13,7 @@ import {
 
 import ScoutSidebar from "../../components/ScoutSidebar";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const ScoutDiscover = () => {
   const navigate = useNavigate();

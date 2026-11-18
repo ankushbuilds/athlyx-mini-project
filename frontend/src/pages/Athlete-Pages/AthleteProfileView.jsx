@@ -30,7 +30,7 @@ import CoachSidebar from "../../components/CoachSidebar";
 import AcademySidebar from "../../components/AcademySidebar";
 import AthleteResume from "../../components/AthleteResume";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const AthleteProfileView = () => {
   const navigate = useNavigate();

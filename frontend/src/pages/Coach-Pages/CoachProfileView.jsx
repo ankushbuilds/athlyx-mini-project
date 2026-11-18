@@ -16,7 +16,7 @@ import {
 import AthleteSidebar from "../../components/AthleteSidebar";
 import CoachSidebar from "../../components/CoachSidebar";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const CoachProfileView = () => {
   const navigate = useNavigate();

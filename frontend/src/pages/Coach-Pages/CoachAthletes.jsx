@@ -12,7 +12,7 @@ import {
 } from "react-icons/fi";
 import CoachSidebar from "../../components/CoachSidebar";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const CoachAthletes = () => {
     const navigate = useNavigate();

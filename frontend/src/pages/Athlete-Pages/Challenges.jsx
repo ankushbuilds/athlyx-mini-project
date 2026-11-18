@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import AthleteSidebar from "../../components/AthleteSidebar";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const Challenges = () => {
     const [challenges, setChallenges] = useState([]);

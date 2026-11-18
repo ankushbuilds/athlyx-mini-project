@@ -3,7 +3,7 @@ import axios from "axios";
 import { FiSend, FiMessageCircle, FiArrowLeft } from "react-icons/fi";
 import AcademySidebar from "../../components/AcademySidebar";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const AcademyMessages = () => {
     const [contacts, setContacts] = useState([]);

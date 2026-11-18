@@ -15,7 +15,7 @@ import {
 import ScoutSidebar from "../../components/ScoutSidebar";
 import LanguageSetting from "../../components/LanguageSetting";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const Toggle = ({ enabled, setEnabled, onChange, disabled }) => (
     <button
